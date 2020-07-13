@@ -43,6 +43,8 @@ def loop(opt, loop_len):
         write_parameters(param_list, next_params)
 
         while param_check(param_list):  # True if Tau0 == TauS
+            rmse = max_rmse(i)
+            res = opt.tell( next_params, rmse )
             next_params = opt.ask()
             write_parameters(param_list, next_params)
 
