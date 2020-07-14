@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt
 ### user input
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
 param_bounds = [ (1,30), (100,500), (1,200), (0,100), (0,0.4) ]
-loop_len = 300
+loop_len = 500
+n_initial_points = 100
 large_error = 5E4  # backup RMSE of runs which don't finish; first option uses 1.5 * max(RMSE)
 exp_SS_file = 'expSS130um.txt'
 ### end input
@@ -27,10 +28,13 @@ exp_SS_file = 'expSS130um.txt'
 # opt_progress = np.zeros( ( 1, len(param_list) + 1 ) )
 
 def main():
+    remove_out_files()
+
+    global n_initial_points
     opt = Optimizer(
         dimensions = param_bounds, 
         base_estimator = 'gp',
-        n_initial_points = 10
+        n_initial_points = n_initial_points
     )
     res = loop( opt, loop_len )
     plot_figs( res )
@@ -80,6 +84,12 @@ def loop(opt, loop_len):
 
     return res
 
+def remove_out_files():
+    out_files = [f for f in os.listdir(os.getcwd()) if f.startswith('out_')]
+    if len(out_files) > 0:
+        for f in out_files:
+            os.remove(f)
+
 def param_check(param_list):
     # True if tauS == tau0 
     if ('TauS' in param_list) or ('Tau0' in param_list):
@@ -121,6 +131,7 @@ def combine_SS():
 def calc_error():
     global exp_SS_file
     simSS = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 )[:,1:]
+    # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0]/3  # disp to strain
     simSS[:,1]/(3**2)  # force to stress
 
