@@ -46,7 +46,7 @@ def loop(opt, loop_len):
         next_params = opt.ask()
         write_parameters(param_list, next_params)
 
-        while param_check(param_list):  # True if Tau0 == TauS
+        while param_check(param_list):  # True if Tau0 >= TauS
             rmse = max_rmse(i)
             res = opt.tell( next_params, rmse )
             next_params = opt.ask()
@@ -91,7 +91,7 @@ def remove_out_files():
             os.remove(f)
 
 def param_check(param_list):
-    # True if tauS == tau0 
+    # True if tau0 >= tauS, which is bad
     if ('TauS' in param_list) or ('Tau0' in param_list):
         filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('Mat_BW')][0]
         f1 = open( filename, 'r' )
@@ -100,7 +100,7 @@ def param_check(param_list):
             if line.startswith('Tau0'): tau0 = float( line[7:] )
             if line.startswith('TauS'): tauS = float( line[7:] )
         f1.close()
-    return ( tau0 == tauS )
+    return ( tau0 >= tauS )
 
 def max_rmse(loop_number):
     global large_error
