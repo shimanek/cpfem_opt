@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 
 ### user input
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
-param_bounds = [ (1,30), (100,500), (1,200), (0,100), (0,0.4) ]
+param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0,0.4) ]
 loop_len = 500
 n_initial_points = 100
-large_error = 5E4  # backup RMSE of runs which don't finish; first option uses 1.5 * max(RMSE)
+large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * max(RMSE)
 exp_SS_file = 'expSS130um.txt'
 ### end input
 
@@ -132,8 +132,8 @@ def calc_error():
     global exp_SS_file
     simSS = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
-    simSS[:,0]/3  # disp to strain
-    simSS[:,1]/(3**2)  # force to stress
+    simSS[:,0] = simSS[:,0]/3  # disp to strain
+    simSS[:,1] = simSS[:,1]/(3**2)  # force to stress
 
     # smooth out simulated SS
     smoothenedSS = interp1d( simSS[:,0], simSS[:,1] )
