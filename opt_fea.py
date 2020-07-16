@@ -46,38 +46,42 @@ def loop(opt, loop_len):
         next_params = opt.ask()
         write_parameters(param_list, next_params)
 
-        while param_check(param_list):  # True if Tau0 >= TauS
+        if param_check(param_list):  # True if Tau0 >= TauS
+            # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
             rmse = max_rmse(i)
             res = opt.tell( next_params, rmse )
             next_params = opt.ask()
             write_parameters(param_list, next_params)
-
-        # submit job 
-        os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=4 double int ask_delete=OFF' )
-        time.sleep( 5 )
-
-        if check_complete():
-            # extract stress-strain
-            os.system( 'abaqus cae nogui=extract_SS_singleEl.py' )
-
-            # save stress-strain data
-            combine_SS()
-
-            # get error
-            rmse = calc_error()  
-            res = opt.tell( next_params, rmse )
-
-            # save optimization progress
+            combine_SS(True)
             if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
             else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
         else:
-            rmse = max_rmse(i)
-            res = opt.tell( next_params, rmse )
-            if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
-            else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
+            # submit job 
+            os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+            time.sleep( 5 )
 
-        with open('out_opt.pkl', 'wb') as f:
-            pickle.dump(opt, f)
+            if check_complete():
+                # extract stress-strain
+                os.system( 'abaqus cae nogui=extract_SS_singleEl.py' )
+
+                # save stress-strain data
+                combine_SS(False)
+
+                # get error
+                rmse = calc_error()  
+                res = opt.tell( next_params, rmse )
+
+                # save optimization progress
+                if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
+                else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
+            else:
+                rmse = max_rmse(i)
+                res = opt.tell( next_params, rmse )
+                if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
+                else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
+
+            with open('out_opt.pkl', 'wb') as f:
+                pickle.dump(opt, f)
 
         opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
         np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
@@ -118,9 +122,11 @@ def check_complete():
         last_line = ''
     return ( 'SUCCESSFULLY' in last_line )
 
-def combine_SS():
+def combine_SS(zeros:bool):
     filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 )
+    sheet = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros?
+    if zeros:
+        sheet = np.zeros( (np.shape(sheet)) )
     if os.path.isfile( filename ): 
         dat = np.load( filename )
         dat = np.dstack( (dat,sheet) )
