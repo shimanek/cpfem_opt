@@ -1,5 +1,5 @@
 '''
-test script to optimize a single CPFEM parameter
+test script to optimize CPFEM parameters
 Date: June 30, 2020
 '''
 import time
@@ -53,6 +53,7 @@ def loop(opt, loop_len):
             next_params = opt.ask()
             write_parameters(param_list, next_params)
             combine_SS(True)
+            # TODO just make the first row of opt_progress zeros and delete it after the last step 
             if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
             else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
         else:
@@ -124,7 +125,7 @@ def check_complete():
 
 def combine_SS(zeros:bool):
     filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros?
+    sheet = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
     if zeros:
         sheet = np.zeros( (np.shape(sheet)) )
     if os.path.isfile( filename ): 
@@ -146,10 +147,13 @@ def calc_error():
 
     # load experimental data
     expSS = np.loadtxt( exp_SS_file, skiprows=2 )
+    smoothenedExp = interp1d( expSS[:,0], expSS[:,1] )
+    num_error_eval_pts = 1000
+    fineSS = smoothenedExp( np.linspace( expSS[0,0], expSS[-1:0], num = num_error_eval_pts ) )
 
     # error function
-    deviations = np.asarray( [ smoothenedSS(expSS[i,0]) - expSS[i,1] for i in range(len(expSS)) ] )
-    rmse = np.sqrt( np.sum( deviations**2 ) / len(expSS) ) 
+    deviations = np.asarray( [ smoothenedSS(fineSS[i,0]) - fineSS[i,1] for i in range(len(fineSS)) ] )
+    rmse = np.sqrt( np.sum( deviations**2 ) / len(fineSS) ) 
 
     return rmse
 
