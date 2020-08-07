@@ -149,10 +149,11 @@ def calc_error():
     expSS = np.loadtxt( exp_SS_file, skiprows=2 )
     smoothenedExp = interp1d( expSS[:,0], expSS[:,1] )
     num_error_eval_pts = 1000
-    fineSS = smoothenedExp( np.linspace( expSS[0,0], expSS[-1:0], num = num_error_eval_pts ) )
+    x_error_eval_pts = np.linspace( expSS[0,0], expSS[-1:0], num = num_error_eval_pts )
+    fineSS = smoothenedExp( x_error_eval_pts )
 
     # error function
-    deviations = np.asarray( [ smoothenedSS(fineSS[i,0]) - fineSS[i,1] for i in range(len(fineSS)) ] )
+    deviations = np.asarray( [ smoothenedSS( x_error_eval_pts[i] ) - fineSS[i] for i in range(len(fineSS)) ] )
     rmse = np.sqrt( np.sum( deviations**2 ) / len(fineSS) ) 
 
     return rmse
