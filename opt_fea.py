@@ -149,7 +149,7 @@ def calc_error():
     expSS = np.loadtxt( exp_SS_file, skiprows=2 )
     smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
     num_error_eval_pts = 1000
-    x_error_eval_pts = np.linspace( expSS[0,0], expSS[-1:0], num = num_error_eval_pts )
+    x_error_eval_pts = np.linspace( expSS[0,0], expSS[-1,0], num = num_error_eval_pts )
     fineSS = smoothedExp( x_error_eval_pts )
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
