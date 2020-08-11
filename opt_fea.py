@@ -111,6 +111,7 @@ def max_rmse(loop_number):
     global large_error
     if loop_number > 10:
         return max(opt_progress[:,-1]) * 1.5
+        # TODO the above error will keep making itself larger... 
     else:
         return large_error
 
