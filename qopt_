@@ -1,0 +1,24 @@
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=30:00:00
+#PBS -A open
+#PBS -l pmem=2gb
+#PBS -j oe
+#PBS -m ae
+SECONDS=0
+pwd
+cd $PBS_O_WORKDIR
+echo " "
+echo "Job started on `hostname` at `date`"
+echo " "
+echo "Running program..."
+module purge
+module load abaqus
+module load intel
+module load python
+source activate opt
+python opt_fea.py
+echo " "
+echo "Job completed at `date`"
+echo " "
+diff=$SECONDS
+echo "$(($diff / 3600)) hours, $((($diff / 60) % 60)) minutes and $(($diff % 60)) seconds elapsed."
