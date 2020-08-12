@@ -78,6 +78,7 @@ def loop(opt, loop_len):
             else:
                 rmse = max_rmse(i)
                 res = opt.tell( next_params, rmse )
+                combine_SS(zeros=True)
                 if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
                 else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
 
