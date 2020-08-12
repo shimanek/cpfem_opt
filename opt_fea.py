@@ -52,7 +52,7 @@ def loop(opt, loop_len):
             res = opt.tell( next_params, rmse )
             next_params = opt.ask()
             write_parameters(param_list, next_params)
-            combine_SS(True)
+            combine_SS(zeros=True)
             # TODO just make the first row of opt_progress zeros and delete it after the last step 
             if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
             else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
@@ -66,7 +66,7 @@ def loop(opt, loop_len):
                 os.system( 'abaqus cae nogui=extract_SS_singleEl.py' )
 
                 # save stress-strain data
-                combine_SS(False)
+                combine_SS(zeros=False)
 
                 # get error
                 rmse = calc_error()  
