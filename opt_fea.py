@@ -110,9 +110,11 @@ def param_check(param_list):
 
 def max_rmse(loop_number):
     global large_error
-    if loop_number > 10:
-        return max(opt_progress[:,-1]) * 1.5
-        # TODO the above error will keep making itself larger... 
+    if loop_number > 15:
+        if max(opt_progress[0:15,-1]) == large_error:
+            return large_error
+        else:
+            return np.quantile(opt_progress[0:15,-1], 0.85)
     else:
         return large_error
 
