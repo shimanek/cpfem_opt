@@ -111,14 +111,15 @@ def param_check(param_list):
 def max_rmse(loop_number):
     global large_error
     grace = 15
-    if loop_number > grace:
-        if max(opt_progress[0:grace,-1]) == large_error:
+    if loop_number < grace:
+        return large_error
+    elif loop_number >= grace:
+        errors = np.delete( opt_progress[:grace,-1], np.where( opt_progress[:grace,-1] == large_error ) )
+        if len(errors) < np.round( grace/2 ):
             return large_error
         else:
-            errors = np.delete( opt_progress[:grace,-1], np.where( opt_progress[:grace,-1] == large_error ) )
-            return np.quantile(errors, 0.85)
-    else:
-        return large_error
+            iq1, iq3 = np.quantile(errors, [0.25,0.75])
+            return (iq3-iq1)*1.5
 
 def check_complete():
     stafile = [ f for f in os.listdir(os.getcwd()) if f.startswith( 'UT' ) ][0]
