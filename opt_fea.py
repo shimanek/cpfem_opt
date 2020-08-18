@@ -36,6 +36,7 @@ def main():
         base_estimator = 'gp',
         n_initial_points = n_initial_points
     )
+    load_opt(opt)
     res = loop( opt, loop_len )
     plot_figs( res )
 
@@ -88,10 +89,12 @@ def loop(opt, loop_len):
     return res
 
 def load_opt(opt):
-    prev_data = np.loadtxt('out_progress.txt')
-    x_in = prev_data[:,1:-1]
-    y_in = prev_data[:,-1]
-    opt.tell(x_in, y_in)
+    in_filename = 'in_opt.txt'
+    if os.path.isfile(in_filename):
+        prev_data = np.loadtxt(in_filename)
+        x_in = prev_data[:,1:-1]
+        y_in = prev_data[:,-1]
+        opt.tell(x_in, y_in)
 
 def remove_out_files():
     out_files = [f for f in os.listdir(os.getcwd()) if f.startswith('out_')]
