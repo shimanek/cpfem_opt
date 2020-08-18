@@ -90,6 +90,12 @@ def loop(opt, loop_len):
 
     return res
 
+def load_opt(opt):
+    prev_data = np.loadtxt('out_progress.txt')
+    x_in = prev_data[:,1:-1]
+    y_in = prev_data[:,-1]
+    opt.tell(x_in, y_in)
+
 def remove_out_files():
     out_files = [f for f in os.listdir(os.getcwd()) if f.startswith('out_')]
     if len(out_files) > 0:
