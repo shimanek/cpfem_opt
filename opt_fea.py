@@ -82,9 +82,6 @@ def loop(opt, loop_len):
                 if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
                 else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
 
-            with open('out_opt.pkl', 'wb') as f:
-                pickle.dump(opt, f)
-
         opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
         np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
 
