@@ -64,7 +64,7 @@ def loop(opt, loop_len):
 
             if check_complete():
                 # extract stress-strain
-                os.system( 'abaqus cae nogui=extract_SS_singleEl.py' )
+                os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
 
                 # save stress-strain data
                 combine_SS(zeros=False)
@@ -138,7 +138,7 @@ def check_complete():
 
 def combine_SS(zeros:bool):
     filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
+    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
     if zeros:
         sheet = np.zeros( (np.shape(sheet)) )
     if os.path.isfile( filename ): 
@@ -150,7 +150,7 @@ def combine_SS(zeros:bool):
 
 def calc_error():
     global exp_SS_file
-    simSS = np.loadtxt( 'allArray.csv', delimiter=',', skiprows=1 )[:,1:]
+    simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0]/3  # disp to strain
     simSS[:,1] = simSS[:,1]/(3**2)  # force to stress
