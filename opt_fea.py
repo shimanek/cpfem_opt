@@ -155,11 +155,22 @@ def calc_error():
     simSS[:,0] = simSS[:,0]/3  # disp to strain
     simSS[:,1] = simSS[:,1]/(3**2)  # force to stress
 
+    # load experimental data
+    expSS = np.loadtxt( exp_SS_file, skiprows=2 )
+
+    # deal with unequal data lengths 
+    if simSS[-1,0] >= expSS[-1,0]:
+        # chop off simSS
+        cutoff = np.where( simSS[:,0] > expSS[-1,0] )[0][0] - 1
+        simSS = simSS[:cutoff,:]
+    else:
+        # chop off expSS
+        cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
+        expSS = expSS[:cutoff,:]
+
     # smooth out simulated SS
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
 
-    # load experimental data
-    expSS = np.loadtxt( exp_SS_file, skiprows=2 )
     smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
     num_error_eval_pts = 1000
     x_error_eval_pts = np.linspace( expSS[0,0], expSS[-1,0], num = num_error_eval_pts )
