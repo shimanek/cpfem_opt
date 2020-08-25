@@ -163,17 +163,19 @@ def calc_error():
         # chop off simSS
         cutoff = np.where( simSS[:,0] > expSS[-1,0] )[0][0] - 1
         simSS = simSS[:cutoff,:]
+        cutoff_strain = simSS[-1,0]
     else:
         # chop off expSS
         cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
         expSS = expSS[:cutoff,:]
+        cutoff_strain = expSS[-1,0]
 
     # smooth out simulated SS
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
 
     smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
     num_error_eval_pts = 1000
-    x_error_eval_pts = np.linspace( expSS[0,0], expSS[-1,0], num = num_error_eval_pts )
+    x_error_eval_pts = np.linspace( expSS[0,0], cutoff_strain, num = num_error_eval_pts )
     fineSS = smoothedExp( x_error_eval_pts )
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
