@@ -22,6 +22,8 @@ loop_len = 500
 n_initial_points = 100
 large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
 exp_SS_file = [f for f in os.listdir() if f.startswith('exp')][0]
+length = 9
+area = 9*9
 ### end input
 
 
@@ -150,10 +152,12 @@ def combine_SS(zeros:bool):
 
 def calc_error():
     global exp_SS_file
+    global length
+    global area
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
-    simSS[:,0] = simSS[:,0]/3  # disp to strain
-    simSS[:,1] = simSS[:,1]/(3**2)  # force to stress
+    simSS[:,0] = simSS[:,0]/length  # disp to strain
+    simSS[:,1] = simSS[:,1]/area    # force to stress
 
     # load experimental data
     expSS = np.loadtxt( exp_SS_file, skiprows=2 )
