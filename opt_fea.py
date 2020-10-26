@@ -46,6 +46,11 @@ def loop(opt, loop_len):
     global opt_progress
 
     for i in range(loop_len):
+        if i == 0:
+            os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+            time.sleep( 5 )
+            os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
+
         next_params = opt.ask()
         write_parameters(param_list, next_params)
 
