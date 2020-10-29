@@ -70,8 +70,8 @@ def loop(opt, loop_len):
             time.sleep( 5 )
 
             if not check_complete():
-                refine_run()
-                
+                refine_run(small_increment=1E-5)
+
             if check_complete():
                 # extract stress-strain
                 os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
@@ -146,15 +146,14 @@ def check_complete():
         last_line = ''
     return ( 'SUCCESSFULLY' in last_line )
 
-def refine_run():
+def refine_run(small_increment:float):
     os.system('rm *.lck')
     # cut max increment size by... factor of 10
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
     lines = f.readlines(filename)
-    step_line_ind = [ line.index() for line in lines if line.lower.startswith('*step')][0] + 1  # want line after
+    step_line_ind = [ line.index() for line in lines if line.lower().startswith('*static')][0] + 1  # want line after
     step_line = np.loadtxt(lines[step_line_ind], delimiter=',')
-    max_increment = step_line[-1]
-    new_step_line = np.append( step_line[:-1], max_increment/10 )
+    new_step_line = np.append( step_line[:-1], small_increment)
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
         new_step_line_str + ', '
@@ -164,6 +163,8 @@ def refine_run():
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
     os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    with open(filename, 'w') as f:
+        f.writelines(lines)
 
 def combine_SS(zeros:bool):
     filename = 'out_time_disp_force.npy'
