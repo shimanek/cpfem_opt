@@ -150,7 +150,8 @@ def refine_run(small_increment:float):
     os.system('rm *.lck')
     # cut max increment size by... factor of 10
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
-    lines = f.readlines(filename)
+    with open(filename, 'r') as f:
+        lines = f.readlines(filename)
     step_line_ind = [ line.index() for line in lines if line.lower().startswith('*static')][0] + 1  # want line after
     step_line = np.loadtxt(lines[step_line_ind], delimiter=',')
     new_step_line = np.append( step_line[:-1], small_increment)
