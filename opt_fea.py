@@ -151,14 +151,15 @@ def refine_run(small_increment:float):
     # cut max increment size by... factor of 10
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
     with open(filename, 'r') as f:
-        lines = f.readlines(filename)
-    step_line_ind = [ line.index() for line in lines if line.lower().startswith('*static')][0] + 1  # want line after
-    step_line = np.loadtxt(lines[step_line_ind], delimiter=',')
-    new_step_line = np.append( step_line[:-1], small_increment)
+        lines = f.readlines()
+    step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1  # want line after
+    step_line = lines[step_line_ind].strip().split(', ')
+    new_step_line = step_line[:-1] + [small_increment]
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
-        new_step_line_str + ', '
-        new_step_line_str + str(new_step_line[i])
+        new_step_line_str = new_step_line_str + ', '
+        new_step_line_str = new_step_line_str + str(new_step_line[i])
+    new_step_line_str = new_step_line_str + '\n'
     with open(filename, 'w') as f:
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
