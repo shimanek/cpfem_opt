@@ -101,7 +101,7 @@ def loop(opt, loop_len):
 def load_opt(opt):
     in_filename = 'in_opt.txt'
     if os.path.isfile(in_filename):
-        prev_data = np.loadtxt(in_filename)
+        prev_data = np.loadtxt(in_filename, skiprows=1)
         x_in = prev_data[:,1:-1]
         y_in = prev_data[:,-1]
         opt.tell(x_in, y_in)
