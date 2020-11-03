@@ -24,6 +24,7 @@ large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1
 exp_SS_file = [f for f in os.listdir() if f.startswith('exp')][0]
 length = 9
 area = 9*9
+jobname = 'UT_729grains'
 ### end input
 
 
@@ -47,7 +48,7 @@ def loop(opt, loop_len):
 
     for i in range(loop_len):
         if i == 0:
-            os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+            os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
             time.sleep( 5 )
             os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
 
@@ -66,7 +67,7 @@ def loop(opt, loop_len):
             else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
         else:
             # submit job 
-            os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+            os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
             time.sleep( 5 )
 
             if not check_complete():
@@ -164,7 +165,7 @@ def refine_run(small_increment:float):
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    os.system( 'abaqus job=UT_27grains user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
     with open(filename, 'w') as f:
         f.writelines(lines)
 
