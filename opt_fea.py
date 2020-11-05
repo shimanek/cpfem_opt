@@ -47,10 +47,8 @@ def loop(opt, loop_len):
     global opt_progress
 
     for i in range(loop_len):
-        if i == 0:
-            os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
-            time.sleep( 5 )
-            os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
+
+        if i==0: get_first()
 
         next_params = opt.ask()
         write_parameters(param_list, next_params)
@@ -71,10 +69,10 @@ def loop(opt, loop_len):
             time.sleep( 5 )
 
             if not check_complete():
-                refine_run(small_increment=1E-5)
+                refine_run()
 
             if check_complete():
-                # extract stress-strain
+                # extract data to temp_time_disp_force.csv
                 os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
 
                 # save stress-strain data
@@ -98,6 +96,18 @@ def loop(opt, loop_len):
         np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
 
     return res
+
+def get_first():
+    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    time.sleep(5)
+    have_1st = check_complete()
+    if have_1st: 
+        os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
+    else: 
+        refine_run()
+        time.sleep(5)
+        os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
+
 
 def load_opt(opt):
     in_filename = 'in_opt.txt'
@@ -147,15 +157,23 @@ def check_complete():
         last_line = ''
     return ( 'SUCCESSFULLY' in last_line )
 
-def refine_run(small_increment:float):
+def refine_run():
+    """
+    cut max increment size by `factor`
+    """
+    factor = 5
+    # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
-    # cut max increment size by... factor of 10
+    # find input file TODO put main input file name up top, not hardcoded as here
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
     with open(filename, 'r') as f:
         lines = f.readlines()
-    step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1  # want line after
+    # find line after step line:
+    step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
     step_line = lines[step_line_ind].strip().split(', ')
-    new_step_line = step_line[:-1] + [small_increment]
+    original_increment = float(step_line[-1])
+    # use original 
+    new_step_line = step_line[:-1] + [ '%.4f' % original_increment/factor ] 
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
         new_step_line_str = new_step_line_str + ', '
@@ -166,8 +184,11 @@ def refine_run(small_increment:float):
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
     os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
-    with open(filename, 'w') as f:
-        f.writelines(lines)
+    if check_complete():
+        with open(filename, 'w') as f:
+            f.writelines(lines)
+    else:
+        refine_run()
 
 def combine_SS(zeros:bool):
     # TODO problems here: incomplete runs throw error, derail entire job 
@@ -178,6 +199,8 @@ def combine_SS(zeros:bool):
     if os.path.isfile( filename ): 
         dat = np.load( filename )
         dat = np.dstack( (dat,sheet) )
+        # error: along dimension 0, the array at index 0 has size 18 and the array at index 1 has size 101
+        # so sheet dimension is correct 
     else:
         dat = sheet
     np.save( filename, dat )
