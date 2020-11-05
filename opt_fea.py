@@ -170,6 +170,7 @@ def refine_run(small_increment:float):
         f.writelines(lines)
 
 def combine_SS(zeros:bool):
+    # TODO problems here: incomplete runs throw error, derail entire job 
     filename = 'out_time_disp_force.npy'
     sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
     if zeros:
