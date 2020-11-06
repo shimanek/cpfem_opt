@@ -47,13 +47,12 @@ def loop(opt, loop_len):
     global opt_progress
 
     for i in range(loop_len):
-
-        if i==0: get_first()
-
+        
         next_params = opt.ask()
         write_parameters(param_list, next_params)
+        if i==0: get_first()
 
-        if param_check(param_list):  # True if Tau0 >= TauS
+        while param_check(param_list):  # True if Tau0 >= TauS
             # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
             rmse = max_rmse(i)
             res = opt.tell( next_params, rmse )
