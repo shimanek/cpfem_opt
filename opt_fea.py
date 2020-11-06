@@ -160,7 +160,7 @@ def refine_run():
     """
     cut max increment size by `factor`
     """
-    factor = 5
+    factor = 5.0
     # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
@@ -172,7 +172,7 @@ def refine_run():
     step_line = lines[step_line_ind].strip().split(', ')
     original_increment = float(step_line[-1])
     # use original 
-    new_step_line = step_line[:-1] + [ '%.4f' % (original_increment/factor) ] 
+    new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
         new_step_line_str = new_step_line_str + ', '
