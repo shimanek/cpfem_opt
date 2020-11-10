@@ -214,7 +214,7 @@ def calc_error():
     simSS[:,1] = simSS[:,1]/area    # force to stress
 
     # load experimental data
-    expSS = np.loadtxt( exp_SS_file, skiprows=2 )
+    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
 
     # deal with unequal data lengths 
     if simSS[-1,0] >= expSS[-1,0]:
