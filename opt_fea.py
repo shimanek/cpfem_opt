@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 
 ### user input
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
-param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0,0.4) ]
-loop_len = 500
+param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ]
+loop_len = 300
 n_initial_points = 100
 large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
 exp_SS_file = [f for f in os.listdir() if f.startswith('exp')][0]
