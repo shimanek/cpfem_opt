@@ -70,7 +70,7 @@ def loop(opt, loop_len):
             else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
         else:
             # submit job 
-            os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+            job_start()
             time.sleep( 5 )
 
             if not check_complete():
@@ -78,7 +78,7 @@ def loop(opt, loop_len):
 
             if check_complete():
                 # extract data to temp_time_disp_force.csv
-                os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
+                job_extract()
 
                 # save stress-strain data
                 combine_SS(zeros=False)
@@ -102,17 +102,22 @@ def loop(opt, loop_len):
 
     return res
 
-def get_first():
+def job_start():
     os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+
+def job_extract():
+    os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
+
+def get_first():
+    job_start()
     time.sleep(5)
     have_1st = check_complete()
     if have_1st: 
-        os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
+        job_extract()
     else: 
         refine_run()
         time.sleep(5)
-        os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
-
+        job_extract()
 
 def load_opt(opt):
     in_filename = 'in_opt.txt'
@@ -188,7 +193,7 @@ def refine_run():
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    job_start()
     if check_complete():
         with open(filename, 'w') as f:
             f.writelines(lines)
