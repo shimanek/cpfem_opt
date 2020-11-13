@@ -48,7 +48,6 @@ def main():
     )
     load_opt(opt)
     res = loop( opt, loop_len )
-    plot_figs( res )
 
 def loop(opt, loop_len):
     get_first()
@@ -271,10 +270,6 @@ def write_parameters(param_list, next_params):
     os.remove( filename )
     os.rename( 'temp_mat_file.inp', filename )
 
-def plot_figs(res):
-    plot_convergence(res)
-    plt.savefig('out_convergence.png',dpi=400)
-    plt.close()
 
 class Get_Fd(object):
     
