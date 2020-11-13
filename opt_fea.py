@@ -47,6 +47,7 @@ def main():
         n_initial_points = n_initial_points
     )
     load_opt(opt)
+    # ^ TODO also combine in_opt.npy ?
     res = loop( opt, loop_len )
 
 def loop(opt, loop_len):
