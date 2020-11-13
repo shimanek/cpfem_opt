@@ -54,23 +54,18 @@ def loop(opt, loop_len):
     get_first()
     for i in range(loop_len):
         def single_loop(opt, i):
-            global opt_progress
-            next_params = opt.ask()
+            global opt_progress  # global progress tracker, row:(i, params, error)
+            next_params = opt.ask()  # get parameters to test
             write_parameters(param_list, next_params)
             
             while param_check(param_list):  # True if Tau0 >= TauS
-                # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
-                # TODO just make the first row of opt_progress zeros and delete it after the last step 
                 res = write_maxRMSE(i, next_params, opt )
                 opt_progress = update_progress(i, next_params, max_rmse(i))
                 next_params = opt.ask()
             else:
-                # submit job 
                 job_run()
-
                 if not check_complete():  # try decreasing max increment size
                     refine_run()  
-                
                 if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
                     opt_progress = update_progress(i, next_params, max_rmse(i))
@@ -89,6 +84,7 @@ def loop(opt, loop_len):
     return res
 
 def update_progress(i, next_params, rmse):
+    global opt_progress
     if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
     else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
     return opt_progress
