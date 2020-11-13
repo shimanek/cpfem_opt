@@ -31,6 +31,7 @@ exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 length = 9
 area = 9*9
 jobname = 'UT_729grains'
+recursion_depth = 5
 ### end input
 
 
@@ -50,66 +51,66 @@ def main():
     plot_figs( res )
 
 def loop(opt, loop_len):
-    global opt_progress
 
     for i in range(loop_len):
-        
-        next_params = opt.ask()
-        write_parameters(param_list, next_params)
-        if i==0: get_first()
-
-        while param_check(param_list):  # True if Tau0 >= TauS
-            # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
-            rmse = max_rmse(i)
-            res = opt.tell( next_params, rmse )
+        def single_loop(opt):
+            global opt_progress
             next_params = opt.ask()
             write_parameters(param_list, next_params)
-            combine_SS(zeros=True)
-            # TODO just make the first row of opt_progress zeros and delete it after the last step 
-            if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
-            else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
-        else:
-            # submit job 
-            job_start()
-            time.sleep( 5 )
+            if i==0: get_first()
 
-            if not check_complete():
-                refine_run()
-
-            if check_complete():
-                # extract data to temp_time_disp_force.csv
-                job_extract()
-
-                # save stress-strain data
-                combine_SS(zeros=False)
-
-                # get error
-                rmse = calc_error()  
-                res = opt.tell( next_params, rmse )
-
-                # save optimization progress
-                if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
-                else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+            while param_check(param_list):  # True if Tau0 >= TauS
+                # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
+                # TODO just make the first row of opt_progress zeros and delete it after the last step 
+                res = write_maxRMSE(i, next_params, opt )
+                opt_progress = update_progress(i, next_params, rmse)
+                next_params = opt.ask()
             else:
-                rmse = max_rmse(i)
-                res = opt.tell( next_params, rmse )
-                combine_SS(zeros=True)
-                if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
-                else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+                # submit job 
+                job_run()
 
-        opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
-        np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
-
+                if not check_complete():  # try decreasing max increment size
+                    refine_run()  
+                
+                if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
+                    write_maxRMSE(i, next_params, opt)
+                    opt_progress = update_progress(i, next_params, rmse)
+                    return  
+                else:
+                    job_extract()  # extract data to temp_time_disp_force.csv
+                    combine_SS(zeros=False)  # save stress-strain data
+                    rmse = calc_error()  # get error
+                    res = opt.tell( next_params, rmse )
+                    opt_progress = update_progress(i, next_params, rmse)
+            # TODO following is re-written every loop! is there an easier way to append? 
+            opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
+            np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
+            return res
+        res = single_loop(opt)
     return res
 
-def job_start():
+def update_progress(i, next_params, rmse):
+    if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
+    else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+    return opt_progress
+
+def write_maxRMSE(i, next_params, opt):
+    rmse = max_rmse(i)
+    res = opt.tell( next_params, rmse )
+    # next_params = opt.ask()
+    write_parameters(param_list, next_params)
+    combine_SS(zeros=True)
+    return res
+
+def job_run():
     os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    time.sleep( 5 )
 
 def job_extract():
     os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
 
 def get_first():
-    job_start()
+    job_run()
     time.sleep(5)
     have_1st = check_complete()
     if have_1st: 
@@ -167,11 +168,12 @@ def check_complete():
         last_line = ''
     return ( 'SUCCESSFULLY' in last_line )
 
-def refine_run():
+def refine_run(ct=0):
     """
     cut max increment size by `factor`
     """
     factor = 5.0
+    ct += 1
     # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
@@ -193,10 +195,12 @@ def refine_run():
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    job_start()  # TODO first check params! also, need a way to get out of this recursion
+    job_run()  # TODO first check params! also, need a way to get out of this recursion
     if check_complete():
         with open(filename, 'w') as f:
             f.writelines(lines)
+    elif ct >= recursion_depth:
+        return
     else:
         refine_run()
 
