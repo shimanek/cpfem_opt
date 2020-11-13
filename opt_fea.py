@@ -51,14 +51,13 @@ def main():
     plot_figs( res )
 
 def loop(opt, loop_len):
-
+    get_first()
     for i in range(loop_len):
         def single_loop(opt, i):
             global opt_progress
             next_params = opt.ask()
             write_parameters(param_list, next_params)
-            if i==0: get_first()
-
+            
             while param_check(param_list):  # True if Tau0 >= TauS
                 # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
                 # TODO just make the first row of opt_progress zeros and delete it after the last step 
@@ -85,7 +84,7 @@ def loop(opt, loop_len):
             # TODO following is re-written every loop! is there an easier way to append? 
             opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
             np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
-            return res
+            return res, opt_progress
         res = single_loop(opt, i)
     return res
 
@@ -111,14 +110,10 @@ def job_extract():
 
 def get_first():
     job_run()
-    time.sleep(5)
     have_1st = check_complete()
-    if have_1st: 
-        job_extract()
-    else: 
+    if not have_1st: 
         refine_run()
-        time.sleep(5)
-        job_extract()
+    job_extract()
 
 def load_opt(opt):
     in_filename = 'in_opt.txt'
