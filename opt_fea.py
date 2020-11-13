@@ -193,7 +193,7 @@ def refine_run():
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    job_start()
+    job_start()  # TODO first check params! also, need a way to get out of this recursion
     if check_complete():
         with open(filename, 'w') as f:
             f.writelines(lines)
