@@ -53,7 +53,7 @@ def main():
 def loop(opt, loop_len):
 
     for i in range(loop_len):
-        def single_loop(opt):
+        def single_loop(opt, i):
             global opt_progress
             next_params = opt.ask()
             write_parameters(param_list, next_params)
@@ -63,7 +63,7 @@ def loop(opt, loop_len):
                 # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
                 # TODO just make the first row of opt_progress zeros and delete it after the last step 
                 res = write_maxRMSE(i, next_params, opt )
-                opt_progress = update_progress(i, next_params, rmse)
+                opt_progress = update_progress(i, next_params, max_rmse(i))
                 next_params = opt.ask()
             else:
                 # submit job 
@@ -74,7 +74,7 @@ def loop(opt, loop_len):
                 
                 if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
-                    opt_progress = update_progress(i, next_params, rmse)
+                    opt_progress = update_progress(i, next_params, max_rmse(i))
                     return  
                 else:
                     job_extract()  # extract data to temp_time_disp_force.csv
@@ -86,7 +86,7 @@ def loop(opt, loop_len):
             opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
             np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
             return res
-        res = single_loop(opt)
+        res = single_loop(opt, i)
     return res
 
 def update_progress(i, next_params, rmse):
