@@ -193,7 +193,7 @@ def refine_run(ct=0):
     elif ct >= recursion_depth:
         return
     else:
-        refine_run()
+        refine_run(ct)
 
 def combine_SS(zeros):
     # TODO problems here: incomplete runs throw error, derail entire job 
