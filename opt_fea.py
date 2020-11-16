@@ -2,18 +2,24 @@
 test script to optimize CPFEM parameters
 Date: June 30, 2020
 '''
-import time
-import os
-import subprocess
-import sys
-import numpy as np
-import pickle
-import matplotlib
-matplotlib.use('Agg')
-from skopt import Optimizer
-from skopt.plots import plot_convergence
-from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
+if __name__ == '__main__':
+    import time
+    import os
+    import subprocess
+    import sys
+    import numpy as np
+    import pickle
+    import matplotlib
+    matplotlib.use('Agg')
+    from skopt import Optimizer
+    from skopt.plots import plot_convergence
+    from scipy.interpolate import interp1d
+    import matplotlib.pyplot as plt
+else:
+    from odbAccess import *
+    from abaqusConstants import *
+    from odbMaterial import *
+    from odbSection import *
 
 ### user input
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
@@ -21,10 +27,11 @@ param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ]
 loop_len = 300
 n_initial_points = 100
 large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
-exp_SS_file = [f for f in os.listdir() if f.startswith('exp')][0]
+exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 length = 9
 area = 9*9
 jobname = 'UT_729grains'
+recursion_depth = 3
 ### end input
 
 
@@ -40,73 +47,71 @@ def main():
         n_initial_points = n_initial_points
     )
     load_opt(opt)
+    # ^ TODO also combine in_opt.npy ?
     res = loop( opt, loop_len )
-    plot_figs( res )
 
 def loop(opt, loop_len):
-    global opt_progress
-
+    get_first()
     for i in range(loop_len):
-        
-        next_params = opt.ask()
-        write_parameters(param_list, next_params)
-        if i==0: get_first()
-
-        while param_check(param_list):  # True if Tau0 >= TauS
-            # TODO add sheet of zeros to out_time_disp_force.npy (implemented below but needs cleaning up!)
-            rmse = max_rmse(i)
-            res = opt.tell( next_params, rmse )
-            next_params = opt.ask()
+        def single_loop(opt, i):
+            global opt_progress  # global progress tracker, row:(i, params, error)
+            next_params = opt.ask()  # get parameters to test
             write_parameters(param_list, next_params)
-            combine_SS(zeros=True)
-            # TODO just make the first row of opt_progress zeros and delete it after the last step 
-            if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
-            else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
-        else:
-            # submit job 
-            os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
-            time.sleep( 5 )
-
-            if not check_complete():
-                refine_run()
-
-            if check_complete():
-                # extract data to temp_time_disp_force.csv
-                os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
-
-                # save stress-strain data
-                combine_SS(zeros=False)
-
-                # get error
-                rmse = calc_error()  
-                res = opt.tell( next_params, rmse )
-
-                # save optimization progress
-                if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
-                else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
-            else:
-                rmse = max_rmse(i)
-                res = opt.tell( next_params, rmse )
+            
+            while param_check(param_list):  # True if Tau0 >= TauS
+                res = write_maxRMSE(i, next_params, opt )
+                opt_progress = update_progress(i, next_params, max_rmse(i))
                 combine_SS(zeros=True)
-                if i == 0: opt_progress = np.transpose( np.asarray( [i, *next_params,rmse] ) )
-                else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i, *next_params,rmse] )) )
-
-        opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
-        np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
-
+                next_params = opt.ask()
+            else:
+                job_run()
+                if not check_complete():  # try decreasing max increment size
+                    refine_run()  
+                if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
+                    write_maxRMSE(i, next_params, opt)
+                    opt_progress = update_progress(i, next_params, max_rmse(i))
+                    combine_SS(zeros=True)
+                    return  
+                else:
+                    job_extract()  # extract data to temp_time_disp_force.csv
+                    combine_SS(zeros=False)  # save stress-strain data
+                    rmse = calc_error()  # get error
+                    res = opt.tell( next_params, rmse )
+                    opt_progress = update_progress(i, next_params, rmse)
+            # TODO following is re-written every loop! is there an easier way to append? 
+            opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
+            np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
+            return res, opt_progress
+        res = single_loop(opt, i)
     return res
 
-def get_first():
-    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
-    time.sleep(5)
-    have_1st = check_complete()
-    if have_1st: 
-        os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
-    else: 
-        refine_run()
-        time.sleep(5)
-        os.system( 'abaqus python -c "from opt_extract import write2file; write2file()"' )
+def update_progress(i, next_params, rmse):
+    global opt_progress
+    if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
+    else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+    return opt_progress
 
+def write_maxRMSE(i, next_params, opt):
+    rmse = max_rmse(i)
+    res = opt.tell( next_params, rmse )
+    # next_params = opt.ask()
+    write_parameters(param_list, next_params)
+    combine_SS(zeros=True)
+    return res
+
+def job_run():
+    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    time.sleep( 5 )
+
+def job_extract():
+    os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
+
+def get_first():
+    job_run()
+    have_1st = check_complete()
+    if not have_1st: 
+        refine_run()
+    job_extract()
 
 def load_opt(opt):
     in_filename = 'in_opt.txt'
@@ -156,11 +161,12 @@ def check_complete():
         last_line = ''
     return ( 'SUCCESSFULLY' in last_line )
 
-def refine_run():
+def refine_run(ct=0):
     """
     cut max increment size by `factor`
     """
     factor = 5.0
+    ct += 1
     # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
@@ -171,7 +177,7 @@ def refine_run():
     step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
     step_line = lines[step_line_ind].strip().split(', ')
     original_increment = float(step_line[-1])
-    # use original 
+    # use original / factor:
     new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
@@ -182,14 +188,16 @@ def refine_run():
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    job_run()  # TODO first check params! also, need a way to get out of this recursion
     if check_complete():
         with open(filename, 'w') as f:
             f.writelines(lines)
+    elif ct >= recursion_depth:
+        return
     else:
-        refine_run()
+        refine_run(ct)
 
-def combine_SS(zeros:bool):
+def combine_SS(zeros):
     # TODO problems here: incomplete runs throw error, derail entire job 
     filename = 'out_time_disp_force.npy'
     sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
@@ -265,10 +273,53 @@ def write_parameters(param_list, next_params):
     os.remove( filename )
     os.rename( 'temp_mat_file.inp', filename )
 
-def plot_figs(res):
-    plot_convergence(res)
-    plt.savefig('out_convergence.png',dpi=400)
-    plt.close()
+
+class Get_Fd(object):
+    
+    def __init__(self,ResultFile):
+
+        CurrentPath = os.getcwd()
+        self.ResultFilePath = os.path.join(CurrentPath, ResultFile + '.odb')
+
+        self.Time = []
+        self.TopU2 = []
+        self.TopRF2 = []
+        
+        step = 'Loading'
+        instance = 'PART-1-1'
+        TopRPset = 'RP-TOP'
+        
+        odb = openOdb(path=self.ResultFilePath, readOnly=True)
+        steps = odb.steps[step]
+        frames = odb.steps[step].frames
+        numFrames = len(frames)
+        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset] # if the node set is in Part
+        #TopNodes = odb.rootAssembly.nodeSets[NodeSetTop] # if the node set is in Assembly
+        
+        for x in range(numFrames):
+            Frame = frames[x]
+            # Record time
+            Time1 = Frame.frameValue
+            self.Time.append(Time1) # list append
+            # Top RP results
+            Displacement = Frame.fieldOutputs['U']
+            ReactionForce = Frame.fieldOutputs['RF']
+            TopU  = Displacement.getSubset(region=TopRP).values
+            TopRf = ReactionForce.getSubset(region=TopRP).values
+            self.TopU2  = self.TopU2  + map(lambda x:x.data[1], TopU)  # list combination
+            self.TopRF2 = self.TopRF2 + map(lambda x:x.data[1], TopRf) # list combination
+        
+        odb.close()
+
+def write2file():
+    job = [f for f in os.listdir(os.getcwd()) if f.endswith('.odb')][0][:-4]
+    Result_Fd = Get_Fd(job)
+    with open('temp_time_disp_force.csv','w') as f:
+        f.write('{0},{1},{2}\n'.format('Time','U2','RF2'))
+        for i in range(len(Result_Fd.Time)):
+            f.write('%.5f,' % Result_Fd.Time[i])
+            f.write('%.5f,' % Result_Fd.TopU2[i])
+            f.write('%.5f\n' % Result_Fd.TopRF2[i])
 
 if __name__ == '__main__':
     main()
