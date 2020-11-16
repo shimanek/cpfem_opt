@@ -48,7 +48,7 @@ def main():
     )
     load_opt(opt)
     # ^ TODO also combine in_opt.npy ?
-    loop( opt, loop_len )
+    res = loop( opt, loop_len )
 
 def loop(opt, loop_len):
     get_first()
@@ -81,7 +81,9 @@ def loop(opt, loop_len):
             # TODO following is re-written every loop! is there an easier way to append? 
             opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
             np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
-        single_loop(opt, i)
+            return res, opt_progress
+        res = single_loop(opt, i)
+    return res
 
 def update_progress(i, next_params, rmse):
     global opt_progress
