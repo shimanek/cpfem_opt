@@ -61,6 +61,7 @@ def loop(opt, loop_len):
             while param_check(param_list):  # True if Tau0 >= TauS
                 res = write_maxRMSE(i, next_params, opt )
                 opt_progress = update_progress(i, next_params, max_rmse(i))
+                combine_SS(zeros=True)
                 next_params = opt.ask()
             else:
                 job_run()
@@ -69,6 +70,7 @@ def loop(opt, loop_len):
                 if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
                     opt_progress = update_progress(i, next_params, max_rmse(i))
+                    combine_SS(zeros=True)
                     return  
                 else:
                     job_extract()  # extract data to temp_time_disp_force.csv
@@ -175,7 +177,7 @@ def refine_run(ct=0):
     step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
     step_line = lines[step_line_ind].strip().split(', ')
     original_increment = float(step_line[-1])
-    # use original 
+    # use original / factor:
     new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
