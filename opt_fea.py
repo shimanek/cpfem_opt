@@ -36,15 +36,13 @@ recursion_depth = 3
 
 def main():
     remove_out_files()
-
     global n_initial_points
     opt = Optimizer(
         dimensions = param_bounds, 
         base_estimator = 'gp',
-        n_initial_points = n_initial_points
-    )
+        n_initial_points = n_initial_points)
     load_opt(opt)
-    # ^ TODO also combine in_opt.npy ?
+
     loop( opt, loop_len )
 
 def loop(opt, loop_len):
@@ -53,7 +51,7 @@ def loop(opt, loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
             next_params = opt.ask()  # get parameters to test
-            write_parameters(param_list, next_params)
+            write_parameters(param_list, next_params)  # write params to file
 
             while param_check(param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
@@ -78,8 +76,6 @@ def loop(opt, loop_len):
 
 def write_opt_progress():
     global opt_progress
-    # TODO following is re-written every loop! is there an easier way to append? 
-    # ^ maybe not to keep opt_progress a stable global variable
     opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
     np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
 
@@ -172,8 +168,19 @@ def refine_run(ct=0):
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
         lines = f.readlines()
+    
+    # exit strategy:
+    if ct == 1:  # need to save original parameters outside of this recursive function
+        with open(tempfile, 'w') as f:
+            f.writelines(lines)
+    def write_original(filename):
+        with open(tempfile, 'r') as f:
+            lines = f.readlines()
+        with open(filename, 'w') as f:
+            f.writelines(lines)
     # find line after step line:
     step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
     step_line = lines[step_line_ind].strip().split(', ')
@@ -189,17 +196,17 @@ def refine_run(ct=0):
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    job_run()  # TODO first check params! also, need a way to get out of this recursion
+    job_run()
     if check_complete():
-        with open(filename, 'w') as f:
-            f.writelines(lines)
+        write_original(filename)
+        return
     elif ct >= recursion_depth:
+        write_original(filename)
         return
     else:
         refine_run(ct)
 
 def combine_SS(zeros):
-    # TODO problems here: incomplete runs throw error, derail entire job 
     filename = 'out_time_disp_force.npy'
     sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
     if zeros:
@@ -207,8 +214,6 @@ def combine_SS(zeros):
     if os.path.isfile( filename ): 
         dat = np.load( filename )
         dat = np.dstack( (dat,sheet) )
-        # error: along dimension 0, the array at index 0 has size 18 and the array at index 1 has size 101
-        # so sheet dimension is correct 
     else:
         dat = sheet
     np.save( filename, dat )
@@ -237,7 +242,7 @@ def calc_error():
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
 
-    # smooth out simulated SS
+    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
 
     smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
