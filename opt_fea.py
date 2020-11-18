@@ -74,10 +74,15 @@ def loop(opt, loop_len):
                     rmse = calc_error()  # get error
                     opt.tell( next_params, rmse )
                     opt_progress = update_progress(i, next_params, rmse)
-            # TODO following is re-written every loop! is there an easier way to append? 
-            opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
-            np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
+                    write_opt_progress()
         single_loop(opt, i)
+
+def write_opt_progress():
+    global opt_progress
+    # TODO following is re-written every loop! is there an easier way to append? 
+    # ^ maybe not to keep opt_progress a stable global variable
+    opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
+    np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
 
 def update_progress(i, next_params, rmse):
     global opt_progress
@@ -91,6 +96,7 @@ def write_maxRMSE(i, next_params, opt):
     opt.tell( next_params, rmse )
     combine_SS(zeros=True)
     opt_progress = update_progress(i, next_params, rmse)
+    write_opt_progress()
 
 def job_run():
     os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
