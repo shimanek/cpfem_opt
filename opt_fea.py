@@ -56,12 +56,14 @@ def loop(opt, loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
             next_params = opt.ask()  # get parameters to test
-            
-            if param_check(param_list):  # True if Tau0 >= TauS
-                write_maxRMSE(i, next_params, opt )
-                return
-            else:
+            write_parameters(param_list, next_params)
+
+            while param_check(param_list):  # True if Tau0 >= TauS
+                # this tells opt that params are bad but does not record it elsewhere
+                opt.tell( next_params, max_rmse(i) )
+                next_params = opt.ask()
                 write_parameters(param_list, next_params)
+            else:
                 job_run()
                 if not check_complete():  # try decreasing max increment size
                     refine_run()  
