@@ -34,9 +34,6 @@ jobname = 'UT_729grains'
 recursion_depth = 3
 ### end input
 
-
-# opt_progress = np.zeros( ( 1, len(param_list) + 1 ) )
-
 def main():
     remove_out_files()
 
@@ -115,12 +112,15 @@ def get_first():
     job_extract()
 
 def load_opt(opt):
-    in_filename = 'in_opt.txt'
-    if os.path.isfile(in_filename):
-        prev_data = np.loadtxt(in_filename, skiprows=1)
+    filename = 'in_opt.txt'
+    arrayname = 'in_opt.npy'
+    if os.path.isfile(filename):
+        prev_data = np.loadtxt(filename, skiprows=1)
         x_in = prev_data[:,1:-1].tolist()
         y_in = prev_data[:,-1].tolist()
         opt.tell(x_in, y_in)
+    if os.path.isfile(arrayname):
+        np.save(arrayname, np.load(arrayname))
 
 def remove_out_files():
     out_files = [f for f in os.listdir(os.getcwd()) if f.startswith('out_')]
@@ -201,7 +201,7 @@ def refine_run(ct=0):
 def combine_SS(zeros):
     # TODO problems here: incomplete runs throw error, derail entire job 
     filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
+    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
     if zeros:
         sheet = np.zeros( (np.shape(sheet)) )
     if os.path.isfile( filename ): 
