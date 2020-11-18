@@ -48,7 +48,7 @@ def main():
     )
     load_opt(opt)
     # ^ TODO also combine in_opt.npy ?
-    res = loop( opt, loop_len )
+    loop( opt, loop_len )
 
 def loop(opt, loop_len):
     get_first()
@@ -56,34 +56,28 @@ def loop(opt, loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
             next_params = opt.ask()  # get parameters to test
-            write_parameters(param_list, next_params)
             
-            while param_check(param_list):  # True if Tau0 >= TauS
-                res = write_maxRMSE(i, next_params, opt )
-                opt_progress = update_progress(i, next_params, max_rmse(i))
-                combine_SS(zeros=True)
-                next_params = opt.ask()
+            if param_check(param_list):  # True if Tau0 >= TauS
+                write_maxRMSE(i, next_params, opt )
+                return
             else:
+                write_parameters(param_list, next_params)
                 job_run()
                 if not check_complete():  # try decreasing max increment size
                     refine_run()  
                 if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
-                    opt_progress = update_progress(i, next_params, max_rmse(i))
-                    combine_SS(zeros=True)
-                    return  
+                    return
                 else:
                     job_extract()  # extract data to temp_time_disp_force.csv
                     combine_SS(zeros=False)  # save stress-strain data
                     rmse = calc_error()  # get error
-                    res = opt.tell( next_params, rmse )
+                    opt.tell( next_params, rmse )
                     opt_progress = update_progress(i, next_params, rmse)
             # TODO following is re-written every loop! is there an easier way to append? 
             opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
             np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
-            return res, opt_progress
-        res = single_loop(opt, i)
-    return res
+        single_loop(opt, i)
 
 def update_progress(i, next_params, rmse):
     global opt_progress
@@ -92,12 +86,11 @@ def update_progress(i, next_params, rmse):
     return opt_progress
 
 def write_maxRMSE(i, next_params, opt):
+    global opt_progress
     rmse = max_rmse(i)
-    res = opt.tell( next_params, rmse )
-    # next_params = opt.ask()
-    write_parameters(param_list, next_params)
+    opt.tell( next_params, rmse )
     combine_SS(zeros=True)
-    return res
+    opt_progress = update_progress(i, next_params, rmse)
 
 def job_run():
     os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
