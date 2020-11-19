@@ -183,7 +183,7 @@ def refine_run(ct=0):
             f.writelines(lines)
     # find line after step line:
     step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
-    step_line = lines[step_line_ind].strip().split(', ')
+    step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
     original_increment = float(step_line[-1])
     # use original / factor:
     new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
