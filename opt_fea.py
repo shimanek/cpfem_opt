@@ -34,21 +34,16 @@ jobname = 'UT_729grains'
 recursion_depth = 3
 ### end input
 
-
-# opt_progress = np.zeros( ( 1, len(param_list) + 1 ) )
-
 def main():
     remove_out_files()
-
     global n_initial_points
     opt = Optimizer(
         dimensions = param_bounds, 
         base_estimator = 'gp',
-        n_initial_points = n_initial_points
-    )
+        n_initial_points = n_initial_points)
     load_opt(opt)
-    # ^ TODO also combine in_opt.npy ?
-    res = loop( opt, loop_len )
+
+    loop( opt, loop_len )
 
 def loop(opt, loop_len):
     get_first()
@@ -56,34 +51,33 @@ def loop(opt, loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
             next_params = opt.ask()  # get parameters to test
-            write_parameters(param_list, next_params)
-            
+            write_parameters(param_list, next_params)  # write params to file
+
             while param_check(param_list):  # True if Tau0 >= TauS
-                res = write_maxRMSE(i, next_params, opt )
-                opt_progress = update_progress(i, next_params, max_rmse(i))
-                combine_SS(zeros=True)
+                # this tells opt that params are bad but does not record it elsewhere
+                opt.tell( next_params, max_rmse(i) )
                 next_params = opt.ask()
+                write_parameters(param_list, next_params)
             else:
                 job_run()
                 if not check_complete():  # try decreasing max increment size
                     refine_run()  
                 if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
-                    opt_progress = update_progress(i, next_params, max_rmse(i))
-                    combine_SS(zeros=True)
-                    return  
+                    return
                 else:
                     job_extract()  # extract data to temp_time_disp_force.csv
                     combine_SS(zeros=False)  # save stress-strain data
                     rmse = calc_error()  # get error
-                    res = opt.tell( next_params, rmse )
+                    opt.tell( next_params, rmse )
                     opt_progress = update_progress(i, next_params, rmse)
-            # TODO following is re-written every loop! is there an easier way to append? 
-            opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
-            np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
-            return res, opt_progress
-        res = single_loop(opt, i)
-    return res
+                    write_opt_progress()
+        single_loop(opt, i)
+
+def write_opt_progress():
+    global opt_progress
+    opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
+    np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
 
 def update_progress(i, next_params, rmse):
     global opt_progress
@@ -92,12 +86,12 @@ def update_progress(i, next_params, rmse):
     return opt_progress
 
 def write_maxRMSE(i, next_params, opt):
+    global opt_progress
     rmse = max_rmse(i)
-    res = opt.tell( next_params, rmse )
-    # next_params = opt.ask()
-    write_parameters(param_list, next_params)
+    opt.tell( next_params, rmse )
     combine_SS(zeros=True)
-    return res
+    opt_progress = update_progress(i, next_params, rmse)
+    write_opt_progress()
 
 def job_run():
     os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
@@ -114,12 +108,15 @@ def get_first():
     job_extract()
 
 def load_opt(opt):
-    in_filename = 'in_opt.txt'
-    if os.path.isfile(in_filename):
-        prev_data = np.loadtxt(in_filename, skiprows=1)
+    filename = 'in_opt.txt'
+    arrayname = 'in_opt.npy'
+    if os.path.isfile(filename):
+        prev_data = np.loadtxt(filename, skiprows=1)
         x_in = prev_data[:,1:-1].tolist()
         y_in = prev_data[:,-1].tolist()
         opt.tell(x_in, y_in)
+    if os.path.isfile(arrayname):
+        np.save(arrayname, np.load(arrayname))
 
 def remove_out_files():
     out_files = [f for f in os.listdir(os.getcwd()) if f.startswith('out_')]
@@ -171,11 +168,22 @@ def refine_run(ct=0):
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
         lines = f.readlines()
+    
+    # exit strategy:
+    if ct == 1:  # need to save original parameters outside of this recursive function
+        with open(tempfile, 'w') as f:
+            f.writelines(lines)
+    def write_original(filename):
+        with open(tempfile, 'r') as f:
+            lines = f.readlines()
+        with open(filename, 'w') as f:
+            f.writelines(lines)
     # find line after step line:
     step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
-    step_line = lines[step_line_ind].strip().split(', ')
+    step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
     original_increment = float(step_line[-1])
     # use original / factor:
     new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
@@ -188,26 +196,24 @@ def refine_run(ct=0):
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    job_run()  # TODO first check params! also, need a way to get out of this recursion
+    job_run()
     if check_complete():
-        with open(filename, 'w') as f:
-            f.writelines(lines)
+        write_original(filename)
+        return
     elif ct >= recursion_depth:
+        write_original(filename)
         return
     else:
         refine_run(ct)
 
 def combine_SS(zeros):
-    # TODO problems here: incomplete runs throw error, derail entire job 
     filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) #TODO what if allarray does not exist? how to get shape for zeros? (maybe from input file)
+    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
     if zeros:
         sheet = np.zeros( (np.shape(sheet)) )
     if os.path.isfile( filename ): 
         dat = np.load( filename )
         dat = np.dstack( (dat,sheet) )
-        # error: along dimension 0, the array at index 0 has size 18 and the array at index 1 has size 101
-        # so sheet dimension is correct 
     else:
         dat = sheet
     np.save( filename, dat )
@@ -236,7 +242,7 @@ def calc_error():
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
 
-    # smooth out simulated SS
+    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
 
     smoothedExp = interp1d( expSS[:,0], expSS[:,1] )

@@ -61,7 +61,7 @@ def main():
     # ^ full list: 'iteration', 'Tau0', 'H0', 'TauS', 'hs', 'gamma0', 'error'
     best_params = [np.round(f,decimals=2) for f in params[loc_min_error,:]]
     for param in fixed_params[::-1]:
-        best_params = [param] + best_params
+        best_params = [best_params[0]] + [param] + best_params[1:]
     with open('out_best_params.txt', 'w') as f:
         f.write('Total iterations: ' + str(num_iter) + '\n')
         f.write('Best parameters:\n')  # TODO write which parameters they are in separate line
