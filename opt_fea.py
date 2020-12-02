@@ -27,12 +27,16 @@ param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ]
 loop_len = 300
 n_initial_points = 100
 large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
+
+MAX_STRAIN = 0.05
 exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
-length = 9
-area = 9*9
+edge_length = 9
 jobname = 'UT_729grains'
 recursion_depth = 3
 ### end input
+
+length = edge_length
+area = edge_length * edge_length
 
 def main():
     remove_out_files()
@@ -220,6 +224,7 @@ def combine_SS(zeros):
 
 def calc_error():
     global exp_SS_file
+    global MAX_STRAIN
     global length
     global area
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
@@ -229,6 +234,14 @@ def calc_error():
 
     # load experimental data
     expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    
+    #limit to data within MAX_STRAIN
+    MS_point = 0
+    while expSS[MS_point,0] <= MAX_STRAIN:
+        MS_point += 1
+
+    expSS = expSS[:MS_point, :]
+    np.savetxt('SS_debug', expSS, delimiter=',')
 
     # deal with unequal data lengths 
     if simSS[-1,0] >= expSS[-1,0]:
@@ -241,6 +254,7 @@ def calc_error():
         cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
+
 
     # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
