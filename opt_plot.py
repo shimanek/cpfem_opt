@@ -5,7 +5,7 @@ of multiple crystal plasticity runs output
 from the optimization procedure.
 Plots 3 figures per subfolder: all params, best params, convergence.
 Prints best parameters.
-Last Mod: 2020-11-13
+Last Mod: 2020-12-07
 '''
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +15,8 @@ from scipy.interpolate import interp1d
 ### user input 
 grain_size_name = '0.12'  # string
 title = '9x9x9el-3x3x3gr model'
-edge_length = 9
+length = 9
+area = 9*9
 fixed_params = []  # usu. [Tau0_value, h0_value]
 ### end input
 
@@ -26,8 +27,8 @@ def main():
     # plot all trials, in order:
     fig, ax = plt.subplots()
     for i in range( num_iter ):
-        eng_strain = data[:,1,i] / edge_length
-        eng_stress = data[:,2,i] / edge_length**2
+        eng_strain = data[:,1,i] / length
+        eng_stress = data[:,2,i] / area
         ax.plot(eng_strain, eng_stress, alpha=0.2+i/num_iter/0.8,color='#696969')
 
     # plot experimental results:
@@ -38,8 +39,8 @@ def main():
     # plot best guess:
     errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')[:,-1]
     loc_min_error = np.argmin(errors)
-    eng_strain_best = data[:,1,loc_min_error] / edge_length
-    eng_stress_best = data[:,2,loc_min_error] / edge_length**2
+    eng_strain_best = data[:,1,loc_min_error] / length
+    eng_stress_best = data[:,2,loc_min_error] / area
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label='Best parameter set')
 
     # plot tuning:
