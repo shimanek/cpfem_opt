@@ -79,16 +79,18 @@ def loop(opt, loop_len):
         single_loop(opt, i)
 
 def set_strain_inp():
-    #modify inputs in UT_729grains.inp to match max strain
+    # modify inputs in UT_729grains.inp to match max strain
+    # modify global experimental data filename to point to truncated data
     global max_strain
     global length
+    global exp_SS_file
     max_bound = round(max_strain * length, 4) #round to 4 digits
 
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
     with open(filename, 'r') as f:
         lines = f.readlines()
 
-    #find last number after RP-TOP under *Boundary
+    # find last number after RP-TOP under *Boundary
     bound_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*boundary')][0] + 4
     bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
 
@@ -100,11 +102,20 @@ def set_strain_inp():
         new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
     new_bound_line_str = new_bound_line_str + '\n'
 
-    #write to UT_729grains.inp
+    # write to UT_729grains.inp
     with open(filename, 'w') as f:
         f.writelines(lines[:bound_line_ind])
         f.writelines(new_bound_line_str)
         f.writelines(lines[bound_line_ind+1:])
+
+    # limit experimental data to within max_strain
+    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    MS_point = 0
+    while expSS[MS_point,0] <= max_strain:
+        MS_point += 1
+    expSS = expSS[:MS_point, :]
+    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+    exp_SS_file = 'temp_expSS.csv'
 
 def write_opt_progress():
     global opt_progress
@@ -264,14 +275,6 @@ def calc_error():
 
     # load experimental data
     expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
-    
-    #limit to data within max_strain
-    MS_point = 0
-    while expSS[MS_point,0] <= max_strain:
-        MS_point += 1
-
-    expSS = expSS[:MS_point, :]
-    np.savetxt('temp_expSS', expSS, delimiter=',')
 
     # deal with unequal data lengths 
     if simSS[-1,0] >= expSS[-1,0]:
