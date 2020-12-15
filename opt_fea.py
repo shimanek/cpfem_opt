@@ -29,13 +29,17 @@ n_initial_points = 100
 large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
 exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 length = 9
-area = 9*9
+area = 9 * 9
 jobname = 'UT_729grains'
 recursion_depth = 3
+max_strain = 0.05 #as a percentage
 ### end input
+
+
 
 def main():
     remove_out_files()
+    set_strain_inp()
     global n_initial_points
     opt = Optimizer(
         dimensions = param_bounds, 
@@ -73,6 +77,45 @@ def loop(opt, loop_len):
                     opt_progress = update_progress(i, next_params, rmse)
                     write_opt_progress()
         single_loop(opt, i)
+
+def set_strain_inp():
+    # modify inputs in UT_729grains.inp to match max strain
+    # modify global experimental data filename to point to truncated data
+    global max_strain
+    global length
+    global exp_SS_file
+    max_bound = round(max_strain * length, 4) #round to 4 digits
+
+    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    # find last number after RP-TOP under *Boundary
+    bound_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*boundary')][0] + 4
+    bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
+
+    new_bound_line = bound_line[:-1] + [ max_bound ] 
+    new_bound_line_str = str(new_bound_line[0])
+
+    for i in range(1, len(new_bound_line)):
+        new_bound_line_str = new_bound_line_str + ', '
+        new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
+    new_bound_line_str = new_bound_line_str + '\n'
+
+    # write to UT_729grains.inp
+    with open(filename, 'w') as f:
+        f.writelines(lines[:bound_line_ind])
+        f.writelines(new_bound_line_str)
+        f.writelines(lines[bound_line_ind+1:])
+
+    # limit experimental data to within max_strain
+    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    MS_point = 0
+    while expSS[MS_point,0] <= max_strain:
+        MS_point += 1
+    expSS = expSS[:MS_point, :]
+    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+    exp_SS_file = 'temp_expSS.csv'
 
 def write_opt_progress():
     global opt_progress
@@ -181,10 +224,12 @@ def refine_run(ct=0):
             lines = f.readlines()
         with open(filename, 'w') as f:
             f.writelines(lines)
+
     # find line after step line:
     step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
     step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
     original_increment = float(step_line[-1])
+
     # use original / factor:
     new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
     new_step_line_str = str(new_step_line[0])
@@ -220,6 +265,7 @@ def combine_SS(zeros):
 
 def calc_error():
     global exp_SS_file
+    global max_strain
     global length
     global area
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
@@ -241,6 +287,7 @@ def calc_error():
         cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
+
 
     # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
