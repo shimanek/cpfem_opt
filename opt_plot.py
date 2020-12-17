@@ -8,6 +8,8 @@ Prints best parameters.
 Last Mod: 2020-12-07
 '''
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import interp1d
