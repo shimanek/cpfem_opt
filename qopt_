@@ -17,6 +17,7 @@ module load intel
 module load python
 source activate opt
 python opt_fea.py
+python opt_plot.py
 echo " "
 echo "Job completed at `date`"
 echo " "
