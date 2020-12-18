@@ -114,6 +114,7 @@ def set_strain_inp():
 
     # limit experimental data to within max_strain
     expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = expSS[expSS[:,0].argsort()]
     MS_point = 0
     while expSS[MS_point,0] <= max_strain:
         MS_point += 1
