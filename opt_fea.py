@@ -98,7 +98,6 @@ def set_strain_inp():
         max_point = 0
         while expSS[max_point,0] <= max_strain:
             max_point += 1
-        if max_point == len(expSS[:,0]): max_point -= 1
         expSS = expSS[:max_point, :]
     np.savetxt('temp_expSS.csv', expSS, delimiter=',')
     exp_SS_file = 'temp_expSS.csv'
