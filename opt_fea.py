@@ -85,9 +85,22 @@ def set_strain_inp():
     global length
     global exp_SS_file
 
+    # limit experimental data to within max_strain
+    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = expSS[expSS[:,0].argsort()]
+
     if float(max_strain) == 0.0:
         max_strain = max(np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+    else:
+        MS_point = 0
+        while expSS[MS_point,0] <= max_strain:
+            MS_point += 1
+        if MS_point == len(expSS[:,0]): MS_point -= 1
+        expSS = expSS[:MS_point, :]
+    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+    exp_SS_file = 'temp_expSS.csv'
 
+    # input file:
     max_bound = round(max_strain * length, 4) #round to 4 digits
 
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
@@ -111,17 +124,6 @@ def set_strain_inp():
         f.writelines(lines[:bound_line_ind])
         f.writelines(new_bound_line_str)
         f.writelines(lines[bound_line_ind+1:])
-
-    # limit experimental data to within max_strain
-    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
-    expSS = expSS[expSS[:,0].argsort()]
-    exp_length = len(expSS[:,0])
-    MS_point = 0
-    while (expSS[MS_point,0] < max_strain) and (MS_point < exp_length - 1):
-        MS_point += 1
-    expSS = expSS[:MS_point+1, :]
-    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
-    exp_SS_file = 'temp_expSS.csv'
 
 def write_opt_progress():
     global opt_progress
