@@ -33,8 +33,8 @@ length = 9
 area = 9 * 9
 jobname = 'UT_729grains'
 recursion_depth = 3
-max_strain = 0.05
-# ^ set to 0 to go to max value in experimental data file
+max_strain = 0.0
+# ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
 ### end input
 
 def main():
@@ -85,7 +85,7 @@ def set_strain_inp():
     global length
     global exp_SS_file
 
-    if max_strain == 0:
+    if int(max_strain) == 0:
         max_strain = max(np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )[:,0])
 
     max_bound = round(max_strain * length, 4) #round to 4 digits
