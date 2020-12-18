@@ -64,9 +64,11 @@ def loop(opt, loop_len):
                 write_parameters(param_list, next_params)
             else:
                 job_run()
-                if not check_complete():  # try decreasing max increment size
+                if not check_complete():  
+                # try decreasing max increment size
                     refine_run()  
-                if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
+                if not check_complete():  
+                # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
                     return
                 else:
@@ -84,6 +86,7 @@ def set_strain_inp():
     global max_strain
     global length
     global exp_SS_file
+    global jobname
 
     # limit experimental data to within max_strain
     expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
@@ -95,7 +98,6 @@ def set_strain_inp():
         max_point = 0
         while expSS[max_point,0] <= max_strain:
             max_point += 1
-        if max_point == len(expSS[:,0]): max_point -= 1
         expSS = expSS[:max_point, :]
     np.savetxt('temp_expSS.csv', expSS, delimiter=',')
     exp_SS_file = 'temp_expSS.csv'
@@ -103,12 +105,13 @@ def set_strain_inp():
     # input file:
     max_bound = round(max_strain * length, 4) #round to 4 digits
 
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    filename = jobname + '.inp'
     with open(filename, 'r') as f:
         lines = f.readlines()
 
     # find last number after RP-TOP under *Boundary
-    bound_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*boundary')][0] + 4
+    bound_line_ind = [ i for i, line in enumerate(lines) \
+        if line.lower().startswith('*boundary')][0] + 4
     bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
 
     new_bound_line = bound_line[:-1] + [ max_bound ] 
@@ -133,7 +136,7 @@ def write_opt_progress():
 def update_progress(i, next_params, rmse):
     global opt_progress
     if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
-    else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+    else: opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
     return opt_progress
 
 def write_maxRMSE(i, next_params, opt):
@@ -145,7 +148,8 @@ def write_maxRMSE(i, next_params, opt):
     write_opt_progress()
 
 def job_run():
-    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    os.system( 'abaqus job=' + jobname + \
+        ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
     time.sleep( 5 )
 
 def job_extract():
@@ -193,7 +197,8 @@ def max_rmse(loop_number):
     if loop_number < grace:
         return large_error
     elif loop_number >= grace:
-        errors = np.delete( opt_progress[:grace,-1], np.where( opt_progress[:grace,-1] == large_error ) )
+        errors = np.delete( opt_progress[:grace,-1], \
+            np.where( opt_progress[:grace,-1] == large_error ) )
         if len(errors) < np.round( grace/2 ):
             return large_error
         else:
@@ -201,8 +206,8 @@ def max_rmse(loop_number):
             return (iq3-iq1)*1.5
 
 def check_complete():
-    stafile = [ f for f in os.listdir(os.getcwd()) if f.startswith( 'UT' ) ][0]
-    stafile = stafile[ 0 : stafile.find('.') ] + '.sta'
+    global jobname
+    stafile = jobname + '.sta'
     if os.path.isfile( stafile ):
             last_line = str( subprocess.check_output( ['tail', '-1', stafile] ) )
     else: 
@@ -213,12 +218,13 @@ def refine_run(ct=0):
     """
     cut max increment size by `factor`
     """
+    global jobname
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    filename = jobname + '.inp'
     tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -234,7 +240,8 @@ def refine_run(ct=0):
             f.writelines(lines)
 
     # find line after step line:
-    step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
+    step_line_ind = [ i for i, line in enumerate(lines) \
+        if line.lower().startswith('*static')][0] + 1 
     step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
     original_increment = float(step_line[-1])
 
@@ -310,7 +317,8 @@ def calc_error():
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    deviations = np.asarray( [ smoothedSS( x_error_eval_pts[i] ) - fineSS[i] for i in range(len(fineSS)) ] )
+    deviations = np.asarray( [ smoothedSS( x_error_eval_pts[i] ) - fineSS[i] \
+        for i in range(len(fineSS)) ] )
     rmse = np.sqrt( np.sum( deviations**2 ) / len(fineSS) ) 
 
     return rmse
@@ -354,7 +362,7 @@ class Get_Fd(object):
         steps = odb.steps[step]
         frames = odb.steps[step].frames
         numFrames = len(frames)
-        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset] # if the node set is in Part
+        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset] # if node set is in Part
         #TopNodes = odb.rootAssembly.nodeSets[NodeSetTop] # if the node set is in Assembly
         
         for x in range(numFrames):
