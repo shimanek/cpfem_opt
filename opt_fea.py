@@ -113,7 +113,7 @@ def set_strain_inp():
         f.writelines(lines[bound_line_ind+1:])
 
     # limit experimental data to within max_strain
-    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = sorted(np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )[:,0])
     MS_point = 0
     while expSS[MS_point,0] <= max_strain:
         MS_point += 1
