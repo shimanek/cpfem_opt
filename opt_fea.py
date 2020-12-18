@@ -24,18 +24,18 @@ else:
 ### user input
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
 param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ]
-loop_len = 300
-n_initial_points = 100
-large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
+loop_len = 150
+n_initial_points = 50
+large_error = 5e3  
+# ^ backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
 exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 length = 9
 area = 9 * 9
 jobname = 'UT_729grains'
 recursion_depth = 3
-max_strain = 0.05 #as a percentage
+max_strain = 0.0
+# ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
 ### end input
-
-
 
 def main():
     remove_out_files()
@@ -84,6 +84,23 @@ def set_strain_inp():
     global max_strain
     global length
     global exp_SS_file
+
+    # limit experimental data to within max_strain
+    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = expSS[expSS[:,0].argsort()]
+
+    if float(max_strain) == 0.0:
+        max_strain = max(np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+    else:
+        MS_point = 0
+        while expSS[MS_point,0] <= max_strain:
+            MS_point += 1
+        if MS_point == len(expSS[:,0]): MS_point -= 1
+        expSS = expSS[:MS_point, :]
+    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+    exp_SS_file = 'temp_expSS.csv'
+
+    # input file:
     max_bound = round(max_strain * length, 4) #round to 4 digits
 
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
@@ -107,15 +124,6 @@ def set_strain_inp():
         f.writelines(lines[:bound_line_ind])
         f.writelines(new_bound_line_str)
         f.writelines(lines[bound_line_ind+1:])
-
-    # limit experimental data to within max_strain
-    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
-    MS_point = 0
-    while expSS[MS_point,0] <= max_strain:
-        MS_point += 1
-    expSS = expSS[:MS_point, :]
-    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
-    exp_SS_file = 'temp_expSS.csv'
 
 def write_opt_progress():
     global opt_progress
