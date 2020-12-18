@@ -85,7 +85,7 @@ def set_strain_inp():
     global length
     global exp_SS_file
 
-    if int(max_strain) == 0:
+    if float(max_strain) == 0.0:
         max_strain = max(np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )[:,0])
 
     max_bound = round(max_strain * length, 4) #round to 4 digits
