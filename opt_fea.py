@@ -84,6 +84,7 @@ def set_strain_inp():
     global max_strain
     global length
     global exp_SS_file
+    global jobname
 
     # limit experimental data to within max_strain
     expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
@@ -103,7 +104,7 @@ def set_strain_inp():
     # input file:
     max_bound = round(max_strain * length, 4) #round to 4 digits
 
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    filename = jobname + '.inp'
     with open(filename, 'r') as f:
         lines = f.readlines()
 
@@ -201,8 +202,8 @@ def max_rmse(loop_number):
             return (iq3-iq1)*1.5
 
 def check_complete():
-    stafile = [ f for f in os.listdir(os.getcwd()) if f.startswith( 'UT' ) ][0]
-    stafile = stafile[ 0 : stafile.find('.') ] + '.sta'
+    global jobname
+    stafile = jobname + '.sta'
     if os.path.isfile( stafile ):
             last_line = str( subprocess.check_output( ['tail', '-1', stafile] ) )
     else: 
@@ -213,12 +214,13 @@ def refine_run(ct=0):
     """
     cut max increment size by `factor`
     """
+    global jobname
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    filename = jobname + '.inp'
     tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
         lines = f.readlines()
