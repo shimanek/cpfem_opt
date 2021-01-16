@@ -45,7 +45,7 @@ else:
 
 # TODO the following should ideally be in some globally accessible settings object:
 param_list = settings['param_list']
-param_bounds = settings['param_bounds']
+param_bounds = [tuple(bound) for bound in settings['param_bounds']]
 loop_len = settings['loop_len']
 n_initial_points = settings['n_initial_points']
 large_error = settings['large_error']
