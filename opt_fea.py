@@ -40,8 +40,8 @@ else:
         'max_strain': 0.0
         # ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
         }
-        with open('opt_in.toml', 'w') as f:
-            f.write(toml.dump(settings))
+    with open('opt_in.toml', 'w') as f:
+        temp_string = toml.dump(settings, f)
 
 # TODO the following should ideally be in some globally accessible settings object:
 param_list = settings['param_list']
@@ -57,7 +57,6 @@ recursion_depth = settings['recursion_depth']
 max_strain = settings['max_strain']
 
 def main():
-    load_settings()
     remove_out_files()
     set_strain_inp()
     global n_initial_points
