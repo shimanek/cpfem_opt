@@ -20,9 +20,7 @@ else:
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
-import opt_input as uset
-
-assert os.path.isfile('opt_input.py'), 'Error: no input file!'
+import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()

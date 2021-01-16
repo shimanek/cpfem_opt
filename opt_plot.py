@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import interp1d
 
+# TODO use inputs from opt_input.py for all of this 
+
 ### user input 
 grain_size_name = '0.12'  # string
 title = '9x9x9el-3x3x3gr model'
