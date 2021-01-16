@@ -3,7 +3,6 @@ test script to optimize CPFEM parameters
 Date: June 30, 2020
 '''
 if __name__ == '__main__':
-    import toml
     import time
     import os
     import subprocess
@@ -16,45 +15,14 @@ if __name__ == '__main__':
     from skopt.plots import plot_convergence
     from scipy.interpolate import interp1d
     import matplotlib.pyplot as plt
+    import opt_input as uset
 else:
     from odbAccess import *
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
 
-if os.path.isfile('opt_in.toml'):
-    settings = toml.load('opt_in.toml')
-else:
-    settings = {
-        'param_list':['Tau0', 'H0', 'TauS', 'hs', 'gamma0'], 
-        'param_bounds':[ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ],
-        'loop_len': 150,
-        'n_initial_points': 50,
-        'large_error': 5e3,
-        # ^ backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
-        'exp_SS_file': [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0],
-        'length': 9,
-        'area': 9 * 9,
-        'jobname': 'UT_729grains',
-        'recursion_depth': 2,
-        'max_strain': 0.0
-        # ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
-        }
-    with open('opt_in.toml', 'w') as f:
-        temp_string = toml.dump(settings, f)
-
-# TODO the following should ideally be in some globally accessible settings object:
-param_list = settings['param_list']
-param_bounds = [tuple(bound) for bound in settings['param_bounds']]
-loop_len = settings['loop_len']
-n_initial_points = settings['n_initial_points']
-large_error = settings['large_error']
-exp_SS_file = settings['exp_SS_file']
-length = settings['length']
-area = settings['area']
-jobname = settings['jobname']
-recursion_depth = settings['recursion_depth']
-max_strain = settings['max_strain']
+assert os.path.isfile('opt_input.py'), 'Error: no input file!'
 
 def main():
     remove_out_files()
