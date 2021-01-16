@@ -1,4 +1,7 @@
-### user input
+"""
+User settings for opt_fea.py
+"""
+import os
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
 param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ]
 loop_len = 150
@@ -12,4 +15,3 @@ jobname = 'UT_729grains'
 recursion_depth = 3
 max_strain = 0.0
 # ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
-### end input
