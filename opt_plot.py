@@ -13,38 +13,38 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import interp1d
+import opt_input as uset
 
 # TODO use inputs from opt_input.py for all of this 
-
+# TODO use param_list to determine which param values to show in legend 
 ### user input 
-grain_size_name = '0.12'  # string
-title = '9x9x9el-3x3x3gr model'
-length = 9
-area = 9*9
 fixed_params = []  # usu. [Tau0_value, h0_value]
 ### end input
 
 def main():
     data = np.load( os.path.join(os.getcwd(), 'out_time_disp_force.npy') )
     num_iter = len(data[0,0,:])
-    #----------------------------------------------------------------------------------------------------------------------------------
+    #-----------------------------------------------------------------------------------------------
     # plot all trials, in order:
     fig, ax = plt.subplots()
     for i in range( num_iter ):
-        eng_strain = data[:,1,i] / length
-        eng_stress = data[:,2,i] / area
+        eng_strain = data[:,1,i] / uset.length
+        eng_stress = data[:,2,i] / uset.area
         ax.plot(eng_strain, eng_stress, alpha=0.2+i/num_iter/0.8,color='#696969')
 
     # plot experimental results:
-    exp_filename = [f for f in os.listdir(os.getcwd()) if f.startswith('exp') and f.endswith('.csv')][0]
+    exp_filename = [f for f in os.listdir(os.getcwd()) \
+        if f.startswith('exp') and f.endswith('.csv')][0]
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
-    ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', label='Experimental ' + grain_size_name + 'um')
+    ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
+        label='Experimental ' + grain_size_name + 'um')
 
     # plot best guess:
-    errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')[:,-1]
+    errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
+        skiprows=1, delimiter='\t')[:,-1]
     loc_min_error = np.argmin(errors)
-    eng_strain_best = data[:,1,loc_min_error] / length
-    eng_stress_best = data[:,2,loc_min_error] / area
+    eng_strain_best = data[:,1,loc_min_error] / uset.length
+    eng_stress_best = data[:,2,loc_min_error] / uset.area
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label='Best parameter set')
 
     # plot tuning:
@@ -55,12 +55,13 @@ def main():
         ax.set_ylim(bottom=0)
         ax.legend(loc='best')
         plt.tick_params(which='both', direction='in', top=True, right=True)
-        ax.set_title(title)
+        ax.set_title(uset.title)
 
     plot_settings()
-    plt.savefig(os.path.join(os.getcwd(), 'res_opt_'+grain_size_name+'um.png'), bbox_inches='tight', dpi=400)
+    plt.savefig(os.path.join(os.getcwd(), 
+        'res_opt_' + uset.grain_size_name + 'um.png'), bbox_inches='tight', dpi=400)
     plt.close()
-    #----------------------------------------------------------------------------------------------------------------------------------
+    #-----------------------------------------------------------------------------------------------
     # print best paramters 
     params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')
     # ^ full list: 'iteration', 'Tau0', 'H0', 'TauS', 'hs', 'gamma0', 'error'
@@ -71,7 +72,7 @@ def main():
         f.write('Total iterations: ' + str(num_iter) + '\n')
         f.write('Best parameters:\n')  # TODO write which parameters they are in separate line
         f.write(str(list(best_params)) + '\n')
-    #----------------------------------------------------------------------------------------------------------------------------------
+    #-----------------------------------------------------------------------------------------------
     # plot best paramters 
     legend_info = r'$\tau_0=$'   + str(best_params[1])  + '\n' + \
                   r'$h_0=$'      + str(best_params[2])  + '\n' + \
@@ -81,12 +82,14 @@ def main():
                 #   r', $f_0=$'      + best_params[i] + \
                 #   r', $q=$'        + best_params[i]
     fig, ax = plt.subplots()
-    ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', label='Experimental '+grain_size_name+'um')
+    ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
+        label='Experimental ' + uset.grain_size_name + 'um')
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
     plot_settings()
-    plt.savefig(os.path.join(os.getcwd(), 'res_single_'+grain_size_name+'um.png'), bbox_inches='tight', dpi=400)
+    plt.savefig(os.path.join(os.getcwd(), 
+        'res_single_' + uset.grain_size_name + 'um.png'), bbox_inches='tight', dpi=400)
     plt.close()
-    #----------------------------------------------------------------------------------------------------------------------------------
+    #-----------------------------------------------------------------------------------------------
     # plot convergence
     fig, ax = plt.subplots()
     running_min = np.empty((num_iter))

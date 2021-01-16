@@ -15,3 +15,7 @@ jobname = 'UT_729grains'
 recursion_depth = 2
 max_strain = 0.0
 # ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
+
+# plot settings:
+grain_size_name = '0.12'  # string
+title = '9x9x9el-3x3x3gr model'
