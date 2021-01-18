@@ -33,8 +33,7 @@ def main():
         ax.plot(eng_strain, eng_stress, alpha=0.2+i/num_iter/0.8,color='#696969')
 
     # plot experimental results:
-    exp_filename = [f for f in os.listdir(os.getcwd()) \
-        if f.startswith('exp') and f.endswith('.csv')][0]
+    exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
         label='Experimental ' + grain_size_name + 'um')
@@ -69,8 +68,9 @@ def main():
     for param in fixed_params[::-1]:
         best_params = [best_params[0]] + [param] + best_params[1:]
     with open('out_best_params.txt', 'w') as f:
-        f.write('Total iterations: ' + str(num_iter) + '\n')
-        f.write('Best parameters:\n')  # TODO write which parameters they are in separate line
+        f.write('Total iterations:\n' + str(num_iter) + '\n')
+        f.write('\nParameter names:\n' + uset.param_list + '\n')
+        f.write('\nBest parameters:\n')
         f.write(str(list(best_params)) + '\n')
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
