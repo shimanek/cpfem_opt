@@ -20,34 +20,19 @@ else:
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
-
-### user input
-param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
-param_bounds = [ (1,100), (100,500), (1,200), (0,100), (0.0001,0.4) ]
-loop_len = 300
-n_initial_points = 100
-large_error = 5e3  # backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
-exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
-length = 9
-area = 9 * 9
-jobname = 'UT_729grains'
-recursion_depth = 3
-max_strain = 0.05 #as a percentage
-### end input
-
-
+import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
     set_strain_inp()
-    global n_initial_points
+    # global n_initial_points
     opt = Optimizer(
-        dimensions = param_bounds, 
+        dimensions = uset.param_bounds, 
         base_estimator = 'gp',
-        n_initial_points = n_initial_points)
+        n_initial_points = uset.n_initial_points)
     load_opt(opt)
 
-    loop( opt, loop_len )
+    loop( opt, uset.loop_len )
 
 def loop(opt, loop_len):
     get_first()
@@ -55,18 +40,20 @@ def loop(opt, loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
             next_params = opt.ask()  # get parameters to test
-            write_parameters(param_list, next_params)  # write params to file
+            write_parameters(uset.param_list, next_params)  # write params to file
 
-            while param_check(param_list):  # True if Tau0 >= TauS
+            while param_check(uset.param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
                 opt.tell( next_params, max_rmse(i) )
                 next_params = opt.ask()
-                write_parameters(param_list, next_params)
+                write_parameters(uset.param_list, next_params)
             else:
                 job_run()
-                if not check_complete():  # try decreasing max increment size
+                if not check_complete():  
+                # try decreasing max increment size
                     refine_run()  
-                if not check_complete():  # if it still fails, write max_rmse, go to next parameterset
+                if not check_complete():  
+                # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
                     return
                 else:
@@ -79,19 +66,35 @@ def loop(opt, loop_len):
         single_loop(opt, i)
 
 def set_strain_inp():
+    global exp_SS_file
     # modify inputs in UT_729grains.inp to match max strain
     # modify global experimental data filename to point to truncated data
-    global max_strain
-    global length
-    global exp_SS_file
-    max_bound = round(max_strain * length, 4) #round to 4 digits
 
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    # limit experimental data to within max_strain
+    expSS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = expSS[expSS[:,0].argsort()]
+
+    if float(uset.max_strain) == 0.0:
+        max_strain = max(np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+    else:
+        max_strain = uset.max_strain
+        max_point = 0
+        while expSS[max_point,0] <= max_strain:
+            max_point += 1
+        expSS = expSS[:max_point, :]
+    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+    exp_SS_file = 'temp_expSS.csv'
+
+    # input file:
+    max_bound = round(max_strain * uset.length, 4) #round to 4 digits
+
+    filename = uset.jobname + '.inp'
     with open(filename, 'r') as f:
         lines = f.readlines()
 
     # find last number after RP-TOP under *Boundary
-    bound_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*boundary')][0] + 4
+    bound_line_ind = [ i for i, line in enumerate(lines) \
+        if line.lower().startswith('*boundary')][0] + 4
     bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
 
     new_bound_line = bound_line[:-1] + [ max_bound ] 
@@ -108,24 +111,15 @@ def set_strain_inp():
         f.writelines(new_bound_line_str)
         f.writelines(lines[bound_line_ind+1:])
 
-    # limit experimental data to within max_strain
-    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
-    MS_point = 0
-    while expSS[MS_point,0] <= max_strain:
-        MS_point += 1
-    expSS = expSS[:MS_point, :]
-    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
-    exp_SS_file = 'temp_expSS.csv'
-
 def write_opt_progress():
     global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + param_list + ['RMSE'] ) 
+    opt_progress_header = ','.join( ['iteration'] + uset.param_list + ['RMSE'] ) 
     np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
 
 def update_progress(i, next_params, rmse):
     global opt_progress
     if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
-    else:      opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+    else: opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
     return opt_progress
 
 def write_maxRMSE(i, next_params, opt):
@@ -137,7 +131,8 @@ def write_maxRMSE(i, next_params, opt):
     write_opt_progress()
 
 def job_run():
-    os.system( 'abaqus job=' + jobname + ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
+    os.system( 'abaqus job=' + uset.jobname + \
+        ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
     time.sleep( 5 )
 
 def job_extract():
@@ -180,21 +175,20 @@ def param_check(param_list):
     return ( tau0 >= tauS )
 
 def max_rmse(loop_number):
-    global large_error
     grace = 15
     if loop_number < grace:
-        return large_error
+        return uset.large_error
     elif loop_number >= grace:
-        errors = np.delete( opt_progress[:grace,-1], np.where( opt_progress[:grace,-1] == large_error ) )
+        errors = np.delete( opt_progress[:grace,-1], \
+            np.where( opt_progress[:grace,-1] == uset.large_error ) )
         if len(errors) < np.round( grace/2 ):
-            return large_error
+            return uset.large_error
         else:
             iq1, iq3 = np.quantile(errors, [0.25,0.75])
             return (iq3-iq1)*1.5
 
 def check_complete():
-    stafile = [ f for f in os.listdir(os.getcwd()) if f.startswith( 'UT' ) ][0]
-    stafile = stafile[ 0 : stafile.find('.') ] + '.sta'
+    stafile = uset.jobname + '.sta'
     if os.path.isfile( stafile ):
             last_line = str( subprocess.check_output( ['tail', '-1', stafile] ) )
     else: 
@@ -210,7 +204,7 @@ def refine_run(ct=0):
     # remove old lock file from previous unfinished simulation
     os.system('rm *.lck')
     # find input file TODO put main input file name up top, not hardcoded as here
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('UT') and f.endswith('.inp')][0]
+    filename = uset.jobname + '.inp'
     tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -226,7 +220,8 @@ def refine_run(ct=0):
             f.writelines(lines)
 
     # find line after step line:
-    step_line_ind = [ i for i, line in enumerate(lines) if line.lower().startswith('*static')][0] + 1 
+    step_line_ind = [ i for i, line in enumerate(lines) \
+        if line.lower().startswith('*static')][0] + 1 
     step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
     original_increment = float(step_line[-1])
 
@@ -245,7 +240,7 @@ def refine_run(ct=0):
     if check_complete():
         write_original(filename)
         return
-    elif ct >= recursion_depth:
+    elif ct >= uset.recursion_depth:
         write_original(filename)
         return
     else:
@@ -265,13 +260,10 @@ def combine_SS(zeros):
 
 def calc_error():
     global exp_SS_file
-    global max_strain
-    global length
-    global area
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
-    simSS[:,0] = simSS[:,0]/length  # disp to strain
-    simSS[:,1] = simSS[:,1]/area    # force to stress
+    simSS[:,0] = simSS[:,0]/uset.length  # disp to strain
+    simSS[:,1] = simSS[:,1]/uset.area    # force to stress
 
     # load experimental data
     expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
@@ -302,7 +294,8 @@ def calc_error():
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    deviations = np.asarray( [ smoothedSS( x_error_eval_pts[i] ) - fineSS[i] for i in range(len(fineSS)) ] )
+    deviations = np.asarray( [ smoothedSS( x_error_eval_pts[i] ) - fineSS[i] \
+        for i in range(len(fineSS)) ] )
     rmse = np.sqrt( np.sum( deviations**2 ) / len(fineSS) ) 
 
     return rmse
@@ -346,7 +339,7 @@ class Get_Fd(object):
         steps = odb.steps[step]
         frames = odb.steps[step].frames
         numFrames = len(frames)
-        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset] # if the node set is in Part
+        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset] # if node set is in Part
         #TopNodes = odb.rootAssembly.nodeSets[NodeSetTop] # if the node set is in Assembly
         
         for x in range(numFrames):
