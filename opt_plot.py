@@ -36,7 +36,7 @@ def main():
     exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
-        label='Experimental ' + grain_size_name + 'um')
+        label='Experimental ' + uset.grain_size_name + 'um')
 
     # plot best guess:
     errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
@@ -64,23 +64,28 @@ def main():
     # print best paramters 
     params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')
     # ^ full list: 'iteration', 'Tau0', 'H0', 'TauS', 'hs', 'gamma0', 'error'
-    best_params = [np.round(f,decimals=2) for f in params[loc_min_error,:]]
-    for param in fixed_params[::-1]:
-        best_params = [best_params[0]] + [param] + best_params[1:]
+    best_params = [np.round(f,decimals=3) for f in params[loc_min_error,:]]
     with open('out_best_params.txt', 'w') as f:
-        f.write('Total iterations:\n' + str(num_iter) + '\n')
-        f.write('\nParameter names:\n' + uset.param_list + '\n')
-        f.write('\nBest parameters:\n')
-        f.write(str(list(best_params)) + '\n')
+        f.write('\nTotal iterations: ' + str(num_iter))
+        f.write('\nBest iteration:   ' + str(int(best_params[0])))
+        f.write('\nLowest error:     ' + str(best_params[-1]) + '\n')
+        f.write('\nParameter names:\n' + ', '.join(uset.param_list) + '\n')
+        f.write('\nBest parameters:\n' + ', '.join([str(f) for f in best_params[1:-1]]) + '\n')
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
-    legend_info = r'$\tau_0=$'   + str(best_params[1])  + '\n' + \
-                  r'$h_0=$'      + str(best_params[2])  + '\n' + \
-                  r'$\tau_s=$'   + str(best_params[3])  + '\n' + \
-                  r'$h_s=$'      + str(best_params[4])  + '\n' + \
-                  r'$\gamma_0=$' + str(best_params[5])  
-                #   r', $f_0=$'      + best_params[i] + \
-                #   r', $q=$'        + best_params[i]
+    name_to_sym = {
+        'Tau0':r'$\tau_0$',
+        'H0':r'$h_0$',
+        'TauS':r'$\tau_s$',
+        'hs':r'$h_s$', 
+        'gamma0':r'$\gamma_0$',
+        'f0':r'$f_0$',
+        'q':r'$q$'}
+    legend_info = []
+    for i, param in enumerate(uset.param_list):
+        # 1st entry in best_params is iteration number, so use i+1
+        legend_info.append( name_to_sym[param] + '=' + str(best_params[i+1]))
+    legend_info = '\n'.join(legend_info)
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
         label='Experimental ' + uset.grain_size_name + 'um')
@@ -108,4 +113,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
