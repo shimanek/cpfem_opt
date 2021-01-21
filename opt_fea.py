@@ -1,20 +1,16 @@
-'''
-test script to optimize CPFEM parameters
+"""
+Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
+All user inputs should be in `opt_input.py` file.
 Date: June 30, 2020
-'''
+"""
 if __name__ == '__main__':
     import time
     import os
     import subprocess
     import sys
     import numpy as np
-    import pickle
-    import matplotlib
-    matplotlib.use('Agg')
     from skopt import Optimizer
-    from skopt.plots import plot_convergence
     from scipy.interpolate import interp1d
-    import matplotlib.pyplot as plt
 else:
     from odbAccess import *
     from abaqusConstants import *
@@ -40,13 +36,13 @@ def loop(opt, loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
             next_params = opt.ask()  # get parameters to test
-            write_parameters(uset.param_list, next_params)  # write params to file
+            write_parameters(next_params)  # write params to file
 
             while param_check(uset.param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
                 opt.tell( next_params, max_rmse(i) )
                 next_params = opt.ask()
-                write_parameters(uset.param_list, next_params)
+                write_parameters(next_params)
             else:
                 job_run()
                 if not check_complete():  
@@ -66,9 +62,11 @@ def loop(opt, loop_len):
         single_loop(opt, i)
 
 def set_strain_inp():
+    """
+    Modify displacement B.C. in main Abaqus input file to match max strain.
+    Modify global experimental data filename to point to truncated data.
+    """
     global exp_SS_file
-    # modify inputs in UT_729grains.inp to match max strain
-    # modify global experimental data filename to point to truncated data
 
     # limit experimental data to within max_strain
     expSS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
@@ -139,6 +137,9 @@ def job_extract():
     os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
 
 def get_first():
+    """
+    Run one simulation, using its output dimensions to get shape of output data.
+    """
     job_run()
     have_1st = check_complete()
     if not have_1st: 
@@ -146,6 +147,10 @@ def get_first():
     job_extract()
 
 def load_opt(opt):
+    """
+    Load input files of previous optimizations to use as initial points in current optimization.
+    Note the parameter bounds for `in`-files must be within current bounds.
+    """
     filename = 'in_opt.txt'
     arrayname = 'in_opt.npy'
     if os.path.isfile(filename):
@@ -163,7 +168,10 @@ def remove_out_files():
             os.remove(f)
 
 def param_check(param_list):
-    # True if tau0 >= tauS, which is bad
+    """
+    True if tau0 >= tauS, which is bad, not practically but in theory.
+    In theory, tau0 should always come before tauS.
+    """
     if ('TauS' in param_list) or ('Tau0' in param_list):
         filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('Mat_BW')][0]
         f1 = open( filename, 'r' )
@@ -175,6 +183,11 @@ def param_check(param_list):
     return ( tau0 >= tauS )
 
 def max_rmse(loop_number):
+    """
+    Return an estimate of a "large" error value to dissuade the optimizer from repeating
+    areas in parameter space where Abaqus+UMAT can't complete calculations.
+    Often this ends up defaulting to `uset.large_error`.
+    """
     grace = 15
     if loop_number < grace:
         return uset.large_error
@@ -188,6 +201,9 @@ def max_rmse(loop_number):
             return (iq3-iq1)*1.5
 
 def check_complete():
+    """
+    Return true if Abaqus has finished sucessfully.
+    """
     stafile = uset.jobname + '.sta'
     if os.path.isfile( stafile ):
             last_line = str( subprocess.check_output( ['tail', '-1', stafile] ) )
@@ -197,7 +213,8 @@ def check_complete():
 
 def refine_run(ct=0):
     """
-    cut max increment size by `factor`
+    Cut max increment size by `factor`, possibly multiple times (up to 
+    `uset.recursion_depth` or until Abaqus finished successfully).
     """
     factor = 5.0
     ct += 1
@@ -247,6 +264,9 @@ def refine_run(ct=0):
         refine_run(ct)
 
 def combine_SS(zeros):
+    """
+    Reads npy stress-strain output and appends current results.
+    """
     filename = 'out_time_disp_force.npy'
     sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
     if zeros:
@@ -259,6 +279,10 @@ def combine_SS(zeros):
     np.save( filename, dat )
 
 def calc_error():
+    """
+    Calculates root mean squared error between experimental and calculated 
+    stress-strain curves.  
+    """
     global exp_SS_file
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
@@ -280,7 +304,6 @@ def calc_error():
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
 
-
     # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
 
@@ -300,27 +323,32 @@ def calc_error():
 
     return rmse
 
-def write_parameters(param_list, next_params):
+def write_parameters(next_params):
+    """
+    Going in order of `uset.Param_list`, write new parameter values to the Abaqus 
+    material input file. 
+    """
     filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('Mat_BW')][0]
-    f1 = open( filename, 'r' )
-    f2 = open( 'temp_mat_file.inp', 'w+' )
-    lines = f1.readlines()
-    for line in lines:
-        skip = False
-        for param in param_list:
-            if line.startswith(param):
-                f2.write( param + ' = ' + str(next_params[param_list.index(param)]) + '\n')
-                skip = True
-        if not skip:
-            f2.write( line )
-    f1.close()
-    f2.close()
+    with open( filename, 'r' ) as f1:
+        lines = f1.readlines()
+    with open( 'temp_mat_file.inp', 'w+' ) as f2:    
+        for line in lines:
+            skip = False
+            for param in uset.param_list:
+                if line.startswith(param):
+                    f2.write( param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
+                    skip = True
+            if not skip:
+                f2.write( line )
 
     os.remove( filename )
     os.rename( 'temp_mat_file.inp', filename )
 
 
 class Get_Fd(object):
+    """
+    Requires Abaqus-specific libraries, must be called from Abaqus python.
+    """
     
     def __init__(self,ResultFile):
 
@@ -358,6 +386,9 @@ class Get_Fd(object):
         odb.close()
 
 def write2file():
+    """
+    Using Get_Fd object, read odb file and write time-displacement-force to csv file.
+    """
     job = [f for f in os.listdir(os.getcwd()) if f.endswith('.odb')][0][:-4]
     Result_Fd = Get_Fd(job)
     with open('temp_time_disp_force.csv','w') as f:

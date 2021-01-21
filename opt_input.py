@@ -1,5 +1,5 @@
 """
-User settings for opt_fea.py
+User settings for opt_fea.py and opt_plot.py
 """
 import os
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
