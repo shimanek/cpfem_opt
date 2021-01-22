@@ -216,6 +216,7 @@ def refine_run(ct=0):
     Cut max increment size by `factor`, possibly multiple times (up to 
     `uset.recursion_depth` or until Abaqus finished successfully).
     """
+    # TODO fails if there is more than one load step!
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
