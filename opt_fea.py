@@ -350,7 +350,7 @@ class Get_Fd(object):
     Requires Abaqus-specific libraries, must be called from Abaqus python.
     """
     
-    def __init__(self,ResultFile):
+    def __init__(self,ResultFile, step):
 
         CurrentPath = os.getcwd()
         self.ResultFilePath = os.path.join(CurrentPath, ResultFile + '.odb')
@@ -359,7 +359,7 @@ class Get_Fd(object):
         self.TopU2 = []
         self.TopRF2 = []
         
-        step = 'Loading'
+        # step = 'Loading'
         instance = 'PART-1-1'
         TopRPset = 'RP-TOP'
         
@@ -390,13 +390,14 @@ def write2file():
     Using Get_Fd object, read odb file and write time-displacement-force to csv file.
     """
     job = [f for f in os.listdir(os.getcwd()) if f.endswith('.odb')][0][:-4]
-    Result_Fd = Get_Fd(job)
     with open('temp_time_disp_force.csv','w') as f:
         f.write('{0},{1},{2}\n'.format('Time','U2','RF2'))
-        for i in range(len(Result_Fd.Time)):
-            f.write('%.5f,' % Result_Fd.Time[i])
-            f.write('%.5f,' % Result_Fd.TopU2[i])
-            f.write('%.5f\n' % Result_Fd.TopRF2[i])
+        for step in uset.loading_steps:
+            Result_Fd = Get_Fd(job, step)
+            for i in range(len(Result_Fd.Time)):
+                f.write('%.5f,' % Result_Fd.Time[i])
+                f.write('%.5f,' % Result_Fd.TopU2[i])
+                f.write('%.5f\n' % Result_Fd.TopRF2[i])
 
 if __name__ == '__main__':
     main()
