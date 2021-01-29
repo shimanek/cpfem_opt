@@ -362,7 +362,7 @@ class Get_Fd(object):
         self.TopRF2 = []
         
         # step = 'Loading'
-        step = step_gl
+        # step = step_gl
         instance = 'PART-1-1'
         TopRPset = 'RP-TOP'
         
@@ -396,9 +396,9 @@ def write2file():
     with open('temp_time_disp_force.csv','w') as f:
         f.write('{0},{1},{2}\n'.format('Time','U2','RF2'))
         for step in uset.loading_steps:
-            global step_gl
-            step_gl = step
-            Result_Fd = Get_Fd(job)
+            # global step_gl
+            # step_gl = step
+            Result_Fd = Get_Fd(job, step)
             for i in range(len(Result_Fd.Time)):
                 f.write('%.5f,' % Result_Fd.Time[i])
                 f.write('%.5f,' % Result_Fd.TopU2[i])
