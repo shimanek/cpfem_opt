@@ -218,6 +218,12 @@ def refine_run(ct=0):
     """
     # TODO fails if there is more than one load step!
     # can get current load step from first col, last row of sta file
+    sta_file = [ f for f in os.path.listdir(os.getcwd()) if f.endswith('.sta')][0]
+    with open(sta_file,'r') as f:
+        for line in f:
+            pass
+        last_line = line
+    step_current = [int(char) for char in last_line if char.isnumeric()][0]
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
@@ -241,7 +247,7 @@ def refine_run(ct=0):
     # find line after step line:
     step_line_ind = [ i for i, line in enumerate(lines) \
         if line.lower().startswith('*static')] \
-        [uset.loading_steps.index(step_gl)] + 1 
+        [step_current - 1] + 1 
     step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
     original_increment = float(step_line[-1])
 
