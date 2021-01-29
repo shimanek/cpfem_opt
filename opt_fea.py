@@ -217,13 +217,11 @@ def refine_run(ct=0):
     `uset.recursion_depth` or until Abaqus finished successfully).
     """
     # TODO fails if there is more than one load step!
-    # can get current load step from first col, last row of sta file
-    sta_file = [ f for f in os.path.listdir(os.getcwd()) if f.endswith('.sta')][0]
+    # can get current load step from first col, 3rd-to-last row of sta file
+    sta_file = [ f for f in os.listdir(os.getcwd()) if f.endswith('.sta')][0]
     with open(sta_file,'r') as f:
-        for line in f:
-            pass
-        last_line = line
-    step_current = [int(char) for char in last_line if char.isnumeric()][0]
+        last_line = f.readlines()[-3]
+    step_current = [int(char) for char in list(last_line) if char.isnumeric()][0]
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
