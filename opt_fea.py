@@ -220,8 +220,18 @@ def refine_run(ct=0):
     # can get current load step from first col, 3rd-to-last row of sta file
     sta_file = [ f for f in os.listdir(os.getcwd()) if f.endswith('.sta')][0]
     with open(sta_file,'r') as f:
-        last_line = f.readlines()[-3]
-    step_current = [int(char) for char in list(last_line) if char.isnumeric()][0]
+        all_lines = f.readlines()
+        i = len(all_lines)
+        while i > 4:
+            if (all_lines[i].strip()) and (all_lines[i].strip()[0].isnumeric()):
+                step_current = int(all_lines[i].strip()[0])
+                break
+            else: i -= 1
+        # last_line = f.readlines()[-3] #TODO find last line that starts with number
+        # last_line = [line.strip() for line in f.readlines() if \
+        # list(line.strip())[0].isnumeric() and not line.strip()] 
+        # and it's not an empty line!
+    # step_current = [int(char) for char in list(last_line) if char.isnumeric()][0]
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
