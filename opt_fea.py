@@ -221,9 +221,9 @@ def refine_run(ct=0):
     sta_file = [ f for f in os.listdir(os.getcwd()) if f.endswith('.sta')][0]
     with open(sta_file,'r') as f:
         all_lines = f.readlines()
-        i = len(all_lines)
+        i = len(all_lines) - 1
         while i > 4:
-            if (all_lines[i].strip()) and (all_lines[i].strip()[0].isnumeric()):
+            if bool(all_lines[i].strip()) and all_lines[i].strip()[0].isnumeric():
                 step_current = int(all_lines[i].strip()[0])
                 break
             else: i -= 1
