@@ -66,9 +66,9 @@ def loop(opt, loop_len):
 class Exp_data():
     #TODO maybe I don't need this init function... 
     def __init__(self):
-        self._max_strain = _get_max_strain()
-        self.raw = _get_SS()
-        _write_strain_inp()
+        self._max_strain = self._get_max_strain()
+        self.raw = self._get_SS()
+        self._write_strain_inp()
 
     def _load(self):
         """Load original exp_SS data, order it."""
@@ -100,7 +100,7 @@ class Exp_data():
     def _write_strain_inp(self):
         """Modify displacement B.C. in main Abaqus input file to match max strain."""
         # input file:
-        max_bound = round(self.max_strain * uset.length, 4) #round to 4 digits
+        max_bound = round(self._max_strain * uset.length, 4) #round to 4 digits
 
         filename = uset.jobname + '.inp'
         with open(filename, 'r') as f:
