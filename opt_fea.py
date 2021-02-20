@@ -104,24 +104,24 @@ class Exp_data():
         with open(filename, 'r') as f:
             lines = f.readlines()
 
-    # find last number after RP-TOP under *Boundary
-    bound_line_ind = [ i for i, line in enumerate(lines) \
-        if line.lower().startswith('*boundary')][0] + 4
-    bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
+        # find last number after RP-TOP under *Boundary
+        bound_line_ind = [ i for i, line in enumerate(lines) \
+            if line.lower().startswith('*boundary')][0] + 4
+        bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
 
-    new_bound_line = bound_line[:-1] + [ max_bound ] 
-    new_bound_line_str = str(new_bound_line[0])
+        new_bound_line = bound_line[:-1] + [ max_bound ] 
+        new_bound_line_str = str(new_bound_line[0])
 
-    for i in range(1, len(new_bound_line)):
-        new_bound_line_str = new_bound_line_str + ', '
-        new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-    new_bound_line_str = new_bound_line_str + '\n'
+        for i in range(1, len(new_bound_line)):
+            new_bound_line_str = new_bound_line_str + ', '
+            new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
+        new_bound_line_str = new_bound_line_str + '\n'
 
-    # write to UT_729grains.inp
-    with open(filename, 'w') as f:
-        f.writelines(lines[:bound_line_ind])
-        f.writelines(new_bound_line_str)
-        f.writelines(lines[bound_line_ind+1:])
+        # write to UT_729grains.inp
+        with open(filename, 'w') as f:
+            f.writelines(lines[:bound_line_ind])
+            f.writelines(new_bound_line_str)
+            f.writelines(lines[bound_line_ind+1:])
 
 def write_opt_progress():
     global opt_progress
