@@ -61,34 +61,48 @@ def loop(opt, loop_len):
                     write_opt_progress()
         single_loop(opt, i)
 
-def set_strain_inp():
-    """
-    Modify displacement B.C. in main Abaqus input file to match max strain.
-    Modify global experimental data filename to point to truncated data.
-    """
-    global exp_SS_file
+class Exp_data():
+    #TODO maybe I don't need this init function... 
+    def __init__(self):
+        self._max_strain = _get_max_strain()
+        self.raw = _get_SS()
+        _write_strain_inp()
 
-    # limit experimental data to within max_strain
-    expSS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
-    expSS = expSS[expSS[:,0].argsort()]
+    def _load(self):
+        """Load original exp_SS data, order it."""
+        original_SS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
+        original_SS = original_SS[original_SS[:,0].argsort()]
+        return original_SS
 
-    if float(uset.max_strain) == 0.0:
-        max_strain = max(np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
-    else:
-        max_strain = uset.max_strain
-        max_point = 0
-        while expSS[max_point,0] <= max_strain:
-            max_point += 1
-        expSS = expSS[:max_point, :]
-    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
-    exp_SS_file = 'temp_expSS.csv'
+    def _get_max_strain(self):
+        """Take either user max strain or file max strain."""
+        if float(uset.max_strain) == 0.0:
+            max_strain = max(np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+        else:
+            max_strain = uset.max_strain
+        return max_strain
 
-    # input file:
-    max_bound = round(max_strain * uset.length, 4) #round to 4 digits
+    def _get_SS(self):
+        """Limit experimental data to within max_strain"""
+        expSS = self._load()
+        max_strain = self._max_strain
+        if not (float(uset.max_strain) == 0.0):
+            max_point = 0
+            while expSS[max_point,0] <= max_strain:
+                max_point += 1
+            expSS = expSS[:max_point, :]
+        np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+        # exp_SS_file = 'temp_expSS.csv'
+        return expSS
 
-    filename = uset.jobname + '.inp'
-    with open(filename, 'r') as f:
-        lines = f.readlines()
+    def _write_strain_inp(self):
+        """Modify displacement B.C. in main Abaqus input file to match max strain."""
+        # input file:
+        max_bound = round(self.max_strain * uset.length, 4) #round to 4 digits
+
+        filename = uset.jobname + '.inp'
+        with open(filename, 'r') as f:
+            lines = f.readlines()
 
     # find last number after RP-TOP under *Boundary
     bound_line_ind = [ i for i, line in enumerate(lines) \
