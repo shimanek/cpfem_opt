@@ -11,6 +11,7 @@ if __name__ == '__main__':
     import numpy as np
     from skopt import Optimizer
     from scipy.interpolate import interp1d
+    from scipy.optimize import curve_fit
 else:
     from odbAccess import *
     from abaqusConstants import *
@@ -20,7 +21,8 @@ import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
-    set_strain_inp()
+    global exp_data 
+    exp_data = Exp_data()
     # global n_initial_points
     opt = Optimizer(
         dimensions = uset.param_bounds, 
@@ -297,14 +299,13 @@ def calc_error():
     Calculates root mean squared error between experimental and calculated 
     stress-strain curves.  
     """
-    global exp_SS_file
+    # global exp_SS_file
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0]/uset.length  # disp to strain
     simSS[:,1] = simSS[:,1]/uset.area    # force to stress
 
-    # load experimental data
-    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = exp_data.raw
 
     # deal with unequal data lengths 
     if simSS[-1,0] >= expSS[-1,0]:
@@ -318,13 +319,25 @@ def calc_error():
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
 
-    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
-    smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
+    def powerlaw(x,k,n):
+        y = k * x**n
+        return y
+    def fit_powerlaw(x,y):
+        popt, _ = curve_fit(x,y)
+        print(popt)
+        return popt
 
-    smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
+    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     num_error_eval_pts = 1000
     x_error_eval_pts = np.linspace( expSS[0,0], cutoff_strain, num = num_error_eval_pts )
-    fineSS = smoothedExp( x_error_eval_pts )
+    smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
+    if not uset.i_powerlaw:
+        smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
+        fineSS = smoothedExp( x_error_eval_pts )
+    else:
+        popt = fit_powerlaw( expSS[:,0], expSS[:,1] )
+        fineSS = powerlaw( x_error_eval_pts, *popt )
+
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
         fineSS = np.delete(fineSS, -1)
