@@ -323,7 +323,7 @@ def calc_error():
         y = k * x**n
         return y
     def fit_powerlaw(x,y):
-        popt, _ = curve_fit(x,y)
+        popt, _ = curve_fit(powerlaw,x,y)
         print(popt)
         return popt
 
