@@ -189,8 +189,7 @@ def param_check(param_list):
     In theory, tau0 should always come before tauS.
     """
     if ('TauS' in param_list) or ('Tau0' in param_list):
-        filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('Mat_BW')][0]
-        f1 = open( filename, 'r' )
+        f1 = open( uset.param_file, 'r' )
         lines = f1.readlines()
         for line in lines:
             if line.startswith('Tau0'): tau0 = float( line[7:] )
@@ -355,8 +354,7 @@ def write_parameters(next_params):
     Going in order of `uset.Param_list`, write new parameter values to the Abaqus 
     material input file. 
     """
-    filename = [ f for f in os.listdir(os.getcwd()) if f.startswith('Mat_BW')][0]
-    with open( filename, 'r' ) as f1:
+    with open( uset.param_file, 'r' ) as f1:
         lines = f1.readlines()
     with open( 'temp_mat_file.inp', 'w+' ) as f2:    
         for line in lines:
@@ -368,8 +366,8 @@ def write_parameters(next_params):
             if not skip:
                 f2.write( line )
 
-    os.remove( filename )
-    os.rename( 'temp_mat_file.inp', filename )
+    os.remove( uset.param_file )
+    os.rename( 'temp_mat_file.inp', uset.param_file )
 
 
 class Get_Fd(object):
