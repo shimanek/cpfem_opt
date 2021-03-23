@@ -11,6 +11,7 @@ if __name__ == '__main__':
     import numpy as np
     from skopt import Optimizer
     from scipy.interpolate import interp1d
+    from scipy.optimize import curve_fit
 else:
     from odbAccess import *
     from abaqusConstants import *
@@ -20,7 +21,8 @@ import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
-    set_strain_inp()
+    global exp_data 
+    exp_data = Exp_data()
     # global n_initial_points
     opt = Optimizer(
         dimensions = uset.param_bounds, 
@@ -61,53 +63,67 @@ def loop(opt, loop_len):
                     write_opt_progress()
         single_loop(opt, i)
 
-def set_strain_inp():
-    """
-    Modify displacement B.C. in main Abaqus input file to match max strain.
-    Modify global experimental data filename to point to truncated data.
-    """
-    global exp_SS_file
+class Exp_data():
+    #TODO maybe I don't need this init function... 
+    def __init__(self):
+        self._max_strain = self._get_max_strain()
+        self.raw = self._get_SS()
+        self._write_strain_inp()
 
-    # limit experimental data to within max_strain
-    expSS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
-    expSS = expSS[expSS[:,0].argsort()]
+    def _load(self):
+        """Load original exp_SS data, order it."""
+        original_SS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
+        original_SS = original_SS[original_SS[:,0].argsort()]
+        return original_SS
 
-    if float(uset.max_strain) == 0.0:
-        max_strain = max(np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
-    else:
-        max_strain = uset.max_strain
-        max_point = 0
-        while expSS[max_point,0] <= max_strain:
-            max_point += 1
-        expSS = expSS[:max_point, :]
-    np.savetxt('temp_expSS.csv', expSS, delimiter=',')
-    exp_SS_file = 'temp_expSS.csv'
+    def _get_max_strain(self):
+        """Take either user max strain or file max strain."""
+        if float(uset.max_strain) == 0.0:
+            max_strain = max(np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+        else:
+            max_strain = uset.max_strain
+        return max_strain
 
-    # input file:
-    max_bound = round(max_strain * uset.length, 4) #round to 4 digits
+    def _get_SS(self):
+        """Limit experimental data to within max_strain"""
+        expSS = self._load()
+        max_strain = self._max_strain
+        if not (float(uset.max_strain) == 0.0):
+            max_point = 0
+            while expSS[max_point,0] <= max_strain:
+                max_point += 1
+            expSS = expSS[:max_point, :]
+        np.savetxt('temp_expSS.csv', expSS, delimiter=',')
+        # exp_SS_file = 'temp_expSS.csv'
+        return expSS
 
-    filename = uset.jobname + '.inp'
-    with open(filename, 'r') as f:
-        lines = f.readlines()
+    def _write_strain_inp(self):
+        """Modify displacement B.C. in main Abaqus input file to match max strain."""
+        # input file:
+        max_bound = round(self._max_strain * uset.length, 4) #round to 4 digits
 
-    # find last number after RP-TOP under *Boundary
-    bound_line_ind = [ i for i, line in enumerate(lines) \
-        if line.lower().startswith('*boundary')][0] + 4
-    bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
+        filename = uset.jobname + '.inp'
+        with open(filename, 'r') as f:
+            lines = f.readlines()
 
-    new_bound_line = bound_line[:-1] + [ max_bound ] 
-    new_bound_line_str = str(new_bound_line[0])
+        # find last number after RP-TOP under *Boundary
+        bound_line_ind = [ i for i, line in enumerate(lines) \
+            if line.lower().startswith('*boundary')][0] + 4
+        bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
 
-    for i in range(1, len(new_bound_line)):
-        new_bound_line_str = new_bound_line_str + ', '
-        new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-    new_bound_line_str = new_bound_line_str + '\n'
+        new_bound_line = bound_line[:-1] + [ max_bound ] 
+        new_bound_line_str = str(new_bound_line[0])
 
-    # write to UT_729grains.inp
-    with open(filename, 'w') as f:
-        f.writelines(lines[:bound_line_ind])
-        f.writelines(new_bound_line_str)
-        f.writelines(lines[bound_line_ind+1:])
+        for i in range(1, len(new_bound_line)):
+            new_bound_line_str = new_bound_line_str + ', '
+            new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
+        new_bound_line_str = new_bound_line_str + '\n'
+
+        # write to UT_729grains.inp
+        with open(filename, 'w') as f:
+            f.writelines(lines[:bound_line_ind])
+            f.writelines(new_bound_line_str)
+            f.writelines(lines[bound_line_ind+1:])
 
 def write_opt_progress():
     global opt_progress
@@ -283,14 +299,13 @@ def calc_error():
     Calculates root mean squared error between experimental and calculated 
     stress-strain curves.  
     """
-    global exp_SS_file
+    # global exp_SS_file
     simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0]/uset.length  # disp to strain
     simSS[:,1] = simSS[:,1]/uset.area    # force to stress
 
-    # load experimental data
-    expSS = np.loadtxt( exp_SS_file, skiprows=1, delimiter=',' )
+    expSS = exp_data.raw
 
     # deal with unequal data lengths 
     if simSS[-1,0] >= expSS[-1,0]:
@@ -304,13 +319,25 @@ def calc_error():
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
 
-    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
-    smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
+    def powerlaw(x,k,n):
+        y = k * x**n
+        return y
+    def fit_powerlaw(x,y):
+        popt, _ = curve_fit(powerlaw,x,y)
+        print(popt)
+        return popt
 
-    smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
+    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     num_error_eval_pts = 1000
     x_error_eval_pts = np.linspace( expSS[0,0], cutoff_strain, num = num_error_eval_pts )
-    fineSS = smoothedExp( x_error_eval_pts )
+    smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
+    if not uset.i_powerlaw:
+        smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
+        fineSS = smoothedExp( x_error_eval_pts )
+    else:
+        popt = fit_powerlaw( expSS[:,0], expSS[:,1] )
+        fineSS = powerlaw( x_error_eval_pts, *popt )
+
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
         fineSS = np.delete(fineSS, -1)
