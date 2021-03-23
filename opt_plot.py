@@ -1,12 +1,11 @@
-'''
+"""
 Date: 2020-04-15
-Quickly plot a comparison of the stress-strain response
-of multiple crystal plasticity runs output 
-from the optimization procedure.
-Plots 3 figures per subfolder: all params, best params, convergence.
-Prints best parameters.
-Last Mod: 2020-12-07
-'''
+Plots 3 figures: 
+1. Stress-strain curves of all parameter sets
+2. Stress-strain curve of best parameter set
+3. Convergence (lowest error as a function of iteration)
+Prints best parameters to file out_best_params.txt
+"""
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -14,12 +13,6 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import interp1d
 import opt_input as uset
-
-# TODO use inputs from opt_input.py for all of this 
-# TODO use param_list to determine which param values to show in legend 
-### user input 
-fixed_params = []  # usu. [Tau0_value, h0_value]
-### end input
 
 def main():
     data = np.load( os.path.join(os.getcwd(), 'out_time_disp_force.npy') )
@@ -85,6 +78,7 @@ def main():
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
         legend_info.append( name_to_sym[param] + '=' + str(best_params[i+1]))
+    legend_info.append('Error:', str(best_params[-1]))
     legend_info = '\n'.join(legend_info)
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 

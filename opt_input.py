@@ -1,5 +1,5 @@
 """
-User settings for opt_fea.py
+User settings for opt_fea.py and opt_plot.py
 """
 import os
 param_list = ['Tau0', 'H0', 'TauS', 'hs', 'gamma0']
@@ -15,6 +15,7 @@ jobname = 'UT_729grains'
 recursion_depth = 2
 max_strain = 0.0
 # ^ 0 for max exp value, fractional strain (0.01=1%) otherwise
+i_powerlaw = 0  # interpolation: 0 = linear, 1 = Holomon equation
 
 # plot settings:
 grain_size_name = '0.12'  # string
