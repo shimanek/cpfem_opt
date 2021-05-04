@@ -29,6 +29,7 @@ def main():
         base_estimator = 'gp',
         n_initial_points = uset.n_initial_points)
     load_opt(opt)
+    load_subroutine()
 
     loop( opt, uset.loop_len )
 
@@ -125,6 +126,9 @@ class Exp_data():
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
 
+def load_subroutine():
+    subprocess.run('abaqus make library=' + uset.umat, shell=True)
+
 def write_opt_progress():
     global opt_progress
     opt_progress_header = ','.join( ['iteration'] + uset.param_list + ['RMSE'] ) 
@@ -145,12 +149,12 @@ def write_maxRMSE(i, next_params, opt):
     write_opt_progress()
 
 def job_run():
-    os.system( 'abaqus job=' + uset.jobname + \
-        ' user=umatcrystal_mod_XIT.f cpus=8 double int ask_delete=OFF' )
-    time.sleep( 5 )
+    subprocess.run( 'abaqus job=' + uset.jobname + \
+        ' user=' + uset.umat[:-2] + '-std.o cpus=' + str(uset.cpus) + \
+        ' double int ask_delete=OFF', shell=True )
 
 def job_extract():
-    os.system( 'abaqus python -c "from opt_fea import write2file; write2file()"' )
+    subprocess.run( 'abaqus python -c "from opt_fea import write2file; write2file()"', shell=True )
 
 def get_first():
     """
@@ -234,7 +238,7 @@ def refine_run(ct=0):
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation
-    os.system('rm *.lck')
+    subprocess.run('rm *.lck', shell=True)
     # find input file TODO put main input file name up top, not hardcoded as here
     filename = uset.jobname + '.inp'
     tempfile = 'temp_input.txt'

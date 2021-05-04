@@ -14,7 +14,6 @@ echo "Running program..."
 module purge
 module load abaqus
 module load intel
-module load python
 module load anaconda3
 source activate opt
 python opt_fea.py
