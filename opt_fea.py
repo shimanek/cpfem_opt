@@ -1,7 +1,6 @@
 """
 Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
 All user inputs should be in `opt_input.py` file.
-Date: June 30, 2020
 """
 if __name__ == '__main__':
     import os
