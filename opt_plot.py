@@ -1,5 +1,4 @@
 """
-Date: 2020-04-15
 Plots 3 figures: 
 1. Stress-strain curves of all parameter sets
 2. Stress-strain curve of best parameter set
@@ -78,7 +77,7 @@ def main():
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
         legend_info.append( name_to_sym[param] + '=' + str(best_params[i+1]))
-    legend_info.append('Error:', str(best_params[-1]))
+    legend_info.append('Error: ' + str(best_params[-1]))
     legend_info = '\n'.join(legend_info)
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
