@@ -3,7 +3,7 @@
 #PBS -A open
 #PBS -l pmem=2gb
 #PBS -j oe
-#PBS -m ae
+#PBS -m n
 SECONDS=0
 pwd
 cd $PBS_O_WORKDIR
@@ -12,9 +12,7 @@ echo "Job started on `hostname` at `date`"
 echo " "
 echo "Running program..."
 module purge
-module load abaqus
-module load intel
-module load anaconda3
+module load abaqus intel anaconda3
 source activate opt
 python opt_fea.py
 python opt_plot.py

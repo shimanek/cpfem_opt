@@ -1,5 +1,4 @@
 """
-Date: 2020-04-15
 Plots 3 figures: 
 1. Stress-strain curves of all parameter sets
 2. Stress-strain curve of best parameter set

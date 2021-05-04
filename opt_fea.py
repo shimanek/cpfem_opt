@@ -1,13 +1,10 @@
 """
 Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
 All user inputs should be in `opt_input.py` file.
-Date: June 30, 2020
 """
 if __name__ == '__main__':
-    import time
     import os
     import subprocess
-    import sys
     import numpy as np
     from skopt import Optimizer
     from scipy.interpolate import interp1d
@@ -19,19 +16,21 @@ else:
     from odbSection import *
 import opt_input as uset  # user settings file
 
+
 def main():
     remove_out_files()
     global exp_data 
-    exp_data = Exp_data()
-    # global n_initial_points
+    exp_data = ExpData()
     opt = Optimizer(
         dimensions = uset.param_bounds, 
         base_estimator = 'gp',
-        n_initial_points = uset.n_initial_points)
+        n_initial_points = uset.n_initial_points
+        )
     load_opt(opt)
     load_subroutine()
 
-    loop( opt, uset.loop_len )
+    loop(opt, uset.loop_len)
+
 
 def loop(opt, loop_len):
     get_first()
@@ -59,12 +58,13 @@ def loop(opt, loop_len):
                     job_extract()  # extract data to temp_time_disp_force.csv
                     combine_SS(zeros=False)  # save stress-strain data
                     rmse = calc_error()  # get error
-                    opt.tell( next_params, rmse )
+                    opt.tell(next_params, rmse)
                     opt_progress = update_progress(i, next_params, rmse)
                     write_opt_progress()
         single_loop(opt, i)
 
-class Exp_data():
+
+class ExpData():
     #TODO maybe I don't need this init function... 
     def __init__(self):
         self._max_strain = self._get_max_strain()
@@ -73,14 +73,14 @@ class Exp_data():
 
     def _load(self):
         """Load original exp_SS data, order it."""
-        original_SS = np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )
+        original_SS = np.loadtxt(uset.exp_SS_file, skiprows=1, delimiter=',')
         original_SS = original_SS[original_SS[:,0].argsort()]
         return original_SS
 
     def _get_max_strain(self):
         """Take either user max strain or file max strain."""
         if float(uset.max_strain) == 0.0:
-            max_strain = max(np.loadtxt( uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+            max_strain = max(np.loadtxt(uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
         else:
             max_strain = uset.max_strain
         return max_strain
@@ -95,7 +95,6 @@ class Exp_data():
                 max_point += 1
             expSS = expSS[:max_point, :]
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
-        # exp_SS_file = 'temp_expSS.csv'
         return expSS
 
     def _write_strain_inp(self):
@@ -110,9 +109,9 @@ class Exp_data():
         # find last number after RP-TOP under *Boundary
         bound_line_ind = [ i for i, line in enumerate(lines) \
             if line.lower().startswith('*boundary')][0] + 4
-        bound_line = [ number.strip() for number in lines[bound_line_ind].strip().split(',') ]
+        bound_line = [number.strip() for number in lines[bound_line_ind].strip().split(',')]
 
-        new_bound_line = bound_line[:-1] + [ max_bound ] 
+        new_bound_line = bound_line[:-1] + [max_bound]
         new_bound_line_str = str(new_bound_line[0])
 
         for i in range(1, len(new_bound_line)):
@@ -120,25 +119,30 @@ class Exp_data():
             new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
         new_bound_line_str = new_bound_line_str + '\n'
 
-        # write to UT_729grains.inp
+        # write to uset.jobname file
         with open(filename, 'w') as f:
             f.writelines(lines[:bound_line_ind])
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
 
+
 def load_subroutine():
+    """Compile the user subroutine uset.umat as a shared library in the directory"""
     subprocess.run('abaqus make library=' + uset.umat, shell=True)
+
 
 def write_opt_progress():
     global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + uset.param_list + ['RMSE'] ) 
+    opt_progress_header = ','.join( ['iteration'] + uset.param_list + ['RMSE'])
     np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
+
 
 def update_progress(i, next_params, rmse):
     global opt_progress
-    if i == 0: opt_progress = np.transpose( np.asarray( [i] + next_params + [rmse] ) )
-    else: opt_progress = np.vstack( (opt_progress, np.asarray( [i] + next_params + [rmse] )) )
+    if i == 0: opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
+    else: opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
     return opt_progress
+
 
 def write_maxRMSE(i, next_params, opt):
     global opt_progress
@@ -148,13 +152,22 @@ def write_maxRMSE(i, next_params, opt):
     opt_progress = update_progress(i, next_params, rmse)
     write_opt_progress()
 
+
 def job_run():
-    subprocess.run( 'abaqus job=' + uset.jobname + \
-        ' user=' + uset.umat[:-2] + '-std.o cpus=' + str(uset.cpus) + \
-        ' double int ask_delete=OFF', shell=True )
+    subprocess.run( 
+        'abaqus job=' + uset.jobname \
+        + ' user=' + uset.umat[:-2] + '-std.o' \
+        + ' cpus=' + str(uset.cpus) \
+        + ' double int ask_delete=OFF', shell=True
+        )
+
 
 def job_extract():
-    subprocess.run( 'abaqus python -c "from opt_fea import write2file; write2file()"', shell=True )
+    subprocess.run(
+        'abaqus python -c "from opt_fea import write2file; write2file()"', 
+        shell=True
+        )
+
 
 def get_first():
     """
@@ -165,6 +178,7 @@ def get_first():
     if not have_1st: 
         refine_run()
     job_extract()
+
 
 def load_opt(opt):
     """
@@ -181,11 +195,14 @@ def load_opt(opt):
     if os.path.isfile(arrayname):
         np.save(arrayname, np.load(arrayname))
 
+
 def remove_out_files():
-    out_files = [f for f in os.listdir(os.getcwd()) if f.startswith('out_')]
+    out_files = [f for f in os.listdir(os.getcwd()) \
+        if (f.startswith('out_') or f.startswith('res_') or f.startswith('temp_'))]
     if len(out_files) > 0:
         for f in out_files:
             os.remove(f)
+
 
 def param_check(param_list):
     """
@@ -193,13 +210,14 @@ def param_check(param_list):
     In theory, tau0 should always come before tauS.
     """
     if ('TauS' in param_list) or ('Tau0' in param_list):
-        f1 = open( uset.param_file, 'r' )
+        f1 = open(uset.param_file, 'r')
         lines = f1.readlines()
         for line in lines:
-            if line.startswith('Tau0'): tau0 = float( line[7:] )
-            if line.startswith('TauS'): tauS = float( line[7:] )
+            if line.startswith('Tau0'): tau0 = float(line[7:])
+            if line.startswith('TauS'): tauS = float(line[7:])
         f1.close()
-    return ( tau0 >= tauS )
+    return (tau0 >= tauS)
+
 
 def max_rmse(loop_number):
     """
@@ -212,23 +230,25 @@ def max_rmse(loop_number):
         return uset.large_error
     elif loop_number >= grace:
         errors = np.delete( opt_progress[:grace,-1], \
-            np.where( opt_progress[:grace,-1] == uset.large_error ) )
+            np.where(opt_progress[:grace,-1] == uset.large_error))
         if len(errors) < np.round( grace/2 ):
             return uset.large_error
         else:
             iq1, iq3 = np.quantile(errors, [0.25,0.75])
             return (iq3-iq1)*1.5
 
+
 def check_complete():
     """
     Return true if Abaqus has finished sucessfully.
     """
     stafile = uset.jobname + '.sta'
-    if os.path.isfile( stafile ):
-            last_line = str( subprocess.check_output( ['tail', '-1', stafile] ) )
+    if os.path.isfile(stafile):
+            last_line = str(subprocess.check_output(['tail', '-1', stafile]))
     else: 
         last_line = ''
-    return ( 'SUCCESSFULLY' in last_line )
+    return ('SUCCESSFULLY' in last_line)
+
 
 def refine_run(ct=0):
     """
@@ -258,11 +278,11 @@ def refine_run(ct=0):
     # find line after step line:
     step_line_ind = [ i for i, line in enumerate(lines) \
         if line.lower().startswith('*static')][0] + 1 
-    step_line = [ number.strip() for number in lines[step_line_ind].strip().split(',') ]
+    step_line = [number.strip() for number in lines[step_line_ind].strip().split(',')]
     original_increment = float(step_line[-1])
 
     # use original / factor:
-    new_step_line = step_line[:-1] + [ '%.4E' % (original_increment/factor) ] 
+    new_step_line = step_line[:-1] + ['%.4E' % (original_increment/factor)]
     new_step_line_str = str(new_step_line[0])
     for i in range(1, len(new_step_line)):
         new_step_line_str = new_step_line_str + ', '
@@ -282,6 +302,7 @@ def refine_run(ct=0):
     else:
         refine_run(ct)
 
+
 def combine_SS(zeros):
     """
     Reads npy stress-strain output and appends current results.
@@ -289,13 +310,14 @@ def combine_SS(zeros):
     filename = 'out_time_disp_force.npy'
     sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
     if zeros:
-        sheet = np.zeros( (np.shape(sheet)) )
-    if os.path.isfile( filename ): 
-        dat = np.load( filename )
-        dat = np.dstack( (dat,sheet) )
+        sheet = np.zeros((np.shape(sheet)))
+    if os.path.isfile(filename): 
+        dat = np.load(filename)
+        dat = np.dstack((dat,sheet))
     else:
         dat = sheet
-    np.save( filename, dat )
+    np.save(filename, dat)
+
 
 def calc_error():
     """
@@ -303,7 +325,7 @@ def calc_error():
     stress-strain curves.  
     """
     # global exp_SS_file
-    simSS = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 )[:,1:]
+    simSS = np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0]/uset.length  # disp to strain
     simSS[:,1] = simSS[:,1]/uset.area    # force to stress
@@ -313,7 +335,7 @@ def calc_error():
     # deal with unequal data lengths 
     if simSS[-1,0] >= expSS[-1,0]:
         # chop off simSS
-        cutoff = np.where( simSS[:,0] > expSS[-1,0] )[0][0] - 1
+        cutoff = np.where(simSS[:,0] > expSS[-1,0])[0][0] - 1
         simSS = simSS[:cutoff,:]
         cutoff_strain = simSS[-1,0]
     else:
@@ -332,14 +354,14 @@ def calc_error():
 
     # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
     num_error_eval_pts = 1000
-    x_error_eval_pts = np.linspace( expSS[0,0], cutoff_strain, num = num_error_eval_pts )
-    smoothedSS = interp1d( simSS[:,0], simSS[:,1] )
+    x_error_eval_pts = np.linspace(expSS[0,0], cutoff_strain, num = num_error_eval_pts)
+    smoothedSS = interp1d(simSS[:,0], simSS[:,1])
     if not uset.i_powerlaw:
-        smoothedExp = interp1d( expSS[:,0], expSS[:,1] )
-        fineSS = smoothedExp( x_error_eval_pts )
+        smoothedExp = interp1d(expSS[:,0], expSS[:,1])
+        fineSS = smoothedExp(x_error_eval_pts)
     else:
-        popt = fit_powerlaw( expSS[:,0], expSS[:,1] )
-        fineSS = powerlaw( x_error_eval_pts, *popt )
+        popt = fit_powerlaw(expSS[:,0], expSS[:,1])
+        fineSS = powerlaw(x_error_eval_pts, *popt)
 
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
@@ -347,34 +369,35 @@ def calc_error():
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    deviations = np.asarray( [ smoothedSS( x_error_eval_pts[i] ) - fineSS[i] \
-        for i in range(len(fineSS)) ] )
-    rmse = np.sqrt( np.sum( deviations**2 ) / len(fineSS) ) 
+    deviations = np.asarray([smoothedSS(x_error_eval_pts[i]) - fineSS[i] \
+        for i in range(len(fineSS))])
+    rmse = np.sqrt(np.sum( deviations**2) / len(fineSS)) 
 
     return rmse
+
 
 def write_parameters(next_params):
     """
     Going in order of `uset.Param_list`, write new parameter values to the Abaqus 
     material input file. 
     """
-    with open( uset.param_file, 'r' ) as f1:
+    with open(uset.param_file, 'r') as f1:
         lines = f1.readlines()
-    with open( 'temp_mat_file.inp', 'w+' ) as f2:    
+    with open('temp_mat_file.inp', 'w+') as f2:    
         for line in lines:
             skip = False
             for param in uset.param_list:
                 if line.startswith(param):
-                    f2.write( param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
+                    f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
                     skip = True
             if not skip:
-                f2.write( line )
+                f2.write(line)
 
-    os.remove( uset.param_file )
-    os.rename( 'temp_mat_file.inp', uset.param_file )
+    os.remove(uset.param_file)
+    os.rename('temp_mat_file.inp', uset.param_file)
 
 
-class Get_Fd(object):
+class GetForceDisplacement(object):
     """
     Requires Abaqus-specific libraries, must be called from Abaqus python.
     """
@@ -414,18 +437,20 @@ class Get_Fd(object):
         
         odb.close()
 
+
 def write2file():
     """
-    Using Get_Fd object, read odb file and write time-displacement-force to csv file.
+    Using GetForceDisplacement object, read odb file and write time-displacement-force to csv file.
     """
     job = [f for f in os.listdir(os.getcwd()) if f.endswith('.odb')][0][:-4]
-    Result_Fd = Get_Fd(job)
+    Result_Fd = GetForceDisplacement(job)
     with open('temp_time_disp_force.csv','w') as f:
         f.write('{0},{1},{2}\n'.format('Time','U2','RF2'))
         for i in range(len(Result_Fd.Time)):
             f.write('%.5f,' % Result_Fd.Time[i])
             f.write('%.5f,' % Result_Fd.TopU2[i])
             f.write('%.5f\n' % Result_Fd.TopRF2[i])
+
 
 if __name__ == '__main__':
     main()
