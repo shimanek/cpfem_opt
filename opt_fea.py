@@ -22,7 +22,7 @@ def main():
     global exp_data 
     exp_data = ExpData()
     opt = Optimizer(
-        dimensions = uset.param_bounds, 
+        dimensions = as_float_tuples(uset.param_bounds), 
         base_estimator = 'gp',
         n_initial_points = uset.n_initial_points
         )
@@ -124,6 +124,18 @@ class ExpData():
             f.writelines(lines[:bound_line_ind])
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
+
+
+def as_float_tuples(list_of_tuples):
+    """
+    Take list of tuples that may include ints and return list of tuples containing only floats.
+    Useful for optimizer param bounds since type of input determines type of param guesses.
+    """
+    new_list = []
+    for tup in list_of_tuples:
+        float_tup = tuple(float(value) for value in tup)
+        new_list.append(float_tup)
+    return new_list
 
 
 def load_subroutine():
