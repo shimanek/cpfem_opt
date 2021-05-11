@@ -65,7 +65,6 @@ def loop(opt, loop_len):
 
 
 class ExpData():
-    #TODO maybe I don't need this init function... 
     def __init__(self):
         self._max_strain = self._get_max_strain()
         self.raw = self._get_SS()
@@ -343,8 +342,8 @@ def calc_error():
     # global exp_SS_file
     simSS = np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
-    simSS[:,0] = simSS[:,0]/uset.length  # disp to strain
-    simSS[:,1] = simSS[:,1]/uset.area    # force to stress
+    simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
+    simSS[:,1] = simSS[:,1] / uset.area    # force to stress
 
     expSS = exp_data.raw
 
@@ -363,12 +362,12 @@ def calc_error():
     def powerlaw(x,k,n):
         y = k * x**n
         return y
+
     def fit_powerlaw(x,y):
         popt, _ = curve_fit(powerlaw,x,y)
-        print(popt)
         return popt
 
-    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
+    # interpolate points in both curves
     num_error_eval_pts = 1000
     x_error_eval_pts = np.linspace(expSS[0,0], cutoff_strain, num = num_error_eval_pts)
     smoothedSS = interp1d(simSS[:,0], simSS[:,1])
