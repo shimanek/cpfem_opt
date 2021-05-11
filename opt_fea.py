@@ -37,13 +37,13 @@ def loop(opt, loop_len):
     for i in range(loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
-            next_params = opt.ask()  # get parameters to test
+            next_params = [round_sig(param) for param in opt.ask()]  # get and rounod parameters to test
             write_parameters(next_params)  # write params to file
 
             while param_check(uset.param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
-                opt.tell( next_params, max_rmse(i) )
-                next_params = opt.ask()
+                opt.tell(next_params, max_rmse(i))
+                next_params = [round_sig(param) for param in opt.ask()] 
                 write_parameters(next_params)
             else:
                 job_run()
