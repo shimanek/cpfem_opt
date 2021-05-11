@@ -138,6 +138,10 @@ def as_float_tuples(list_of_tuples):
     return new_list
 
 
+def round_sig(x, sig=4):
+    return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
+
+
 def load_subroutine():
     """Compile the user subroutine uset.umat as a shared library in the directory"""
     subprocess.run('abaqus make library=' + uset.umat, shell=True)
