@@ -348,16 +348,18 @@ def calc_error():
     expSS = exp_data.raw
 
     # deal with unequal data lengths 
-    if simSS[-1,0] >= expSS[-1,0]:
+    if simSS[-1,0] > expSS[-1,0]:
         # chop off simSS
         cutoff = np.where(simSS[:,0] > expSS[-1,0])[0][0] - 1
         simSS = simSS[:cutoff,:]
         cutoff_strain = simSS[-1,0]
-    else:
+    elif simSS[-1,0] < expSS[-1,0]:
         # chop off expSS
         cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
+    else:
+        cutoff_strain = simSS[-1,0]
 
     def powerlaw(x,k,n):
         y = k * x**n
