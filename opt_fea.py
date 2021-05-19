@@ -22,7 +22,7 @@ def main():
     global exp_data 
     exp_data = ExpData()
     opt = Optimizer(
-        dimensions = uset.param_bounds, 
+        dimensions = as_float_tuples(uset.param_bounds), 
         base_estimator = 'gp',
         n_initial_points = uset.n_initial_points
         )
@@ -37,13 +37,13 @@ def loop(opt, loop_len):
     for i in range(loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
-            next_params = opt.ask()  # get parameters to test
+            next_params = [round_sig(param) for param in opt.ask()]  # get and rounod parameters to test
             write_parameters(next_params)  # write params to file
 
             while param_check(uset.param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
-                opt.tell( next_params, max_rmse(i) )
-                next_params = opt.ask()
+                opt.tell(next_params, max_rmse(i))
+                next_params = [round_sig(param) for param in opt.ask()] 
                 write_parameters(next_params)
             else:
                 job_run()
@@ -65,7 +65,6 @@ def loop(opt, loop_len):
 
 
 class ExpData():
-    #TODO maybe I don't need this init function... 
     def __init__(self):
         self._max_strain = self._get_max_strain()
         self.raw = self._get_SS()
@@ -124,6 +123,22 @@ class ExpData():
             f.writelines(lines[:bound_line_ind])
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
+
+
+def as_float_tuples(list_of_tuples):
+    """
+    Take list of tuples that may include ints and return list of tuples containing only floats.
+    Useful for optimizer param bounds since type of input determines type of param guesses.
+    """
+    new_list = []
+    for tup in list_of_tuples:
+        float_tup = tuple(float(value) for value in tup)
+        new_list.append(float_tup)
+    return new_list
+
+
+def round_sig(x, sig=4):
+    return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
 
 def load_subroutine():
@@ -327,32 +342,34 @@ def calc_error():
     # global exp_SS_file
     simSS = np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
-    simSS[:,0] = simSS[:,0]/uset.length  # disp to strain
-    simSS[:,1] = simSS[:,1]/uset.area    # force to stress
+    simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
+    simSS[:,1] = simSS[:,1] / uset.area    # force to stress
 
     expSS = exp_data.raw
 
     # deal with unequal data lengths 
-    if simSS[-1,0] >= expSS[-1,0]:
+    if simSS[-1,0] > expSS[-1,0]:
         # chop off simSS
         cutoff = np.where(simSS[:,0] > expSS[-1,0])[0][0] - 1
         simSS = simSS[:cutoff,:]
         cutoff_strain = simSS[-1,0]
-    else:
+    elif simSS[-1,0] < expSS[-1,0]:
         # chop off expSS
         cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
         expSS = expSS[:cutoff,:]
         cutoff_strain = expSS[-1,0]
+    else:
+        cutoff_strain = simSS[-1,0]
 
     def powerlaw(x,k,n):
         y = k * x**n
         return y
+
     def fit_powerlaw(x,y):
         popt, _ = curve_fit(powerlaw,x,y)
-        print(popt)
         return popt
 
-    # smooth out simulated SS -- note this isn't real smoothing but maybe it should be
+    # interpolate points in both curves
     num_error_eval_pts = 1000
     x_error_eval_pts = np.linspace(expSS[0,0], cutoff_strain, num = num_error_eval_pts)
     smoothedSS = interp1d(simSS[:,0], simSS[:,1])
