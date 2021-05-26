@@ -22,7 +22,7 @@ def main():
     for i in range( num_iter ):
         eng_strain = data[:,1,i] / uset.length
         eng_stress = data[:,2,i] / uset.area
-        ax.plot(eng_strain, eng_stress, alpha=0.2+i/num_iter/0.8,color='#696969')
+        ax.plot(eng_strain, eng_stress, alpha=0.2+(i+1)/num_iter*0.8,color='#696969')
 
     # plot experimental results:
     exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
