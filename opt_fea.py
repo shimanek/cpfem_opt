@@ -56,11 +56,14 @@ def loop(opt, loop_len):
                     return
                 else:
                     job_extract()  # extract data to temp_time_disp_force.csv
-                    combine_SS(zeros=False)  # save stress-strain data
-                    rmse = calc_error()  # get error
-                    opt.tell(next_params, rmse)
-                    opt_progress = update_progress(i, next_params, rmse)
-                    write_opt_progress()
+                    if np.sum(np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
+                        write_maxRMSE(i, next_params, opt)
+                    else:
+                        combine_SS(zeros=False)  # save stress-strain data
+                        rmse = calc_error()  # get error
+                        opt.tell(next_params, rmse)
+                        opt_progress = update_progress(i, next_params, rmse)
+                        write_opt_progress()
         single_loop(opt, i)
 
 
@@ -250,7 +253,7 @@ def max_rmse(loop_number):
             return uset.large_error
         else:
             iq1, iq3 = np.quantile(errors, [0.25,0.75])
-            return (iq3-iq1)*1.5
+            return np.ceil(np.mean(errors) + (iq3-iq1)*1.5)
 
 
 def check_complete():
