@@ -407,7 +407,7 @@ def write_parameters(next_params):
         for line in lines:
             skip = False
             for param in uset.param_list:
-                if line.startswith(param):
+                if line[:line.find('=')].strip() == param:
                     f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
                     skip = True
             if not skip:
