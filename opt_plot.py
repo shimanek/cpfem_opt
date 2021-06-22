@@ -28,7 +28,7 @@ def main():
     exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
-        label='Experimental ' + uset.grain_size_name + 'um')
+        label='Experimental ' + uset.grain_size_name)
 
     # plot best guess:
     errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
@@ -50,7 +50,7 @@ def main():
 
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_opt_' + uset.grain_size_name + 'um.png'), bbox_inches='tight', dpi=400)
+        'res_opt_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # print best paramters 
@@ -81,11 +81,11 @@ def main():
     legend_info = '\n'.join(legend_info)
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
-        label='Experimental ' + uset.grain_size_name + 'um')
+        label='Experimental ' + uset.grain_size_name)
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_single_' + uset.grain_size_name + 'um.png'), bbox_inches='tight', dpi=400)
+        'res_single_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot convergence
