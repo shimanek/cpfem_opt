@@ -77,8 +77,18 @@ def main():
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
         legend_info.append( name_to_sym[param] + '=' + str(best_params[i+1]))
+    # also add additional parameters to legend:
+    with open(uset.param_file, 'r') as f1:
+        lines = f1.readlines()
+    for param in uset.param_additional_legend:
+        for line in lines:
+                if line[:line.find('=')].strip() == param:
+                    param_value = line[line.find('=')+1:].strip()
+        legend_info.append( name_to_sym[param] + '=' + str(param_value))
+    # add error value
     legend_info.append('Error: ' + str(best_params[-1]))
     legend_info = '\n'.join(legend_info)
+    
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
         label='Experimental ' + uset.grain_size_name)

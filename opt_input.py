@@ -23,3 +23,4 @@ cpus = 4
 # plot settings:
 grain_size_name = '0.12'  # string
 title = '9x9x9el-3x3x3gr model'
+param_additional_legend = ['q']
