@@ -22,13 +22,13 @@ def main():
     for i in range( num_iter ):
         eng_strain = data[:,1,i] / uset.length
         eng_stress = data[:,2,i] / uset.area
-        ax.plot(eng_strain, eng_stress, alpha=0.2+i/num_iter/0.8,color='#696969')
+        ax.plot(eng_strain, eng_stress, alpha=0.2+(i+1)/num_iter*0.8,color='#696969')
 
     # plot experimental results:
     exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
-        label='Experimental ' + uset.grain_size_name + 'um')
+        label='Experimental ' + uset.grain_size_name)
 
     # plot best guess:
     errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
@@ -50,7 +50,7 @@ def main():
 
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_opt_' + uset.grain_size_name + 'um.png'), bbox_inches='tight', dpi=400)
+        'res_opt_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # print best paramters 
@@ -62,7 +62,11 @@ def main():
         f.write('\nBest iteration:   ' + str(int(best_params[0])))
         f.write('\nLowest error:     ' + str(best_params[-1]) + '\n')
         f.write('\nParameter names:\n' + ', '.join(uset.param_list) + '\n')
-        f.write('\nBest parameters:\n' + ', '.join([str(f) for f in best_params[1:-1]]) + '\n')
+        f.write('Best parameters:\n' + ', '.join([str(f) for f in best_params[1:-1]]) + '\n\n')
+        if len(uset.param_additional_legend) > 0:
+            f.write('Fixed parameters:\n' + ', '.join(uset.param_additional_legend) + '\n')
+            f.write('Fixed parameter values:\n' + ', '.join(
+                [str(get_param_value(f)) for f in uset.param_additional_legend]) + '\n\n')
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
     name_to_sym = {
@@ -77,15 +81,20 @@ def main():
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
         legend_info.append( name_to_sym[param] + '=' + str(best_params[i+1]))
+    # also add additional parameters to legend:
+    for param_name in uset.param_additional_legend:
+        legend_info.append( name_to_sym[param_name] + '=' + str(get_param_value(param_name)))
+    # add error value
     legend_info.append('Error: ' + str(best_params[-1]))
     legend_info = '\n'.join(legend_info)
+    
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
-        label='Experimental ' + uset.grain_size_name + 'um')
+        label='Experimental ' + uset.grain_size_name)
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_single_' + uset.grain_size_name + 'um.png'), bbox_inches='tight', dpi=400)
+        'res_single_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot convergence
@@ -103,6 +112,15 @@ def main():
     ax.set_ylabel('Lowest RMSE')
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
     plt.close()
+
+
+def get_param_value(param_name):
+    with open(uset.param_file, 'r') as f1:
+        lines = f1.readlines()
+    for line in lines:
+        if line[:line.find('=')].strip() == param_name:
+            return line[line.find('=')+1:].strip()
+
 
 if __name__ == '__main__':
     main()
