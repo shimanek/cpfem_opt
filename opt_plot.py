@@ -62,7 +62,11 @@ def main():
         f.write('\nBest iteration:   ' + str(int(best_params[0])))
         f.write('\nLowest error:     ' + str(best_params[-1]) + '\n')
         f.write('\nParameter names:\n' + ', '.join(uset.param_list) + '\n')
-        f.write('\nBest parameters:\n' + ', '.join([str(f) for f in best_params[1:-1]]) + '\n')
+        f.write('Best parameters:\n' + ', '.join([str(f) for f in best_params[1:-1]]) + '\n\n')
+        if len(uset.param_additional_legend) > 0:
+            f.write('Fixed parameters:\n' + ', '.join(uset.param_additional_legend) + '\n')
+            f.write('Fixed parameter values:\n' + ', '.join(
+                [str(get_param_value(f)) for f in uset.param_additional_legend]) + '\n\n')
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
     name_to_sym = {
@@ -78,13 +82,8 @@ def main():
         # 1st entry in best_params is iteration number, so use i+1
         legend_info.append( name_to_sym[param] + '=' + str(best_params[i+1]))
     # also add additional parameters to legend:
-    with open(uset.param_file, 'r') as f1:
-        lines = f1.readlines()
-    for param in uset.param_additional_legend:
-        for line in lines:
-                if line[:line.find('=')].strip() == param:
-                    param_value = line[line.find('=')+1:].strip()
-        legend_info.append( name_to_sym[param] + '=' + str(param_value))
+    for param_name in uset.param_additional_legend:
+        legend_info.append( name_to_sym[param_name] + '=' + str(get_param_value(param_name)))
     # add error value
     legend_info.append('Error: ' + str(best_params[-1]))
     legend_info = '\n'.join(legend_info)
@@ -113,6 +112,15 @@ def main():
     ax.set_ylabel('Lowest RMSE')
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
     plt.close()
+
+
+def get_param_value(param_name):
+    with open(uset.param_file, 'r') as f1:
+        lines = f1.readlines()
+    for line in lines:
+        if line[:line.find('=')].strip() == param_name:
+            return line[line.find('=')+1:].strip()
+
 
 if __name__ == '__main__':
     main()
