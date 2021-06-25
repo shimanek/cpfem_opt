@@ -157,8 +157,10 @@ def write_opt_progress():
 
 def update_progress(i, next_params, rmse):
     global opt_progress
-    if i == 0: opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
-    else: opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
+    if (i == 0) and (uset.do_load_previous == False): 
+        opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
+    else: 
+        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
     return opt_progress
 
 
@@ -201,25 +203,31 @@ def get_first():
 def load_opt(opt):
     """
     Load input files of previous optimizations to use as initial points in current optimization.
-    Note the parameter bounds for `in`-files must be within current bounds.
+    Note the parameter bounds for the input files must be within current parameter bounds.
     """
-    filename = 'in_opt.txt'
-    arrayname = 'in_opt.npy'
-    if os.path.isfile(filename):
-        prev_data = np.loadtxt(filename, skiprows=1)
-        x_in = prev_data[:,1:-1].tolist()
-        y_in = prev_data[:,-1].tolist()
+    global opt_progress
+    filename = 'out_progress.txt'
+    arrayname = 'out_time_disp_force.npy'
+    if uset.do_load_previous:
+        opt_progress = np.loadtxt(filename, skiprows=1)
+        # renumber iterations (negative length to zero) to distinguish from new calculations:
+        opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
+        x_in = opt_progress[:,1:-1].tolist()
+        y_in = opt_progress[:,-1].tolist()
         opt.tell(x_in, y_in)
     if os.path.isfile(arrayname):
         np.save(arrayname, np.load(arrayname))
 
 
 def remove_out_files():
-    out_files = [f for f in os.listdir(os.getcwd()) \
-        if (f.startswith('out_') or f.startswith('res_') or f.startswith('temp_'))]
-    if len(out_files) > 0:
-        for f in out_files:
-            os.remove(f)
+    if not uset.do_load_previous:
+        out_files = [f for f in os.listdir(os.getcwd()) \
+            if (f.startswith('out_') or f.startswith('res_') or f.startswith('temp_'))]
+        if len(out_files) > 0:
+            for f in out_files:
+                os.remove(f)
+    job_files = [f for f in os.listdir(os.getcwd()) \
+        if (f.startswith(uset.jobname)) and not (f.endswith('.inp'))]
 
 
 def param_check(param_list):
