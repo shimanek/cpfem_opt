@@ -4,4 +4,4 @@ channels:
   - defaults
 dependencies:
   - scikit-optimize
-#prefix: /storage/home/jxs2468/.conda/envs/opt
+#prefix: /storage/home/<username>/.conda/envs/opt

@@ -12,7 +12,7 @@ main:
 model_generation:
 
 	- mk_singleCrystalModel.py: limited script to generate Abaqus mesh files for long chains of elements appropriate for single crystal deformation simulations
-	- mk_orthoModel.py: 		script to generate Abaqus input files for polycrystalline models for arbitrary sizes of orthorhombic grains within orthorhombic volume elements
+	- mk_orthoModel.py: script to generate Abaqus input files for polycrystalline models for arbitrary sizes of orthorhombic grains within orthorhombic volume elements
 
 ## Dependencies:
 This requires scikit-optimize, which can be installed to a new Conda environment called `opt` with the following steps. Configuration files are located in `src/install/`.
