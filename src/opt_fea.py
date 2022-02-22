@@ -222,7 +222,7 @@ def get_first():
     have_1st = check_complete()
     if not have_1st: 
         refine_run()
-    job_extract()
+    job_extract('111')
 
 
 def load_opt(opt):
