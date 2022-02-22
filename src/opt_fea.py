@@ -20,8 +20,8 @@ import opt_input as uset  # user settings file
 def main():
     remove_out_files()
     global exp_data 
-    exp_data1 = ExpData('exp_w-mX-001.csv')
-    exp_data2 = ExpData('exp_w-mX-111.csv')
+    exp_data1 = ExpData('exp_W-mX-001.csv')
+    exp_data2 = ExpData('exp_W-mX-111.csv')
     opt = Optimizer(
         dimensions = as_float_tuples(uset.param_bounds), 
         base_estimator = 'gp',
