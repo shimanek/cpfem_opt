@@ -4,6 +4,7 @@ All user inputs should be in `opt_input.py` file.
 """
 if __name__ == '__main__':
     import os
+    import shutil
     import subprocess
     import numpy as np
     from skopt import Optimizer
@@ -49,7 +50,7 @@ def loop(opt, loop_len):
                 write_parameters(next_params)
             else:
                 # first orientation:
-                os.rename('mat_orient_111.inp', 'mat_orient.inp')
+                shutil.copy('mat_orient_111.inp', 'mat_orient.inp')
                 job_run()
                 if not check_complete():
                 # try decreasing max increment size
@@ -65,7 +66,7 @@ def loop(opt, loop_len):
                         return
 
                 # second orientation:
-                os.rename('mat_orient_001.inp', 'mat_orient.inp')
+                shutil.copy('mat_orient_001.inp', 'mat_orient.inp')
                 job_run()
                 if not check_complete():
                 # try decreasing max increment size
@@ -80,7 +81,7 @@ def loop(opt, loop_len):
                         write_maxRMSE(i, next_params, opt)
 
                 # error value:
-                combine_SS(zeros=False)  # save stress-strain data
+                combine_SS(zeros=True)  # save stress-strain data
                 # ^ ERROR: will not save both SS data...
                 rmse = 0.
                 for exp_data in [exp_data1, exp_data2]:
@@ -361,7 +362,7 @@ def combine_SS(zeros):
     Reads npy stress-strain output and appends current results.
     """
     filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
+    sheet = np.loadtxt( 'temp_time_disp_force_001.csv', delimiter=',', skiprows=1 ) 
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
     if os.path.isfile(filename): 
