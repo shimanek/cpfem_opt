@@ -91,8 +91,8 @@ def loop(opt, loop_len):
         single_loop(opt, i)
 
 
-class ExpData(fname):
-    def __init__(self):
+class ExpData():
+    def __init__(self, fname):
         self._max_strain = self._get_max_strain()
         self.raw = self._get_SS()
         self._write_strain_inp()
