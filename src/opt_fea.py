@@ -93,27 +93,27 @@ def loop(opt, loop_len):
 
 class ExpData():
     def __init__(self, fname):
-        self._max_strain = self._get_max_strain()
-        self.raw = self._get_SS()
+        self._max_strain = self._get_max_strain(fname)
+        self.raw = self._get_SS(fname)
         self._write_strain_inp()
 
-    def _load(self):
+    def _load(self, fname):
         """Load original exp_SS data, order it."""
         original_SS = np.loadtxt(fname, skiprows=1, delimiter=',')
         original_SS = original_SS[original_SS[:,0].argsort()]
         return original_SS
 
-    def _get_max_strain(self):
+    def _get_max_strain(self, fname):
         """Take either user max strain or file max strain."""
         if float(uset.max_strain) == 0.0:
-            max_strain = max(np.loadtxt(uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+            max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
         else:
             max_strain = uset.max_strain
         return max_strain
 
-    def _get_SS(self):
+    def _get_SS(self, fname):
         """Limit experimental data to within max_strain"""
-        expSS = self._load()
+        expSS = self._load(fname)
         max_strain = self._max_strain
         if not (float(uset.max_strain) == 0.0):
             max_point = 0
