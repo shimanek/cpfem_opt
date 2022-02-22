@@ -20,7 +20,8 @@ import opt_input as uset  # user settings file
 def main():
     remove_out_files()
     global exp_data 
-    exp_data = ExpData()
+    exp_data1 = ExpData('exp_w-mX-001.csv')
+    exp_data2 = ExpData('exp_w-mX-111.csv')
     opt = Optimizer(
         dimensions = as_float_tuples(uset.param_bounds), 
         base_estimator = 'gp',
@@ -46,28 +47,51 @@ def loop(opt, loop_len):
                 next_params = [round_sig(param) for param in opt.ask()] 
                 write_parameters(next_params)
             else:
+                # first orientation:
+                os.rename('mat_orient_111.inp', 'mat_orient.inp')
                 job_run()
-                if not check_complete():  
+                if not check_complete():
                 # try decreasing max increment size
-                    refine_run()  
-                if not check_complete():  
+                    refine_run()
+                if not check_complete():
                 # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
                     return
                 else:
-                    job_extract()  # extract data to temp_time_disp_force.csv
-                    if np.sum(np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
+                    job_extract('111')  # extract data to temp_time_disp_force.csv
+                    if np.sum(np.loadtxt('temp_time_disp_force_111.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
                         write_maxRMSE(i, next_params, opt)
-                    else:
-                        combine_SS(zeros=False)  # save stress-strain data
-                        rmse = calc_error()  # get error
-                        opt.tell(next_params, rmse)
-                        opt_progress = update_progress(i, next_params, rmse)
-                        write_opt_progress()
+                        return
+
+                # second orientation:
+                os.rename('mat_orient_001.inp', 'mat_orient.inp')
+                job_run()
+                if not check_complete():
+                # try decreasing max increment size
+                    refine_run()
+                if not check_complete():
+                # if it still fails, write max_rmse, go to next parameterset
+                    write_maxRMSE(i, next_params, opt)
+                    return
+                else:
+                    if np.sum(np.loadtxt('temp_time_disp_force_001.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
+                        write_maxRMSE(i, next_params, opt)
+
+                # error value:
+                combine_SS(zeros=False)  # save stress-strain data
+                # ^ ERROR: will not save both SS data...
+                rmse = 0.
+                for exp_data in [exp_data1, exp_data2]:
+                    rmse += calc_error(exp_data)  # get error
+                rmse /= 2  # mean of rmse between orientations
+                opt.tell(next_params, rmse)
+                opt_progress = update_progress(i, next_params, rmse)
+                write_opt_progress()
+
         single_loop(opt, i)
 
 
-class ExpData():
+class ExpData(fname):
     def __init__(self):
         self._max_strain = self._get_max_strain()
         self.raw = self._get_SS()
@@ -75,7 +99,7 @@ class ExpData():
 
     def _load(self):
         """Load original exp_SS data, order it."""
-        original_SS = np.loadtxt(uset.exp_SS_file, skiprows=1, delimiter=',')
+        original_SS = np.loadtxt(fname, skiprows=1, delimiter=',')
         original_SS = original_SS[original_SS[:,0].argsort()]
         return original_SS
 
@@ -182,11 +206,12 @@ def job_run():
         )
 
 
-def job_extract():
+def job_extract(outname):
     subprocess.run(
         'abaqus python -c "from opt_fea import write2file; write2file()"', 
         shell=True
         )
+    os.rename('out_time_disp_force.csv', f'out_time_disp_force_{outname}.csv')
 
 
 def get_first():
@@ -345,13 +370,13 @@ def combine_SS(zeros):
     np.save(filename, dat)
 
 
-def calc_error():
+def calc_error(exp_data):
     """
     Calculates root mean squared error between experimental and calculated 
     stress-strain curves.  
     """
     # global exp_SS_file
-    simSS = np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:]
+    simSS = np.loadtxt(f'temp_time_disp_force_{orientation}.csv', delimiter=',', skiprows=1)[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
     simSS[:,1] = simSS[:,1] / uset.area    # force to stress
