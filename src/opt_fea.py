@@ -19,7 +19,8 @@ import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
-    global exp_data 
+    global exp_data1
+    global exp_data2
     exp_data1 = ExpData('exp_W-mX-001.csv')
     exp_data2 = ExpData('exp_W-mX-111.csv')
     opt = Optimizer(
