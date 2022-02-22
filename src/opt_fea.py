@@ -263,14 +263,21 @@ def param_check(param_list):
     True if tau0 >= tauS, which is bad, not practically but in theory.
     In theory, tau0 should always come before tauS.
     """
-    if ('TauS' in param_list) or ('Tau0' in param_list):
+    if ('TauS1' in param_list) or ('Tau01' in param_list):
         f1 = open(uset.param_file, 'r')
         lines = f1.readlines()
         for line in lines:
-            if line.startswith('Tau0'): tau0 = float(line[7:])
-            if line.startswith('TauS'): tauS = float(line[7:])
+            if line.startswith('Tau01'): tau01 = float(line[7:])
+            if line.startswith('TauS1'): tauS1 = float(line[7:])
         f1.close()
-    return (tau0 >= tauS)
+    if ('TauS2' in param_list) or ('Tau02' in param_list):
+        f1 = open(uset.param_file, 'r')
+        lines = f1.readlines()
+        for line in lines:
+            if line.startswith('Tau02'): tau02 = float(line[7:])
+            if line.startswith('TauS2'): tauS2 = float(line[7:])
+        f1.close()
+    return (tau01 >= tauS1) & (tau02 >= tauS2)
 
 
 def max_rmse(loop_number):
