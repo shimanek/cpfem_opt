@@ -84,8 +84,8 @@ def loop(opt, loop_len):
                 combine_SS(zeros=True)  # save stress-strain data
                 # ^ ERROR: will not save both SS data...
                 rmse = 0.
-                for exp_data in [exp_data1, exp_data2]:
-                    rmse += calc_error(exp_data)  # get error
+                for exp_data, orientation in zip([exp_data1, exp_data2], ['001', '111']):
+                    rmse += calc_error(exp_data, orientation)  # get error
                 rmse /= 2  # mean of rmse between orientations
                 opt.tell(next_params, rmse)
                 opt_progress = update_progress(i, next_params, rmse)
@@ -373,7 +373,7 @@ def combine_SS(zeros):
     np.save(filename, dat)
 
 
-def calc_error(exp_data):
+def calc_error(exp_data, orientation):
     """
     Calculates root mean squared error between experimental and calculated 
     stress-strain curves.  
