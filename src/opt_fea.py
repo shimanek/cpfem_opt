@@ -75,6 +75,7 @@ def loop(opt, loop_len):
                     write_maxRMSE(i, next_params, opt)
                     return
                 else:
+                    job_extract('001') 
                     if np.sum(np.loadtxt('temp_time_disp_force_001.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
                         write_maxRMSE(i, next_params, opt)
 
@@ -212,7 +213,7 @@ def job_extract(outname):
         'abaqus python -c "from opt_fea import write2file; write2file()"', 
         shell=True
     )
-    os.rename('out_time_disp_force.csv', 'out_time_disp_force_{0}.csv'.format(outname))
+    os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
 def get_first():
