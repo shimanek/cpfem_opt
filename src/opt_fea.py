@@ -211,8 +211,8 @@ def job_extract(outname):
     subprocess.run(
         'abaqus python -c "from opt_fea import write2file; write2file()"', 
         shell=True
-        )
-    os.rename('out_time_disp_force.csv', f'out_time_disp_force_{outname}.csv')
+    )
+    os.rename('out_time_disp_force.csv', 'out_time_disp_force_{0}.csv'.format(outname))
 
 
 def get_first():
@@ -377,7 +377,7 @@ def calc_error(exp_data):
     stress-strain curves.  
     """
     # global exp_SS_file
-    simSS = np.loadtxt(f'temp_time_disp_force_{orientation}.csv', delimiter=',', skiprows=1)[:,1:]
+    simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
     simSS[:,1] = simSS[:,1] / uset.area    # force to stress
