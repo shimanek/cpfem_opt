@@ -13,8 +13,8 @@ import os
 from scipy.interpolate import interp1d
 import opt_input as uset
 
-def main():
-    data = np.load( os.path.join(os.getcwd(), 'out_time_disp_force.npy') )
+def main(orientation):
+    data = np.load( os.path.join(os.getcwd(), f'out_time_disp_force_{orientation}.npy') )
     num_iter = len(data[0,0,:])
     #-----------------------------------------------------------------------------------------------
     # plot all trials, in order:
@@ -126,4 +126,5 @@ def get_param_value(param_name):
 
 
 if __name__ == '__main__':
-    main()
+    main(orientation='111')
+    main(orientation='001')

@@ -64,6 +64,7 @@ def loop(opt, loop_len):
                     if np.sum(np.loadtxt('temp_time_disp_force_111.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
                         write_maxRMSE(i, next_params, opt)
                         return
+                combine_SS(zeros=True, orientation='111')  # save stress-strain data
 
                 # second orientation:
                 shutil.copy('mat_orient_001.inp', 'mat_orient.inp')
@@ -81,8 +82,7 @@ def loop(opt, loop_len):
                         write_maxRMSE(i, next_params, opt)
 
                 # error value:
-                combine_SS(zeros=True)  # save stress-strain data
-                # ^ ERROR: will not save both SS data...
+                combine_SS(zeros=True, orientation='001')  # save stress-strain data
                 rmse = 0.
                 for exp_data, orientation in zip([exp_data1, exp_data2], ['001', '111']):
                     rmse += calc_error(exp_data, orientation)  # get error
@@ -364,12 +364,12 @@ def refine_run(ct=0):
         refine_run(ct)
 
 
-def combine_SS(zeros):
+def combine_SS(zeros, orientation):
     """
     Reads npy stress-strain output and appends current results.
     """
-    filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'temp_time_disp_force_001.csv', delimiter=',', skiprows=1 ) 
+    filename = f'out_time_disp_force_{orientation}.npy'
+    sheet = np.loadtxt( f'temp_time_disp_force_{orientation}.csv', delimiter=',', skiprows=1 )
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
     if os.path.isfile(filename): 
