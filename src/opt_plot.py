@@ -70,13 +70,16 @@ def main():
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
     name_to_sym = {
-        'Tau0':r'$\tau_0$',
-        'H0':r'$h_0$',
-        'TauS':r'$\tau_s$',
+        'Tau01':r'$\tau_0$',
+        'H01':r'$h_0$',
+        'TauS1':r'$\tau_s$',
+        'Tau02':r'$\tau_0^{(2)}$',
+        'H02':r'$h_0^{(2)}$',
+        'TauS2':r'$\tau_s^{(2)}$',
         'hs':r'$h_s$', 
         'gamma0':r'$\gamma_0$',
         'f0':r'$f_0$',
-        'q':r'$q$'}
+        'q1':r'$q$'}
     legend_info = []
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
