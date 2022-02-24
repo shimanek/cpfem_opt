@@ -58,13 +58,15 @@ def loop(opt, loop_len):
                 if not check_complete():
                 # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
+                    combine_SS(zeros=True, orientation='111')
                     return
                 else:
                     job_extract('111')  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt('temp_time_disp_force_111.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
                         write_maxRMSE(i, next_params, opt)
+                        combine_SS(zeros=True, orientation='111')
                         return
-                combine_SS(zeros=True, orientation='111')  # save stress-strain data
+                    combine_SS(zeros=False, orientation='111')  # save stress-strain data
 
                 # second orientation:
                 shutil.copy('mat_orient_001.inp', 'mat_orient.inp')
@@ -75,14 +77,16 @@ def loop(opt, loop_len):
                 if not check_complete():
                 # if it still fails, write max_rmse, go to next parameterset
                     write_maxRMSE(i, next_params, opt)
+                    combine_SS(zeros=True, orientation='001')
                     return
                 else:
                     job_extract('001') 
                     if np.sum(np.loadtxt('temp_time_disp_force_001.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
                         write_maxRMSE(i, next_params, opt)
+                        combine_SS(zeros=True, orientation='001')
+                    combine_SS(zeros=False, orientation='001')  # save stress-strain data
 
                 # error value:
-                combine_SS(zeros=True, orientation='001')  # save stress-strain data
                 rmse = 0.
                 for exp_data, orientation in zip([exp_data1, exp_data2], ['001', '111']):
                     rmse += calc_error(exp_data, orientation)  # get error
