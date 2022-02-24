@@ -24,4 +24,4 @@ do_load_previous = False
 # plot settings:
 grain_size_name = 'mX'  # string
 title = '9x9x9el-3x3x3gr model'
-param_additional_legend = ['q']
+param_additional_legend = ['q1']
