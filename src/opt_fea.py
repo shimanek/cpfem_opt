@@ -57,14 +57,12 @@ def loop(opt, loop_len):
                     refine_run()
                 if not check_complete():
                 # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt)
-                    combine_SS(zeros=True, orientation='111')
+                    write_maxRMSE(i, next_params, opt, orientation='111')
                     return
                 else:
                     job_extract('111')  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt('temp_time_disp_force_111.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt)
-                        combine_SS(zeros=True, orientation='111')
+                        write_maxRMSE(i, next_params, opt, orientation='111')
                         return
                     combine_SS(zeros=False, orientation='111')  # save stress-strain data
 
@@ -76,14 +74,12 @@ def loop(opt, loop_len):
                     refine_run()
                 if not check_complete():
                 # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt)
-                    combine_SS(zeros=True, orientation='001')
+                    write_maxRMSE(i, next_params, opt, orientation='001')
                     return
                 else:
                     job_extract('001') 
                     if np.sum(np.loadtxt('temp_time_disp_force_001.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt)
-                        combine_SS(zeros=True, orientation='001')
+                        write_maxRMSE(i, next_params, opt, orientation='001')
                     combine_SS(zeros=False, orientation='001')  # save stress-strain data
 
                 # error value:
@@ -195,11 +191,11 @@ def update_progress(i, next_params, rmse):
     return opt_progress
 
 
-def write_maxRMSE(i, next_params, opt):
+def write_maxRMSE(i, next_params, opt, orientation):
     global opt_progress
     rmse = max_rmse(i)
     opt.tell( next_params, rmse )
-    combine_SS(zeros=True)
+    combine_SS(zeros=True, orientation=orientation)
     opt_progress = update_progress(i, next_params, rmse)
     write_opt_progress()
 
