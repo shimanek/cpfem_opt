@@ -50,7 +50,7 @@ def main(orientation):
 
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_opt_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
+        'res_opt_' + orientation + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # print best paramters 
@@ -79,7 +79,9 @@ def main(orientation):
         'hs':r'$h_s$', 
         'gamma0':r'$\gamma_0$',
         'f0':r'$f_0$',
-        'q1':r'$q$'}
+        'q':r'$q$',
+        'q1':r'$q_1$',
+        'q2':r'$q_2$'}
     legend_info = []
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
@@ -97,7 +99,7 @@ def main(orientation):
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_single_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
+        'res_single_' + orientation + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot convergence
