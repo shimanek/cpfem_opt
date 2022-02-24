@@ -368,7 +368,7 @@ def combine_SS(zeros, orientation):
     """
     Reads npy stress-strain output and appends current results.
     """
-    filename = f'out_time_disp_force_{orientation}.npy'
+    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
     sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
