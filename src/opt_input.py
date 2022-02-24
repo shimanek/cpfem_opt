@@ -10,8 +10,8 @@ large_error = 5e3
 # ^ backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
 exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 param_file = [f for f in os.listdir(os.getcwd()) if f.startswith('mat_param')][0]
-length = 9
-area = 9 * 9
+length = 1
+area = 1 * 1
 jobname = 'UT_mX'
 recursion_depth = 1
 max_strain = 0.0
