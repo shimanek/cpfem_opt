@@ -6,7 +6,7 @@ param_list = ['Tau01', 'H01', 'TauS1', 'Tau02', 'H02', 'TauS2']
 param_bounds = [(100,200), (1400,2400), (400,800), (500,800), (4100,6000), (100,300)]
 loop_len = 15
 n_initial_points = 5
-large_error = 5e3
+large_error = 1e2
 # ^ backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
 exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 param_file = [f for f in os.listdir(os.getcwd()) if f.startswith('mat_param')][0]
