@@ -432,9 +432,10 @@ def calc_error(exp_data, orientation):
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    deviations = np.asarray([smoothedSS(x_error_eval_pts[i]) - fineSS[i] \
+    # for dual opt, error is normalized by exp value (root mean percent error instead of RMSE)
+    deviations_pct = np.asarray([100*(smoothedSS(x_error_eval_pts[i]) - fineSS[i])/fineSS[i] \
         for i in range(len(fineSS))])
-    rmse = np.sqrt(np.sum( deviations**2) / len(fineSS)) 
+    rmse = np.sqrt(np.sum( deviations_pct**2) / len(fineSS)) 
 
     return rmse
 
