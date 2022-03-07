@@ -2,8 +2,14 @@
 User settings for opt_fea.py and opt_plot.py
 """
 import os
-param_list = ['Tau01', 'H01', 'TauS1', 'Tau02', 'H02', 'TauS2']
-param_bounds = [(100,200), (1400,2400), (400,800), (500,800), (4100,6000), (100,300)]
+param_list = [
+	'Tau01', 'H01', 'TauS1', 
+	'Tau02', 'H02', 'TauS2'
+]
+param_bounds = [
+	(100,200), (1400,2400), (400,800), 
+	(500,800), (4100,6000), (100,300)
+]
 loop_len = 15
 n_initial_points = 5
 large_error = 1e2
