@@ -277,6 +277,8 @@ def param_check(param_list):
             if line.startswith('Tau02'): tau02 = float(line[7:])
             if line.startswith('TauS2'): tauS2 = float(line[7:])
         f1.close()
+    else:
+        return True
     return (tau01 >= tauS1) & (tau02 >= tauS2)
 
 
