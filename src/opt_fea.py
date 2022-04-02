@@ -137,7 +137,9 @@ class ExpData():
 
         # find last number after RP-TOP under *Boundary
         bound_line_ind = [ i for i, line in enumerate(lines) \
-            if line.lower().startswith('*boundary')][0] + 4
+            if line.lower().startswith('*boundary')][0]
+        bound_line_ind += [ i for i, line in enumerate(lines[bound_line_ind:]) \
+            if line.strip().lower().startswith('rp-top')][0]
         bound_line = [number.strip() for number in lines[bound_line_ind].strip().split(',')]
 
         new_bound_line = bound_line[:-1] + [max_bound]
@@ -146,7 +148,7 @@ class ExpData():
         for i in range(1, len(new_bound_line)):
             new_bound_line_str = new_bound_line_str + ', '
             new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-        new_bound_line_str = new_bound_line_str + '\n'
+        new_bound_line_str = '   ' + new_bound_line_str + '\n'
 
         # write to uset.jobname file
         with open(filename, 'w') as f:
