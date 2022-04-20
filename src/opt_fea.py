@@ -20,10 +20,8 @@ import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
-    global exp_data1
-    global exp_data2
-    exp_data1 = ExpData('exp_W-mX-001.csv')
-    exp_data2 = ExpData('exp_W-mX-111.csv')
+    global exp_data
+    exp_data = ExpData(uset.orientations)
     opt = Optimizer(
         dimensions = as_float_tuples(uset.param_bounds), 
         base_estimator = 'gp',
@@ -50,43 +48,29 @@ def loop(opt, loop_len):
                 write_parameters(next_params)
             else:
                 # first orientation:
-                shutil.copy('mat_orient_111.inp', 'mat_orient.inp')
-                job_run()
-                if not check_complete():
-                # try decreasing max increment size
-                    refine_run()
-                if not check_complete():
-                # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt, orientation='111')
-                    return
-                else:
-                    job_extract('111')  # extract data to temp_time_disp_force.csv
-                    if np.sum(np.loadtxt('temp_time_disp_force_111.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt, orientation='111')
+                for orient in uset.orientations.keys():
+                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                    shutil.copy('{0}_{1}.inp'.format(uset.jobname,orient), '{0}.inp'.format(uset.jobname))
+                    job_run()
+                    if not check_complete():
+                    # try decreasing max increment size
+                        refine_run()
+                    if not check_complete():
+                    # if it still fails, write max_rmse, go to next parameterset
+                        write_maxRMSE(i, next_params, opt, orientation=orient)
                         return
-                    combine_SS(zeros=False, orientation='111')  # save stress-strain data
-
-                # second orientation:
-                shutil.copy('mat_orient_001.inp', 'mat_orient.inp')
-                job_run()
-                if not check_complete():
-                # try decreasing max increment size
-                    refine_run()
-                if not check_complete():
-                # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt, orientation='001')
-                    return
-                else:
-                    job_extract('001') 
-                    if np.sum(np.loadtxt('temp_time_disp_force_001.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt, orientation='001')
-                    combine_SS(zeros=False, orientation='001')  # save stress-strain data
+                    else:
+                        job_extract(orient)  # extract data to temp_time_disp_force.csv
+                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), delimiter=',', skiprows=1)[:,1:2]) == 0:
+                            write_maxRMSE(i, next_params, opt, orientation=orient)
+                            return
+                        combine_SS(zeros=False, orientation=orient)  # save stress-strain data
 
                 # error value:
-                rmse = 0.
-                for exp_data, orientation in zip([exp_data1, exp_data2], ['001', '111']):
-                    rmse += calc_error(exp_data, orientation)  # get error
-                rmse /= 2  # mean of rmse between orientations
+                rmse_list = []
+                for orient in uset.orientations.keys():
+                    rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
+                rmse = np.mean(rmse_list)
                 opt.tell(next_params, rmse)
                 opt_progress = update_progress(i, next_params, rmse)
                 write_opt_progress()
@@ -95,10 +79,19 @@ def loop(opt, loop_len):
 
 
 class ExpData():
-    def __init__(self, fname):
-        self._max_strain = self._get_max_strain(fname)
-        self.raw = self._get_SS(fname)
-        self._write_strain_inp()
+    def __init__(self, orientations):
+        self.data = {}
+        for orient in orientations.keys():
+            expname = orientations[orient]['exp']
+            # orientname = orientations[orient]['inp']
+            jobname = uset.jobname + '_{0}.inp'.format(orient)
+            self._max_strain = self._get_max_strain(expname)
+            self.raw = self._get_SS(expname)
+            self._write_strain_inp(jobname)
+            self.data[orient] = {
+                'max_strain':self._max_strain,
+                'raw':self.raw
+            }
 
     def _load(self, fname):
         """Load original exp_SS data, order it."""
@@ -126,13 +119,12 @@ class ExpData():
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 
-    def _write_strain_inp(self):
+    def _write_strain_inp(self, jobname):
         """Modify displacement B.C. in main Abaqus input file to match max strain."""
         # input file:
         max_bound = round(self._max_strain * uset.length, 4) #round to 4 digits
 
-        filename = uset.jobname + '.inp'
-        with open(filename, 'r') as f:
+        with open('{0}.inp'.format(uset.jobname), 'r') as f:
             lines = f.readlines()
 
         # find last number after RP-TOP under *Boundary
@@ -151,7 +143,7 @@ class ExpData():
         new_bound_line_str = '   ' + new_bound_line_str + '\n'
 
         # write to uset.jobname file
-        with open(filename, 'w') as f:
+        with open(jobname, 'w') as f:
             f.writelines(lines[:bound_line_ind])
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
@@ -395,7 +387,7 @@ def calc_error(exp_data, orientation):
     simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
     simSS[:,1] = simSS[:,1] / uset.area    # force to stress
 
-    expSS = exp_data.raw
+    expSS = exp_data
 
     # deal with unequal data lengths 
     if simSS[-1,0] > expSS[-1,0]:

@@ -10,6 +10,10 @@ param_bounds = [
 	(100,200), (1400,2400), (400,800), 
 	(500,800), (4100,6000), (100,300)
 ]
+orientations = {
+	'001':{'exp':'exp_W-mX-001.csv','inp':'mat_orient_001.inp'},
+	'111':{'exp':'exp_W-mX-111.csv','inp':'mat_orient_111.inp'}
+}
 loop_len = 15
 n_initial_points = 5
 large_error = 1e2
