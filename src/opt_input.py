@@ -18,7 +18,6 @@ loop_len = 15
 n_initial_points = 5
 large_error = 1e2
 # ^ backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
-exp_SS_file = [f for f in os.listdir(os.getcwd()) if f.startswith('exp')][0]
 param_file = [f for f in os.listdir(os.getcwd()) if f.startswith('mat_param')][0]
 length = 1
 area = 1 * 1
@@ -33,5 +32,5 @@ do_load_previous = False
 
 # plot settings:
 grain_size_name = 'mX'  # string
-title = '9x9x9el-3x3x3gr model'
+title = ''
 param_additional_legend = ['q1']
