@@ -13,8 +13,8 @@ import os
 from scipy.interpolate import interp1d
 import opt_input as uset
 
-def main(orientation):
-    data = np.load( os.path.join(os.getcwd(), f'out_time_disp_force_{orientation}.npy') )
+def main(orient):
+    data = np.load( os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy') )
     num_iter = len(data[0,0,:])
     #-----------------------------------------------------------------------------------------------
     # plot all trials, in order:
@@ -26,7 +26,7 @@ def main(orientation):
 
     # plot experimental results:
     # exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
-    exp_filename = 'exp_W-mX-' + orientation + '.csv'
+    exp_filename = uset.orientations[orient]['exp']
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
         label='Experimental ' + uset.grain_size_name)
@@ -51,7 +51,7 @@ def main(orientation):
 
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_opt_' + orientation + '.png'), bbox_inches='tight', dpi=400)
+        'res_opt_' + orient + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # print best paramters 
@@ -100,7 +100,7 @@ def main(orientation):
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_single_' + orientation + '.png'), bbox_inches='tight', dpi=400)
+        'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot convergence
@@ -129,5 +129,5 @@ def get_param_value(param_name):
 
 
 if __name__ == '__main__':
-    main(orientation='111')
-    main(orientation='001')
+    for orient in uset.orientations.keys():
+        main(orient=orient)
