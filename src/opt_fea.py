@@ -381,7 +381,7 @@ def calc_error(exp_data, orientation):
     Calculates root mean squared error between experimental and calculated 
     stress-strain curves.  
     """
-    simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[:,1:]
+    simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[1:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
     simSS[:,1] = simSS[:,1] / uset.area    # force to stress
