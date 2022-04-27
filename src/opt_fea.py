@@ -401,6 +401,7 @@ def calc_error(exp_data, orientation):
         cutoff_strain = expSS[-1,0]
     else:
         cutoff_strain = simSS[-1,0]
+    begin_strain = max(min(expSS[:,0]), min(simSS[:,0]))
 
     def powerlaw(x,k,n):
         y = k * x**n
@@ -412,7 +413,7 @@ def calc_error(exp_data, orientation):
 
     # interpolate points in both curves
     num_error_eval_pts = 1000
-    x_error_eval_pts = np.linspace(expSS[0,0], cutoff_strain, num = num_error_eval_pts)
+    x_error_eval_pts = np.linspace(begin_strain, cutoff_strain, num = num_error_eval_pts)
     smoothedSS = interp1d(simSS[:,0], simSS[:,1])
     if not uset.i_powerlaw:
         smoothedExp = interp1d(expSS[:,0], expSS[:,1])
