@@ -4,6 +4,7 @@ All user inputs should be in `opt_input.py` file.
 """
 if __name__ == '__main__':
     import os
+    import shutil
     import subprocess
     import numpy as np
     from skopt import Optimizer
@@ -19,8 +20,8 @@ import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
-    global exp_data 
-    exp_data = ExpData()
+    global exp_data
+    exp_data = ExpData(uset.orientations)
     opt = Optimizer(
         dimensions = as_float_tuples(uset.param_bounds), 
         base_estimator = 'gp',
@@ -46,50 +47,69 @@ def loop(opt, loop_len):
                 next_params = [round_sig(param) for param in opt.ask()] 
                 write_parameters(next_params)
             else:
-                job_run()
-                if not check_complete():  
-                # try decreasing max increment size
-                    refine_run()  
-                if not check_complete():  
-                # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt)
-                    return
-                else:
-                    job_extract()  # extract data to temp_time_disp_force.csv
-                    if np.sum(np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt)
+                # first orientation:
+                for orient in uset.orientations.keys():
+                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                    shutil.copy('{0}_{1}.inp'.format(uset.jobname,orient), '{0}.inp'.format(uset.jobname))
+                    job_run()
+                    if not check_complete():
+                    # try decreasing max increment size
+                        refine_run()
+                    if not check_complete():
+                    # if it still fails, write max_rmse, go to next parameterset
+                        write_maxRMSE(i, next_params, opt, orientation=orient)
+                        return
                     else:
-                        combine_SS(zeros=False)  # save stress-strain data
-                        rmse = calc_error()  # get error
-                        opt.tell(next_params, rmse)
-                        opt_progress = update_progress(i, next_params, rmse)
-                        write_opt_progress()
+                        job_extract(orient)  # extract data to temp_time_disp_force.csv
+                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), delimiter=',', skiprows=1)[:,1:2]) == 0:
+                            write_maxRMSE(i, next_params, opt, orientation=orient)
+                            return
+                        combine_SS(zeros=False, orientation=orient)  # save stress-strain data
+
+                # error value:
+                rmse_list = []
+                for orient in uset.orientations.keys():
+                    rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
+                rmse = np.mean(rmse_list)
+                opt.tell(next_params, rmse)
+                opt_progress = update_progress(i, next_params, rmse)
+                write_opt_progress()
+
         single_loop(opt, i)
 
 
 class ExpData():
-    def __init__(self):
-        self._max_strain = self._get_max_strain()
-        self.raw = self._get_SS()
-        self._write_strain_inp()
+    def __init__(self, orientations):
+        self.data = {}
+        for orient in orientations.keys():
+            expname = orientations[orient]['exp']
+            # orientname = orientations[orient]['inp']
+            jobname = uset.jobname + '_{0}.inp'.format(orient)
+            self._max_strain = self._get_max_strain(expname)
+            self.raw = self._get_SS(expname)
+            self._write_strain_inp(jobname)
+            self.data[orient] = {
+                'max_strain':self._max_strain,
+                'raw':self.raw
+            }
 
-    def _load(self):
+    def _load(self, fname):
         """Load original exp_SS data, order it."""
-        original_SS = np.loadtxt(uset.exp_SS_file, skiprows=1, delimiter=',')
+        original_SS = np.loadtxt(fname, skiprows=1, delimiter=',')
         original_SS = original_SS[original_SS[:,0].argsort()]
         return original_SS
 
-    def _get_max_strain(self):
+    def _get_max_strain(self, fname):
         """Take either user max strain or file max strain."""
         if float(uset.max_strain) == 0.0:
-            max_strain = max(np.loadtxt(uset.exp_SS_file, skiprows=1, delimiter=',' )[:,0])
+            max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
         else:
             max_strain = uset.max_strain
         return max_strain
 
-    def _get_SS(self):
+    def _get_SS(self, fname):
         """Limit experimental data to within max_strain"""
-        expSS = self._load()
+        expSS = self._load(fname)
         max_strain = self._max_strain
         if not (float(uset.max_strain) == 0.0):
             max_point = 0
@@ -99,18 +119,19 @@ class ExpData():
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 
-    def _write_strain_inp(self):
+    def _write_strain_inp(self, jobname):
         """Modify displacement B.C. in main Abaqus input file to match max strain."""
         # input file:
         max_bound = round(self._max_strain * uset.length, 4) #round to 4 digits
 
-        filename = uset.jobname + '.inp'
-        with open(filename, 'r') as f:
+        with open('{0}.inp'.format(uset.jobname), 'r') as f:
             lines = f.readlines()
 
         # find last number after RP-TOP under *Boundary
         bound_line_ind = [ i for i, line in enumerate(lines) \
-            if line.lower().startswith('*boundary')][0] + 4
+            if line.lower().startswith('*boundary')][0]
+        bound_line_ind += [ i for i, line in enumerate(lines[bound_line_ind:]) \
+            if line.strip().lower().startswith('rp-top')][0]
         bound_line = [number.strip() for number in lines[bound_line_ind].strip().split(',')]
 
         new_bound_line = bound_line[:-1] + [max_bound]
@@ -119,10 +140,10 @@ class ExpData():
         for i in range(1, len(new_bound_line)):
             new_bound_line_str = new_bound_line_str + ', '
             new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-        new_bound_line_str = new_bound_line_str + '\n'
+        new_bound_line_str = '   ' + new_bound_line_str + '\n'
 
         # write to uset.jobname file
-        with open(filename, 'w') as f:
+        with open(jobname, 'w') as f:
             f.writelines(lines[:bound_line_ind])
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
@@ -164,11 +185,11 @@ def update_progress(i, next_params, rmse):
     return opt_progress
 
 
-def write_maxRMSE(i, next_params, opt):
+def write_maxRMSE(i, next_params, opt, orientation):
     global opt_progress
     rmse = max_rmse(i)
     opt.tell( next_params, rmse )
-    combine_SS(zeros=True)
+    combine_SS(zeros=True, orientation=orientation)
     opt_progress = update_progress(i, next_params, rmse)
     write_opt_progress()
 
@@ -182,11 +203,12 @@ def job_run():
         )
 
 
-def job_extract():
+def job_extract(outname):
     subprocess.run(
         'abaqus python -c "from opt_fea import write2file; write2file()"', 
         shell=True
-        )
+    )
+    os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
 def get_first():
@@ -197,7 +219,7 @@ def get_first():
     have_1st = check_complete()
     if not have_1st: 
         refine_run()
-    job_extract()
+    job_extract('111')
 
 
 def load_opt(opt):
@@ -235,14 +257,23 @@ def param_check(param_list):
     True if tau0 >= tauS, which is bad, not practically but in theory.
     In theory, tau0 should always come before tauS.
     """
-    if ('TauS' in param_list) or ('Tau0' in param_list):
+    if ('TauS1' in param_list) or ('Tau01' in param_list):
         f1 = open(uset.param_file, 'r')
         lines = f1.readlines()
         for line in lines:
-            if line.startswith('Tau0'): tau0 = float(line[7:])
-            if line.startswith('TauS'): tauS = float(line[7:])
+            if line.startswith('Tau01'): tau01 = float(line[7:])
+            if line.startswith('TauS1'): tauS1 = float(line[7:])
         f1.close()
-    return (tau0 >= tauS)
+    if ('TauS2' in param_list) or ('Tau02' in param_list):
+        f1 = open(uset.param_file, 'r')
+        lines = f1.readlines()
+        for line in lines:
+            if line.startswith('Tau02'): tau02 = float(line[7:])
+            if line.startswith('TauS2'): tauS2 = float(line[7:])
+        f1.close()
+    else:
+        return False
+    return (tau01 >= tauS1) & (tau02 >= tauS2)
 
 
 def max_rmse(loop_number):
@@ -329,12 +360,12 @@ def refine_run(ct=0):
         refine_run(ct)
 
 
-def combine_SS(zeros):
+def combine_SS(zeros, orientation):
     """
     Reads npy stress-strain output and appends current results.
     """
-    filename = 'out_time_disp_force.npy'
-    sheet = np.loadtxt( 'temp_time_disp_force.csv', delimiter=',', skiprows=1 ) 
+    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
+    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
     if os.path.isfile(filename): 
@@ -345,18 +376,17 @@ def combine_SS(zeros):
     np.save(filename, dat)
 
 
-def calc_error():
+def calc_error(exp_data, orientation):
     """
     Calculates root mean squared error between experimental and calculated 
     stress-strain curves.  
     """
-    # global exp_SS_file
-    simSS = np.loadtxt('temp_time_disp_force.csv', delimiter=',', skiprows=1)[:,1:]
+    simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[1:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
     simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
     simSS[:,1] = simSS[:,1] / uset.area    # force to stress
 
-    expSS = exp_data.raw
+    expSS = exp_data
 
     # deal with unequal data lengths 
     if simSS[-1,0] > expSS[-1,0]:
@@ -371,6 +401,7 @@ def calc_error():
         cutoff_strain = expSS[-1,0]
     else:
         cutoff_strain = simSS[-1,0]
+    begin_strain = max(min(expSS[:,0]), min(simSS[:,0]))
 
     def powerlaw(x,k,n):
         y = k * x**n
@@ -382,7 +413,7 @@ def calc_error():
 
     # interpolate points in both curves
     num_error_eval_pts = 1000
-    x_error_eval_pts = np.linspace(expSS[0,0], cutoff_strain, num = num_error_eval_pts)
+    x_error_eval_pts = np.linspace(begin_strain, cutoff_strain, num = num_error_eval_pts)
     smoothedSS = interp1d(simSS[:,0], simSS[:,1])
     if not uset.i_powerlaw:
         smoothedExp = interp1d(expSS[:,0], expSS[:,1])
@@ -397,9 +428,10 @@ def calc_error():
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    deviations = np.asarray([smoothedSS(x_error_eval_pts[i]) - fineSS[i] \
+    # for dual opt, error is normalized by exp value (root mean percent error instead of RMSE)
+    deviations_pct = np.asarray([100*(smoothedSS(x_error_eval_pts[i]) - fineSS[i])/fineSS[i] \
         for i in range(len(fineSS))])
-    rmse = np.sqrt(np.sum( deviations**2) / len(fineSS)) 
+    rmse = np.sqrt(np.sum( deviations_pct**2) / len(fineSS)) 
 
     return rmse
 
