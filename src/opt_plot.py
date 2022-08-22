@@ -13,8 +13,8 @@ import os
 from scipy.interpolate import interp1d
 import opt_input as uset
 
-def main():
-    data = np.load( os.path.join(os.getcwd(), 'out_time_disp_force.npy') )
+def main(orient):
+    data = np.load( os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy') )
     num_iter = len(data[0,0,:])
     #-----------------------------------------------------------------------------------------------
     # plot all trials, in order:
@@ -25,7 +25,7 @@ def main():
         ax.plot(eng_strain, eng_stress, alpha=0.2+(i+1)/num_iter*0.8,color='#696969')
 
     # plot experimental results:
-    exp_filename = 'temp_expSS.csv' if (float(uset.max_strain) == 0.0) else uset.exp_SS_file
+    exp_filename = uset.orientations[orient]['exp']
     exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
         label='Experimental ' + uset.grain_size_name)
@@ -50,7 +50,7 @@ def main():
 
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_opt_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
+        'res_opt_' + orient + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # print best paramters 
@@ -70,13 +70,18 @@ def main():
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
     name_to_sym = {
-        'Tau0':r'$\tau_0$',
-        'H0':r'$h_0$',
-        'TauS':r'$\tau_s$',
+        'Tau01':r'$\tau_0$',
+        'H01':r'$h_0$',
+        'TauS1':r'$\tau_s$',
+        'Tau02':r'$\tau_0^{(2)}$',
+        'H02':r'$h_0^{(2)}$',
+        'TauS2':r'$\tau_s^{(2)}$',
         'hs':r'$h_s$', 
         'gamma0':r'$\gamma_0$',
         'f0':r'$f_0$',
-        'q':r'$q$'}
+        'q':r'$q$',
+        'q1':r'$q_1$',
+        'q2':r'$q_2$'}
     legend_info = []
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
@@ -94,7 +99,7 @@ def main():
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
     plot_settings()
     plt.savefig(os.path.join(os.getcwd(), 
-        'res_single_' + uset.grain_size_name + '.png'), bbox_inches='tight', dpi=400)
+        'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot convergence
@@ -123,4 +128,5 @@ def get_param_value(param_name):
 
 
 if __name__ == '__main__':
-    main()
+    for orient in uset.orientations.keys():
+        main(orient=orient)
