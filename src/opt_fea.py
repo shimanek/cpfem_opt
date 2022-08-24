@@ -552,12 +552,15 @@ def calc_error(exp_data, orientation):
 
 
 def write_orientation_params(dir_load):
+    dir_ortho = np.array([1, 0, -dir_load[0]/dir_load[2]])
+    component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
+    component_values = 
     with open('mat_orient.inp', 'r') as f1:
         lines = f1.readlines()
     with open('temp_orient_file.inp', 'w+') as f2:    
         for line in lines:
             skip = False
-            for param in in_opt.params: $$ should have separate list for orientation vars
+            for param in 
                 if line[:line.find('=')].strip() == param:
                     f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
                     skip = True
