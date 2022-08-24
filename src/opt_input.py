@@ -2,6 +2,7 @@
 User settings for opt_fea.py and opt_plot.py
 """
 import os
+
 param_list = [
 	'Tau01', 'H01', 'TauS1', 
 	'Tau02', 'H02', 'TauS2'
@@ -11,8 +12,24 @@ param_bounds = [
 	(500,800), (4100,6000), (100,300)
 ]
 orientations = {
-	'001':{'exp':'exp_W-mX-001.csv','inp':'mat_orient_001.inp'},
-	'111':{'exp':'exp_W-mX-111.csv','inp':'mat_orient_111.inp'}
+	'001':{
+		'exp':'exp_W-mX-001.csv',
+		'dir_load':(0,0,1),
+		'offset':{
+			'dir_0deg':(0,1,1),
+			'mag_bounds':(0,1),
+			'deg_bounds':(0,90)
+		}
+	},
+	'111':{
+		'exp':'exp_W-mX-111.csv',
+		'dir_load':(1,1,1),
+		'offset':{
+			'dir_0deg':(0,1,1),
+			'mag_bounds':(0,1),
+			'deg_bounds':(0,90)
+		}
+	}
 }
 loop_len = 15
 n_initial_points = 5

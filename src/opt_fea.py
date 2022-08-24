@@ -10,6 +10,7 @@ if __name__ == '__main__':
     from skopt import Optimizer
     from scipy.interpolate import interp1d
     from scipy.optimize import curve_fit
+    from numpy.linalg import norm
 else:
     from odbAccess import *
     from abaqusConstants import *
@@ -20,10 +21,11 @@ import opt_input as uset  # user settings file
 
 def main():
     remove_out_files()
-    global exp_data
+    global exp_data, in_opt
     exp_data = ExpData(uset.orientations)
+    in_opt = InOpt()
     opt = Optimizer(
-        dimensions = as_float_tuples(uset.param_bounds), 
+        dimensions = in_opt.bounds, 
         base_estimator = 'gp',
         n_initial_points = uset.n_initial_points
         )
@@ -38,17 +40,18 @@ def loop(opt, loop_len):
     for i in range(loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
-            next_params = [round_sig(param) for param in opt.ask()]  # get and rounod parameters to test
-            write_parameters(next_params)  # write params to file
-
+            next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
             while param_check(uset.param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
                 opt.tell(next_params, max_rmse(i))
                 next_params = [round_sig(param) for param in opt.ask()] 
-                write_parameters(next_params)
             else:
-                # first orientation:
+                write_material_params(next_params)
                 for orient in uset.orientations.keys():
+
+                    # call function here to write new orientation files based on angle and magnitude
+                    write_orientation(next_params, orient)
+
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                     shutil.copy('{0}_{1}.inp'.format(uset.jobname,orient), '{0}.inp'.format(uset.jobname))
                     job_run()
@@ -147,6 +150,119 @@ class ExpData():
             f.writelines(lines[:bound_line_ind])
             f.writelines(new_bound_line_str)
             f.writelines(lines[bound_line_ind+1:])
+
+
+def write_orientation(next_params, orient):
+    def _get_new_dir():
+        """Write orientation file for one simulation based on orientation offset info."""
+        dir_load = uset['orientations'][orient]['dir_load']
+        dir_0deg = uset['orientations'][orient]['dir_0deg']
+
+        index_mag = in_opt.params.index(orient+'_mag')
+        index_deg = in_opt.params.index(orient+'_deg')
+        angle = next_params[index_angle]
+
+        col_load = norm(np.asarray(dir_load).transpose())
+        col_0deg = norm(np.asarray(dir_0deg))
+        col_cross = np.cross(col_load, col_0deg)
+
+        basis_og = np.hstack(col_load, col_0deg, col_cross)
+        basis_new = np.matmul(_mk_x_rot(angle*np.pi/180), basis_og)
+        dir_to = basis_new[:,1]
+        
+        sol = get_offset_angle(dir_load, dir_to, angle)
+        direction_tot = dir_load + sol * direction_to
+        return direction_tot
+
+    def  _write_orientation_file(orient, dir_load_new):
+
+        pass
+
+
+    if in_opt.has_orient_opt:
+        dir_load_new = _get_new_dir()
+        _write_orientation_file(orient, dir_load_new)
+        # then copy mat_orient.inp to named orient file?
+    else:
+        pass
+        # do nothing? copy over existing mat_orient_something.inp to mat_orient.inp ?
+
+
+    # have new loading orientation in direction_tot, should then write out to mat_orient file
+
+
+def _mk_x_rot(theta):
+    rot = np.array([[1,             0,              0],
+                    [0, np.cos(theta), -np.sin(theta)],
+                    [0, np.sin(theta),  np.cos(theta)]])
+    return rot
+
+
+def get_offset_angle(direction_og, direction_to, angle):
+    def _opt_angle(offset_amt):
+        """
+        Angle difference between original vector and new vector, which is
+        made by small offset toward new direction.  Returns zero when offset_amt 
+        produces new vector at desired angle.  Uses higher namespace variables so 
+        that the single argument can be tweaked by optimizer.
+        """
+        direction_new = direction_og + offset_amt * direction_to
+        angle_difference = \
+        np.dot(direction_og, direction_new) / \
+        ( norm(direction_og) * norm(direction_new) ) \
+        - np.cos(np.deg2rad(angle))
+        return angle_difference
+
+    sol = optimize.newton_krylov(_opt_angle, 0.01, f_tol=1e-10) 
+    # ^ default f_tol=1e-6 is insufficient
+    return sol
+
+
+class InOpt:
+    def __init__(self, orientations):
+        """Sorted orientations here defines order for use in single list passed to optimizer."""
+        self.orients = sorted(uset.orientations.keys())
+        self.params = []
+        self.bounds = []
+        for i in range(len(uset.param_list)):
+            self.params.append(uset.param_list[i])
+            self.bounds.append(uset.param_bounds[i])
+        self.num_params_material = len(self.params)
+        self.offsets = []
+        for orient in self.orients:
+            if 'offset' in uset.orientations[orient].keys():
+                self.offsets.append({orient:uset.orientations[orient]['offset'])
+                self.params.append(orient+'_deg')
+                self.bounds.append(uset.orientations[orient]['offset']['deg_bounds'])
+                self.params.append(orient+'_mag')
+                self.bounds.append(uset.orientations[orient]['offset']['mag_bounds'])
+        self.bounds = as_float_tuples(self.bounds)
+        self.num_params_total = len(self.params)
+        self.has_orient_opt = True if self.num_params_total == self.num_params_material else False
+
+
+        # self.param_dicts = []
+        # self.param_names = []
+        # self.param_bounds = []
+        # for i in range(len(uset.param_list)):
+        #     self.param_dicts.append({
+        #         uset.param_list[i] : uset.param_bounds[i]
+        #     })
+        # for orient in uset.orientations.keys():
+        #     self.param_dicts.append({
+        #         orient + '-deg' : uset.orientations[orient]['offset']['deg_bounds']
+        #         orient + '-mag' : uset.orientations[orient]['offset']['mag_bounds']            
+        #     })
+
+
+
+    # num_material = len(uset.param_bounds)
+    # num_orient = 0
+    # for orient in uset.orientations.keys():
+    #     if uset.orientations[orient]['offset']['mag_bounds']: num_orient += 1
+    #     if uset.orientations[orient]['offset']['deg_bounds']: num_orient += 1
+    # return {'mat':num_material, 'orient':num_orient, 'tot':(num_orient + num_material)}
+    # return param_dicts
 
 
 def as_float_tuples(list_of_tuples):
@@ -316,7 +432,6 @@ def refine_run(ct=0):
     ct += 1
     # remove old lock file from previous unfinished simulation
     subprocess.run('rm *.lck', shell=True)
-    # find input file TODO put main input file name up top, not hardcoded as here
     filename = uset.jobname + '.inp'
     tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
@@ -436,7 +551,24 @@ def calc_error(exp_data, orientation):
     return rmse
 
 
-def write_parameters(next_params):
+def write_orientation_params(dir_load):
+    with open('mat_orient.inp', 'r') as f1:
+        lines = f1.readlines()
+    with open('temp_orient_file.inp', 'w+') as f2:    
+        for line in lines:
+            skip = False
+            for param in in_opt.params: $$ should have separate list for orientation vars
+                if line[:line.find('=')].strip() == param:
+                    f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
+                    skip = True
+            if not skip:
+                f2.write(line)
+
+    os.remove(uset.param_file)
+    os.rename('temp_mat_file.inp', uset.param_file)
+
+
+def write_material_params(next_params):
     """
     Going in order of `uset.Param_list`, write new parameter values to the Abaqus 
     material input file. 
