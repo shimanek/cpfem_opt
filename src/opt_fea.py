@@ -48,19 +48,16 @@ def loop(opt, loop_len):
             else:
                 write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
                 for orient in uset.orientations.keys():
-
-                    # call function here to write new orientation files based on angle and magnitude
-                    orient_components = get_orient_components(next_params, orient)
-                    write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+                    if in_opt.has_orient_opt:
+                        orient_components = get_orient_components(next_params, orient)
+                        write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                     shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
                     
                     job_run()
-                    if not check_complete():
-                    # try decreasing max increment size
+                    if not check_complete(): # try decreasing max increment size
                         refine_run()
-                    if not check_complete():
-                    # if it still fails, write max_rmse, go to next parameterset
+                    if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
                         write_maxRMSE(i, next_params, opt, orientation=orient)
                         return
                     else:
@@ -180,18 +177,6 @@ def get_orient_info(next_params, orient):
     component_values = list(dir_ortho) + list(dir_tot)
 
     return {'names':component_names, 'values':component_values}
-
-
-    if in_opt.has_orient_opt:
-        dir_load_new = _get_new_dir()
-        _write_orientation_file(orient, dir_load_new)
-        # then copy mat_orient.inp to named orient file?
-    else:
-        pass
-        # do nothing? copy over existing mat_orient_something.inp to mat_orient.inp ?
-
-
-    # have new loading orientation in direction_tot, should then write out to mat_orient file
 
 
 def _mk_x_rot(theta):
