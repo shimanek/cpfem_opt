@@ -155,7 +155,7 @@ def get_orient_info(next_params, orient):
     Get components of orientation-defining vectors and their names
     for substitution into the orientation input files.
     """
-    dir_load = uset.orientations[orient]['offset']['dir_load']
+    dir_load = uset.orientations[orient]['dir_load']
     dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
 
     index_mag = in_opt.params.index(orient+'_mag')
