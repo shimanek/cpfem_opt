@@ -50,11 +50,11 @@ def loop(opt, loop_len):
                 for orient in uset.orientations.keys():
 
                     # call function here to write new orientation files based on angle and magnitude
-                    orient_info = get_orient_info(next_params[in_opt.num_params_material:in_opt.num_params_material+2])
-                    write_params('mat_orient.inp', in_opt.orient_params, orient_info)
-
+                    orient_components = get_orient_components(next_params, orient)
+                    write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                    shutil.copy('{0}_{1}.inp'.format(uset.jobname,orient), '{0}.inp'.format(uset.jobname))
+                    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+                    
                     job_run()
                     if not check_complete():
                     # try decreasing max increment size
@@ -153,31 +153,33 @@ class ExpData():
             f.writelines(lines[bound_line_ind+1:])
 
 
-def write_orientation(next_params, orient):
-    def _get_new_dir():
-        """Write orientation file for one simulation based on orientation offset info."""
-        dir_load = uset['orientations'][orient]['dir_load']
-        dir_0deg = uset['orientations'][orient]['dir_0deg']
+def get_orient_info(next_params, orient):
+    """
+    Get components of orientation-defining vectors and their names
+    for substitution into the orientation input files.
+    """
+    dir_load = uset['orientations'][orient]['dir_load']
+    dir_0deg = uset['orientations'][orient]['dir_0deg']
 
-        index_mag = in_opt.params.index(orient+'_mag')
-        index_deg = in_opt.params.index(orient+'_deg')
-        angle = next_params[index_angle]
+    index_mag = in_opt.params.index(orient+'_mag')
+    index_deg = in_opt.params.index(orient+'_deg')
+    angle = next_params[index_angle]
 
-        col_load = norm(np.asarray(dir_load).transpose())
-        col_0deg = norm(np.asarray(dir_0deg))
-        col_cross = np.cross(col_load, col_0deg)
+    col_load = norm(np.asarray(dir_load).transpose())
+    col_0deg = norm(np.asarray(dir_0deg))
+    col_cross = np.cross(col_load, col_0deg)
 
-        basis_og = np.hstack(col_load, col_0deg, col_cross)
-        basis_new = np.matmul(_mk_x_rot(angle*np.pi/180), basis_og)
-        dir_to = basis_new[:,1]
-        
-        sol = get_offset_angle(dir_load, dir_to, angle)
-        direction_tot = dir_load + sol * direction_to
-        return direction_tot
+    basis_og = np.hstack(col_load, col_0deg, col_cross)
+    basis_new = np.matmul(_mk_x_rot(angle*np.pi/180), basis_og)
+    dir_to = basis_new[:,1]
+    
+    sol = get_offset_angle(dir_load, dir_to, angle)
+    dir_tot = dir_load + sol * dir_to
+    dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
+    component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
+    component_values = list(dir_ortho) + list(dir_tot)
 
-    def  _write_orientation_file(orient, dir_load_new):
-
-        pass
+    return {'names':component_names, 'values':component_values}
 
 
     if in_opt.has_orient_opt:
@@ -230,6 +232,7 @@ class InOpt:
         for i in range(len(uset.param_list)):
             self.material_params.append(uset.param_list[i])
             self.material_bounds.append(uset.param_bounds[i])
+        
         # add orientation offset info:
         self.offsets = []
         for orient in self.orients:
@@ -239,9 +242,11 @@ class InOpt:
                 self.orient_bounds.append(uset.orientations[orient]['offset']['deg_bounds'])
                 self.orient_params.append(orient+'_mag')
                 self.orient_bounds.append(uset.orientations[orient]['offset']['mag_bounds'])
+        
         # combine material and orient info into one ordered list:
         self.params = self.material_params + self.orient_params
         self.bounds = as_float_tuples(self.material_bounds + self.orient_bounds)
+        
         # descriptive stats on input object:
         self.num_params_material = len(self.material_params)
         self.num_params_orient = len(self.orient_params)
