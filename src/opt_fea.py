@@ -189,6 +189,7 @@ def _mk_x_rot(theta):
 
 
 def get_offset_angle(direction_og, direction_to, angle):
+    print('debug direction_og, direction_to, angle', direction_og, direction_to, angle)
     def _opt_angle(offset_amt):
         """
         Angle difference between original vector and new vector, which is
