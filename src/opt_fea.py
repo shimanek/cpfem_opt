@@ -163,9 +163,9 @@ def get_orient_info(next_params, orient):
     angle = next_params[index_deg]
 
     col_load = np.asarray(dir_load).transpose()
-    col_load /= norm(col_load)
+    col_load = col_load/norm(col_load)
     col_0deg = np.asarray(dir_0deg)
-    col_0deg /= norm(col_0deg)
+    col_0deg = col_0deg/norm(col_0deg)
     col_cross = np.cross(col_load, col_0deg)
 
     basis_og = np.hstack(col_load, col_0deg, col_cross)
