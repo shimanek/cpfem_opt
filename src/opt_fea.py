@@ -49,7 +49,7 @@ def loop(opt, loop_len):
                 write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
                 for orient in uset.orientations.keys():
                     if in_opt.has_orient_opt:
-                        orient_components = get_orient_components(next_params, orient)
+                        orient_components = get_orient_info(next_params, orient)
                         write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                     shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
@@ -155,8 +155,8 @@ def get_orient_info(next_params, orient):
     Get components of orientation-defining vectors and their names
     for substitution into the orientation input files.
     """
-    dir_load = uset['orientations'][orient]['dir_load']
-    dir_0deg = uset['orientations'][orient]['dir_0deg']
+    dir_load = uset.orientations[orient]['dir_load']
+    dir_0deg = uset.orientations[orient]['dir_0deg']
 
     index_mag = in_opt.params.index(orient+'_mag')
     index_deg = in_opt.params.index(orient+'_deg')
