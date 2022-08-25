@@ -9,7 +9,7 @@ if __name__ == '__main__':
     import numpy as np
     from skopt import Optimizer
     from scipy.interpolate import interp1d
-    from scipy.optimize import curve_fit
+    from scipy.optimize import curve_fit, newton_krylov
     from numpy.linalg import norm
 else:
     from odbAccess import *
@@ -203,7 +203,7 @@ def get_offset_angle(direction_og, direction_to, angle):
         - np.cos(np.deg2rad(angle))
         return angle_difference
 
-    sol = optimize.newton_krylov(_opt_angle, 0.01, f_tol=1e-10) 
+    sol = newton_krylov(_opt_angle, 0.01, f_tol=1e-10) 
     # ^ default f_tol=1e-6 is insufficient
     return sol
 
