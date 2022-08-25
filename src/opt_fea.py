@@ -23,7 +23,7 @@ def main():
     remove_out_files()
     global exp_data, in_opt
     exp_data = ExpData(uset.orientations)
-    in_opt = InOpt()
+    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     opt = Optimizer(
         dimensions = in_opt.bounds, 
         base_estimator = 'gp',
@@ -207,26 +207,26 @@ def get_offset_angle(direction_og, direction_to, angle):
 
 
 class InOpt:
-    def __init__(self, orientations):
+    def __init__(self, orientations, param_list, param_bounds):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
-        self.orients = sorted(uset.orientations.keys())
+        self.orients = sorted(orientations.keys())
         self.params, self.bounds, \
         self.material_params, self.material_bounds, \
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
-        for i in range(len(uset.param_list)):
-            self.material_params.append(uset.param_list[i])
-            self.material_bounds.append(uset.param_bounds[i])
+        for i in range(len(param_list)):
+            self.material_params.append(param_list[i])
+            self.material_bounds.append(param_bounds[i])
         
         # add orientation offset info:
         self.offsets = []
         for orient in self.orients:
-            if 'offset' in uset.orientations[orient].keys():
-                self.offsets.append({orient:uset.orientations[orient]['offset']})
+            if 'offset' in orientations[orient].keys():
+                self.offsets.append({orient:orientations[orient]['offset']})
                 self.orient_params.append(orient+'_deg')
-                self.orient_bounds.append(uset.orientations[orient]['offset']['deg_bounds'])
+                self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
                 self.orient_params.append(orient+'_mag')
-                self.orient_bounds.append(uset.orientations[orient]['offset']['mag_bounds'])
+                self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
         
         # combine material and orient info into one ordered list:
         self.params = self.material_params + self.orient_params

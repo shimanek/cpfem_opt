@@ -13,7 +13,7 @@ param_bounds = [
 	]
 orientations = {
 	'001':{
-		'exp':'exp_W-mX-001.csv',
+		'exp':'exp_Cu-mX-001.csv',
 		'dir_load':(0,0,1),
 		'offset':{
 			'dir_0deg':(0,1,1),
@@ -22,7 +22,7 @@ orientations = {
 			}
 		},
 	'111':{
-		'exp':'exp_W-mX-111.csv',
+		'exp':'exp_Cu-mX-111.csv',
 		'dir_load':(1,1,1),
 		'offset':{
 			'dir_0deg':(0,1,1),
