@@ -160,7 +160,7 @@ def get_orient_info(next_params, orient):
 
     index_mag = in_opt.params.index(orient+'_mag')
     index_deg = in_opt.params.index(orient+'_deg')
-    angle = next_params[index_angle]
+    angle = next_params[index_deg]
 
     col_load = norm(np.asarray(dir_load).transpose())
     col_0deg = norm(np.asarray(dir_0deg))
