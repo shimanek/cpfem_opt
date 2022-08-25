@@ -347,23 +347,18 @@ def param_check(param_list):
     True if tau0 >= tauS, which is bad, not practically but in theory.
     In theory, tau0 should always come before tauS.
     """
-    if ('TauS1' in param_list) or ('Tau01' in param_list):
-        f1 = open(uset.param_file, 'r')
-        lines = f1.readlines()
-        for line in lines:
-            if line.startswith('Tau01'): tau01 = float(line[7:])
-            if line.startswith('TauS1'): tauS1 = float(line[7:])
-        f1.close()
-    if ('TauS2' in param_list) or ('Tau02' in param_list):
-        f1 = open(uset.param_file, 'r')
-        lines = f1.readlines()
-        for line in lines:
-            if line.startswith('Tau02'): tau02 = float(line[7:])
-            if line.startswith('TauS2'): tauS2 = float(line[7:])
-        f1.close()
-    else:
-        return False
-    return (tau01 >= tauS1) & (tau02 >= tauS2)
+    # TODO: should work for any Tau0, TauS for multiple or single systems
+    tau0_list, tauS_list = [], []
+    for sysnum in ['', '1', '2']:
+        if ('TauS'+sysnum in param_list) or ('Tau0'+sysnum in param_list):
+            f1 = open(uset.param_file, 'r')
+            lines = f1.readlines()
+            for line in lines:
+                if line.startswith('Tau0'+sysnum): tau0_list.append(float(line[7:]))
+                if line.startswith('TauS'+sysnum): tauS_list.append(float(line[7:]))
+            f1.close()
+    is_bad = any([(tau0 >= tauS) for tau0, tauS in zip(tau0_list, tauS_list)])
+    return is_bad
 
 
 def max_rmse(loop_number):
