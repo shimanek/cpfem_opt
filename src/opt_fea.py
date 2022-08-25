@@ -46,11 +46,12 @@ def loop(opt, loop_len):
                 opt.tell(next_params, max_rmse(i))
                 next_params = [round_sig(param) for param in opt.ask()] 
             else:
-                write_material_params(next_params)
+                write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
                 for orient in uset.orientations.keys():
 
                     # call function here to write new orientation files based on angle and magnitude
-                    write_orientation(next_params, orient)
+                    orient_info = get_orient_info(next_params[in_opt.num_params_material:in_opt.num_params_material+2])
+                    write_params('mat_orient.inp', in_opt.orient_params, orient_info)
 
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                     shutil.copy('{0}_{1}.inp'.format(uset.jobname,orient), '{0}.inp'.format(uset.jobname))
@@ -222,47 +223,30 @@ class InOpt:
     def __init__(self, orientations):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
         self.orients = sorted(uset.orientations.keys())
-        self.params = []
-        self.bounds = []
+        self.params, self.bounds, 
+            self.material_params, self.material_bounds,
+            self.orient_params, self.orient_bounds \
+            = ([] for i in range(6))
         for i in range(len(uset.param_list)):
-            self.params.append(uset.param_list[i])
-            self.bounds.append(uset.param_bounds[i])
-        self.num_params_material = len(self.params)
+            self.material_params.append(uset.param_list[i])
+            self.material_bounds.append(uset.param_bounds[i])
+        # add orientation offset info:
         self.offsets = []
         for orient in self.orients:
             if 'offset' in uset.orientations[orient].keys():
-                self.offsets.append({orient:uset.orientations[orient]['offset'])
-                self.params.append(orient+'_deg')
-                self.bounds.append(uset.orientations[orient]['offset']['deg_bounds'])
-                self.params.append(orient+'_mag')
-                self.bounds.append(uset.orientations[orient]['offset']['mag_bounds'])
-        self.bounds = as_float_tuples(self.bounds)
+                self.offsets.append({orient:uset.orientations[orient]['offset']})
+                self.orient_params.append(orient+'_deg')
+                self.orient_bounds.append(uset.orientations[orient]['offset']['deg_bounds'])
+                self.orient_params.append(orient+'_mag')
+                self.orient_bounds.append(uset.orientations[orient]['offset']['mag_bounds'])
+        # combine material and orient info into one ordered list:
+        self.params = self.material_params + self.orient_params
+        self.bounds = as_float_tuples(self.material_bounds + self.orient_bounds)
+        # descriptive stats on input object:
+        self.num_params_material = len(self.material_params)
+        self.num_params_orient = len(self.orient_params)
         self.num_params_total = len(self.params)
-        self.has_orient_opt = True if self.num_params_total == self.num_params_material else False
-
-
-        # self.param_dicts = []
-        # self.param_names = []
-        # self.param_bounds = []
-        # for i in range(len(uset.param_list)):
-        #     self.param_dicts.append({
-        #         uset.param_list[i] : uset.param_bounds[i]
-        #     })
-        # for orient in uset.orientations.keys():
-        #     self.param_dicts.append({
-        #         orient + '-deg' : uset.orientations[orient]['offset']['deg_bounds']
-        #         orient + '-mag' : uset.orientations[orient]['offset']['mag_bounds']            
-        #     })
-
-
-
-    # num_material = len(uset.param_bounds)
-    # num_orient = 0
-    # for orient in uset.orientations.keys():
-    #     if uset.orientations[orient]['offset']['mag_bounds']: num_orient += 1
-    #     if uset.orientations[orient]['offset']['deg_bounds']: num_orient += 1
-    # return {'mat':num_material, 'orient':num_orient, 'tot':(num_orient + num_material)}
-    # return param_dicts
+        self.has_orient_opt = True if self.num_params_orient>0 else False
 
 
 def as_float_tuples(list_of_tuples):
@@ -551,45 +535,25 @@ def calc_error(exp_data, orientation):
     return rmse
 
 
-def write_orientation_params(dir_load):
-    dir_ortho = np.array([1, 0, -dir_load[0]/dir_load[2]])
-    component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
-    component_values = 
-    with open('mat_orient.inp', 'r') as f1:
+def write_params(fname, param_names, param_values):
+    """
+    Write parameter values to file with `=` as separator.
+    Used for material and orientation input files.
+    'param_names': list of strings, shares order with 'param_values'
+    """
+    with open(fname, 'r') as f1:
         lines = f1.readlines()
-    with open('temp_orient_file.inp', 'w+') as f2:    
+    with open('temp_' + fname, 'w+') as f2:
         for line in lines:
             skip = False
-            for param in 
-                if line[:line.find('=')].strip() == param:
-                    f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
+            for param_name, param_value in zip(param_names, param_values):
+                if line[:line.find('=')].strip() == param_name:
+                    f2.write(param_name + ' = ' + param_value + '\n')
                     skip = True
             if not skip:
                 f2.write(line)
-
-    os.remove(uset.param_file)
-    os.rename('temp_mat_file.inp', uset.param_file)
-
-
-def write_material_params(next_params):
-    """
-    Going in order of `uset.Param_list`, write new parameter values to the Abaqus 
-    material input file. 
-    """
-    with open(uset.param_file, 'r') as f1:
-        lines = f1.readlines()
-    with open('temp_mat_file.inp', 'w+') as f2:    
-        for line in lines:
-            skip = False
-            for param in uset.param_list:
-                if line[:line.find('=')].strip() == param:
-                    f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
-                    skip = True
-            if not skip:
-                f2.write(line)
-
-    os.remove(uset.param_file)
-    os.rename('temp_mat_file.inp', uset.param_file)
+    os.remove(fname)
+    os.rename('temp_' + fname, fname)
 
 
 class GetForceDisplacement(object):
