@@ -210,9 +210,9 @@ class InOpt:
     def __init__(self, orientations):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
         self.orients = sorted(uset.orientations.keys())
-        self.params, self.bounds, 
-            self.material_params, self.material_bounds,
-            self.orient_params, self.orient_bounds \
+        self.params, self.bounds, \
+        self.material_params, self.material_bounds, \
+        self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
         for i in range(len(uset.param_list)):
             self.material_params.append(uset.param_list[i])
