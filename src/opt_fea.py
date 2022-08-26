@@ -173,10 +173,19 @@ def get_orient_info(next_params, orient):
     col_0deg = col_0deg/norm(col_0deg)
     col_cross = np.cross(col_load, col_0deg)
 
-    basis_og = np.stack((col_load.transpose(), col_0deg.transpose(), col_cross.transpose()), axis=1)
+    basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
     basis_new = np.matmul(_mk_x_rot(angle_deg*np.pi/180), basis_og)
     dir_to = basis_new[:,1]
-    
+
+    if True:  # ck angles for angle_deg rotation:
+        vector_rotated = np.asarray(dir_load) - np.asarray(dir_to)
+        vector_0deg = np.asarray(dir_load) - np.asarray(dir_0deg)
+        proj_rot = np.dot(vector_rotated, np.array([1,1,0]))
+        proj_0deg = np.dot(vector_0deg, np.array([1,1,0]))
+        angle_test = np.arccos(np.dot(proj_0deg, proj_rot)/(norm(proj_0deg)*norm(proj_rot)))*180./np.pi
+        with open('debug.txt', 'w') as f:
+            f.write('angle inp: {0}\tangle out: {1}\n'.format(angle_mag, angle_test))
+
     sol = get_offset_angle(dir_load, dir_to, angle_mag)
     dir_tot = dir_load + sol * dir_to
     dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
@@ -357,6 +366,7 @@ def param_check(param_list):
     True if tau0 >= tauS, which is bad, not practically but in theory.
     In theory, tau0 should always come before tauS.
     """
+    # TODO: ck if it's possible to satisfy this based on mat_params and bounds, raise helpful error
     tau0_list, tauS_list = [], []
     for sysnum in ['', '1', '2']:
         if ('TauS'+sysnum in param_list) or ('Tau0'+sysnum in param_list):
