@@ -49,7 +49,7 @@ def loop(opt, loop_len):
             else:
                 write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
                 for orient in uset.orientations.keys():
-                    if in_opt.has_orient_opt:
+                    if in_opt.has_orient_opt[orient]:
                         # TODO should test each orient independently in above
                         orient_components = get_orient_info(next_params, orient)
                         write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
@@ -225,6 +225,7 @@ class InOpt:
         
         # add orientation offset info:
         self.offsets = []
+        self.has_orient_opt = {}
         for orient in self.orients:
             if 'offset' in orientations[orient].keys():
                 self.offsets.append({orient:orientations[orient]['offset']})
@@ -232,6 +233,9 @@ class InOpt:
                 self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
                 self.orient_params.append(orient+'_mag')
                 self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                self.has_orient_opt[orient] = True
+            else:
+                self.has_orient_opt[orient] = False
         
         # combine material and orient info into one ordered list:
         self.params = self.material_params + self.orient_params
@@ -241,7 +245,6 @@ class InOpt:
         self.num_params_material = len(self.material_params)
         self.num_params_orient = len(self.orient_params)
         self.num_params_total = len(self.params)
-        self.has_orient_opt = True if self.num_params_orient>0 else False
 
 
 def as_float_tuples(list_of_tuples):
