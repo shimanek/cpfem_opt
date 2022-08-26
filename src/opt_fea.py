@@ -22,6 +22,7 @@ import opt_input as uset  # user settings file
 def main():
     remove_out_files()
     global exp_data, in_opt
+    # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     opt = Optimizer(
@@ -267,8 +268,8 @@ def load_subroutine():
 
 def write_opt_progress():
     global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + uset.param_list + ['RMSE'])
-    np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
+    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
+    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
 
 
 def update_progress(i, next_params, rmse):
@@ -352,7 +353,6 @@ def param_check(param_list):
     True if tau0 >= tauS, which is bad, not practically but in theory.
     In theory, tau0 should always come before tauS.
     """
-    # TODO: should work for any Tau0, TauS for multiple or single systems
     tau0_list, tauS_list = [], []
     for sysnum in ['', '1', '2']:
         if ('TauS'+sysnum in param_list) or ('Tau0'+sysnum in param_list):
