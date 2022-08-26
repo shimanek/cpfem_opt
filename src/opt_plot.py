@@ -70,18 +70,28 @@ def main(orient):
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
     name_to_sym = {
-        'Tau01':r'$\tau_0$',
-        'H01':r'$h_0$',
-        'TauS1':r'$\tau_s$',
+        'Tau0':r'$\tau_0$',
+        'Tau01':r'$\tau_0^{(1)}$',
         'Tau02':r'$\tau_0^{(2)}$',
-        'H02':r'$h_0^{(2)}$',
+        'H0':r'$h_0$',
+        'H01':r'$h_0^{(1)}$',
+        'H01':r'$h_0^{(2)}$',
+        'TauS':r'$\tau_s$',
+        'TauS1':r'$\tau_s^{(1)}$',
         'TauS2':r'$\tau_s^{(2)}$',
-        'hs':r'$h_s$', 
-        'gamma0':r'$\gamma_0$',
-        'f0':r'$f_0$',
         'q':r'$q$',
         'q1':r'$q_1$',
-        'q2':r'$q_2$'}
+        'q2':r'$q_2$'
+        'hs':r'$h_s$',
+        'hs1':r'$h_s^{(1)}$',
+        'hs2':r'$h_s^{(2)}$',
+        'gamma0':r'$\gamma_0$',
+        'gamma01':r'$\gamma_0^{(1)}$',
+        'gamma02':r'$\gamma_0^{(2)}$',
+        'f0':r'$f_0$',
+        'f01':r'$f_0^{(1)}$',
+        'f02':r'$f_0^{(2)}$',
+        }
     legend_info = []
     for i, param in enumerate(uset.param_list):
         # 1st entry in best_params is iteration number, so use i+1
