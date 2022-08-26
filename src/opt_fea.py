@@ -30,7 +30,7 @@ def main():
         n_initial_points = uset.n_initial_points
         )
     load_opt(opt)
-    load_subroutine()
+    # load_subroutine()
 
     loop(opt, uset.loop_len)
 
@@ -49,9 +49,11 @@ def loop(opt, loop_len):
                 write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
                 for orient in uset.orientations.keys():
                     if in_opt.has_orient_opt:
+                        # TODO should test each orient independently in above
                         orient_components = get_orient_info(next_params, orient)
                         write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
-                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                    else:
+                        shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                     shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
                     
                     job_run()
@@ -160,7 +162,8 @@ def get_orient_info(next_params, orient):
 
     index_mag = in_opt.params.index(orient+'_mag')
     index_deg = in_opt.params.index(orient+'_deg')
-    angle = next_params[index_deg]
+    angle_deg = next_params[index_deg]
+    angle_mag = next_params[index_mag]
 
     col_load = np.asarray(dir_load)
     col_load = col_load/norm(col_load)
@@ -169,10 +172,10 @@ def get_orient_info(next_params, orient):
     col_cross = np.cross(col_load, col_0deg)
 
     basis_og = np.stack((col_load.transpose(), col_0deg.transpose(), col_cross.transpose()), axis=1)
-    basis_new = np.matmul(_mk_x_rot(angle*np.pi/180), basis_og)
+    basis_new = np.matmul(_mk_x_rot(angle_deg*np.pi/180), basis_og)
     dir_to = basis_new[:,1]
     
-    sol = get_offset_angle(dir_load, dir_to, angle)
+    sol = get_offset_angle(dir_load, dir_to, angle_mag)
     dir_tot = dir_load + sol * dir_to
     dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
     component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
@@ -189,7 +192,6 @@ def _mk_x_rot(theta):
 
 
 def get_offset_angle(direction_og, direction_to, angle):
-    print('debug direction_og, direction_to, angle', direction_og, direction_to, angle)
     def _opt_angle(offset_amt):
         """
         Angle difference between original vector and new vector, which is
@@ -536,7 +538,7 @@ def write_params(fname, param_names, param_values):
             skip = False
             for param_name, param_value in zip(param_names, param_values):
                 if line[:line.find('=')].strip() == param_name:
-                    f2.write(param_name + ' = ' + param_value + '\n')
+                    f2.write(param_name + ' = ' + str(param_value) + '\n')
                     skip = True
             if not skip:
                 f2.write(line)
