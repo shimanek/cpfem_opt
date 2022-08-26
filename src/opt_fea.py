@@ -9,7 +9,7 @@ if __name__ == '__main__':
     import numpy as np
     from skopt import Optimizer
     from scipy.interpolate import interp1d
-    from scipy.optimize import curve_fit, newton_krylov
+    from scipy.optimize import curve_fit, root
     from numpy.linalg import norm
 else:
     from odbAccess import *
@@ -193,7 +193,7 @@ def _mk_x_rot(theta):
 
 
 def get_offset_angle(direction_og, direction_to, angle):
-    def _opt_angle(offset_amt):
+    def _opt_angle(offset_amt, direction_og, direction_to, angle):
         """
         Angle difference between original vector and new vector, which is
         made by small offset toward new direction.  Returns zero when offset_amt 
@@ -202,13 +202,12 @@ def get_offset_angle(direction_og, direction_to, angle):
         """
         direction_new = direction_og + offset_amt * direction_to
         angle_difference = \
-        np.dot(direction_og, direction_new) / \
-        ( norm(direction_og) * norm(direction_new) ) \
-        - np.cos(np.deg2rad(angle))
+            np.dot(direction_og, direction_new) / \
+            ( norm(direction_og) * norm(direction_new) ) \
+            - np.cos(np.deg2rad(angle))
         return angle_difference
 
-    sol = newton_krylov(_opt_angle, 0.01, f_tol=1e-10) 
-    # ^ default f_tol=1e-6 is insufficient
+    sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x
     return sol
 
 
@@ -258,6 +257,7 @@ def as_float_tuples(list_of_tuples):
 
 
 def round_sig(x, sig=4):
+    if x == 0.0: return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
 
