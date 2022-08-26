@@ -75,7 +75,7 @@ def main(orient):
         'Tau02':r'$\tau_0^{(2)}$',
         'H0':r'$h_0$',
         'H01':r'$h_0^{(1)}$',
-        'H01':r'$h_0^{(2)}$',
+        'H02':r'$h_0^{(2)}$',
         'TauS':r'$\tau_s$',
         'TauS1':r'$\tau_s^{(1)}$',
         'TauS2':r'$\tau_s^{(2)}$',
@@ -91,6 +91,10 @@ def main(orient):
         'f0':r'$f_0$',
         'f01':r'$f_0^{(1)}$',
         'f02':r'$f_0^{(2)}$',
+        'qA1':r'$q_{A1}$',
+        'qB1':r'$q_{B1}$',
+        'qA2':r'$q_{A2}$',
+        'qB2':r'$q_{B2}$'
         }
     legend_info = []
     for i, param in enumerate(uset.param_list):
