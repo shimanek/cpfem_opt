@@ -66,7 +66,8 @@ def loop(opt, loop_len):
                         return
                     else:
                         job_extract(orient)  # extract data to temp_time_disp_force.csv
-                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), delimiter=',', skiprows=1)[:,1:2]) == 0:
+                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), 
+                                delimiter=',', skiprows=1)[:,1:2]) == 0:
                             write_maxRMSE(i, next_params, opt, orientation=orient)
                             return
                         combine_SS(zeros=False, orientation=orient)  # save stress-strain data
@@ -180,11 +181,14 @@ def get_orient_info(next_params, orient):
     if True:  # ck angles for angle_deg rotation:
         vector_rotated = np.asarray(dir_load) - np.asarray(dir_to)
         vector_0deg = np.asarray(dir_load) - np.asarray(dir_0deg)
-        proj_rot = np.dot(vector_rotated, np.array([1,1,0]))
-        proj_0deg = np.dot(vector_0deg, np.array([1,1,0]))
+        vector_proj = np.array([1,1,0])/norm(np.array([1,1,0])) @@ERROR@@ # something... Can we get from dir_load and dir_0deg?
+        proj_rot = vector_proj * np.dot(vector_rotated, vector_proj)
+        proj_0deg = vector_proj * np.dot(vector_0deg, vector_proj)
         angle_test = np.arccos(np.dot(proj_0deg, proj_rot)/(norm(proj_0deg)*norm(proj_rot)))*180./np.pi
-        with open('debug.txt', 'w') as f:
-            f.write('angle inp: {0}\tangle out: {1}\n'.format(angle_mag, angle_test))
+        with open('debug.txt', 'a+') as f:
+            f.write('vector_rotated: {0}\tvector_0deg: {1}\n'.format(vector_rotated, vector_0deg))
+            f.write('proj_rot: {0}\tproj_0deg: {1}\n'.format(proj_rot, proj_0deg))
+            f.write('angle inp: {0}\tangle_test: {1}\n'.format(angle_deg, angle_test))
 
     sol = get_offset_angle(dir_load, dir_to, angle_mag)
     dir_tot = dir_load + sol * dir_to
