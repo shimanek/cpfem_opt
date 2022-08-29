@@ -178,21 +178,46 @@ def get_orient_info(next_params, orient):
     basis_new = np.matmul(_mk_x_rot(angle_deg*np.pi/180), basis_og)
     dir_to = basis_new[:,1]
 
-    if True:  # ck angles for angle_deg rotation:
+    if True:  # debug angles for angle_deg rotation:
+        dir_load = dir_load / norm(dir_load)
+        dir_to = dir_to / norm(dir_to)
+        dir_0deg = dir_0deg / norm(dir_0deg)
+
         vector_rotated = np.asarray(dir_load) - np.asarray(dir_to)
         vector_0deg = np.asarray(dir_load) - np.asarray(dir_0deg)
-        vector_proj = np.array([1,1,0])/norm(np.array([1,1,0])) @@ERROR@@ # something... Can we get from dir_load and dir_0deg?
-        proj_rot = vector_proj * np.dot(vector_rotated, vector_proj)
-        proj_0deg = vector_proj * np.dot(vector_0deg, vector_proj)
+        plane_normal = np.array([1,1,0])/norm(np.array([1,1,0]))
+
+        norm_rotated = plane_normal * np.dot(vector_rotated, plane_normal)
+        norm_0deg = plane_normal * np.dot(vector_0deg, plane_normal)
+
+        proj_rot = vector_rotated - norm_rotated
+        proj_0deg = vector_0deg - norm_0deg
+
         angle_test = np.arccos(np.dot(proj_0deg, proj_rot)/(norm(proj_0deg)*norm(proj_rot)))*180./np.pi
         with open('debug.txt', 'a+') as f:
+            f.write('\nbasis OG: \n{0}'.format(basis_og))
+            f.write('\n')
+            f.write('\nrotation: \n{0}'.format(_mk_x_rot(angle_deg*np.pi/180.)))
+            f.write('\n')
+            f.write('\nbasis new: \n{0}'.format(basis_new))
+            f.write('\n\n')
+            f.write('dir_load: {0}\tdir_to: {1}\n'.format(dir_load, dir_to))
             f.write('vector_rotated: {0}\tvector_0deg: {1}\n'.format(vector_rotated, vector_0deg))
             f.write('proj_rot: {0}\tproj_0deg: {1}\n'.format(proj_rot, proj_0deg))
-            f.write('angle inp: {0}\tangle_test: {1}\n'.format(angle_deg, angle_test))
+            f.write('angle_inp: {0}\tangle_test: {1}\n\n'.format(angle_deg, angle_test))
 
     sol = get_offset_angle(dir_load, dir_to, angle_mag)
     dir_tot = dir_load + sol * dir_to
     dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
+
+    if True:
+        angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
+        with open('debug.txt', 'a+') as f:
+            f.write('\n')
+            f.write('\ndir_tot: {0}'.format(dir_tot))
+            f.write('\ndir_ortho: {0}'.format(dir_ortho))
+            f.write('\nangle_input: {}\tangle_output:{}'.format(angle_mag, angle_output))
+            f.write('\n\n')
     component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
     component_values = list(dir_ortho) + list(dir_tot)
 
