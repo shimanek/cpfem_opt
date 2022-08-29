@@ -175,7 +175,7 @@ def get_orient_info(next_params, orient):
     col_cross = np.cross(col_load, col_0deg)
 
     basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
-    basis_new = np.matmul(_mk_x_rot(angle_deg*np.pi/180), basis_og)
+    basis_new = np.matmul(basis_og, _mk_x_rot(angle_deg*np.pi/180.))
     dir_to = basis_new[:,1]
 
     if True:  # debug angles for angle_deg rotation:
@@ -225,6 +225,10 @@ def get_orient_info(next_params, orient):
 
 
 def _mk_x_rot(theta):
+    """
+    Generates rotation matrix for theta (radians) clockwise rotation 
+    about first column of 3D basis when applied from right.
+    """
     rot = np.array([[1,             0,              0],
                     [0, np.cos(theta), -np.sin(theta)],
                     [0, np.sin(theta),  np.cos(theta)]])
