@@ -2,21 +2,22 @@
 Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
 All user inputs should be in `opt_input.py` file.
 """
-if __name__ == '__main__':
-    import os
-    import shutil
-    import subprocess
-    import numpy as np
-    from skopt import Optimizer
-    from scipy.interpolate import interp1d
-    from scipy.optimize import curve_fit, root
-    from numpy.linalg import norm
-else:
+import os
+import shutil
+import subprocess
+import numpy as np
+from numpy.linalg import norm
+import opt_input as uset  # user settings file
+
+try: # Abaqus-specific imports
     from odbAccess import *
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
-import opt_input as uset  # user settings file
+except: # optimizer-specific imports
+    from skopt import Optimizer
+    from scipy.interpolate import interp1d
+    from scipy.optimize import curve_fit, root
 
 
 def main():
@@ -347,10 +348,8 @@ def job_run():
 
 
 def job_extract(outname):
-    subprocess.run(
-        'abaqus python -c "from opt_fea import write2file; write2file()"', 
-        shell=True
-    )
+    run_string = 'abaqus python -c "from opt_fea import write2file; write2file()"'
+    subprocess.run(run_string, shell=True)
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
