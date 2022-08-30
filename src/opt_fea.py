@@ -173,6 +173,7 @@ def get_orient_info(next_params, orient):
     col_0deg = np.asarray(dir_0deg)
     col_0deg = col_0deg/norm(col_0deg)
     col_cross = np.cross(col_load, col_0deg)
+    col_cross = col_cross/norm(col_cross)
 
     basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
     basis_new = np.matmul(basis_og, _mk_x_rot(angle_deg*np.pi/180.))
