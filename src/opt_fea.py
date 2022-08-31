@@ -156,6 +156,9 @@ class ExpData():
             f.writelines(lines[bound_line_ind+1:])
 
 
+def unit_vector(vector):
+    return vector/norm(vector)
+
 def get_orient_info(next_params, orient):
     """
     Get components of orientation-defining vectors and their names
@@ -169,34 +172,20 @@ def get_orient_info(next_params, orient):
     angle_deg = next_params[index_deg]
     angle_mag = next_params[index_mag]
 
-    col_load = np.asarray(dir_load)
-    col_load = col_load/norm(col_load)
-    col_0deg = np.asarray(dir_0deg)
-    col_0deg = col_0deg/norm(col_0deg)
-    col_cross = np.cross(col_load, col_0deg)
-    col_cross = col_cross/norm(col_cross)
+    col_load = unit_vector(np.asarray(dir_load))
+    col_0deg = unit_vector(np.asarray(dir_0deg))
+    col_cross = unit_vector(np.cross(col_load, col_0deg))
 
     basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
-    basis_new = np.matmul(basis_og, _mk_x_rot(angle_deg*np.pi/180.))
+    basis_new = np.matmul(basis_og, _mk_x_rot(np.deg2rad(angle_deg)))
     dir_to = basis_new[:,1]
 
-    if True:  # debug angles for angle_deg rotation:
+    if __debug__:  # write angle_deg rotation info
         dir_load = dir_load / norm(dir_load)
         dir_to = dir_to / norm(dir_to)
         dir_0deg = dir_0deg / norm(dir_0deg)
-
-        vector_rotated = np.asarray(dir_load) - np.asarray(dir_to)
-        vector_0deg = np.asarray(dir_load) - np.asarray(dir_0deg)
-        plane_normal = np.array([1,1,0])/norm(np.array([1,1,0]))
-
-        norm_rotated = plane_normal * np.dot(vector_rotated, plane_normal)
-        norm_0deg = plane_normal * np.dot(vector_0deg, plane_normal)
-
-        proj_rot = vector_rotated - norm_rotated
-        proj_0deg = vector_0deg - norm_0deg
-
-        angle_test = np.arccos(np.dot(proj_0deg, proj_rot)/(norm(proj_0deg)*norm(proj_rot)))*180./np.pi
         with open('debug.txt', 'a+') as f:
+            f.write('orientation: {}'.format(orient))
             f.write('\nbasis OG: \n{0}'.format(basis_og))
             f.write('\n')
             f.write('\nrotation: \n{0}'.format(_mk_x_rot(angle_deg*np.pi/180.)))
@@ -204,21 +193,19 @@ def get_orient_info(next_params, orient):
             f.write('\nbasis new: \n{0}'.format(basis_new))
             f.write('\n\n')
             f.write('dir_load: {0}\tdir_to: {1}\n'.format(dir_load, dir_to))
-            f.write('vector_rotated: {0}\tvector_0deg: {1}\n'.format(vector_rotated, vector_0deg))
-            f.write('proj_rot: {0}\tproj_0deg: {1}\n'.format(proj_rot, proj_0deg))
-            f.write('angle_inp: {0}\tangle_test: {1}\n\n'.format(angle_deg, angle_test))
+            f.write('angle_deg_inp: {0}\n'.format(angle_deg))
+            f.write('all params: {}'.format(next_params))
 
     sol = get_offset_angle(dir_load, dir_to, angle_mag)
     dir_tot = dir_load + sol * dir_to
     dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
 
-    if True:
+    if __debug__: # write final loading orientation info
         angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
         with open('debug.txt', 'a+') as f:
-            f.write('\n')
             f.write('\ndir_tot: {0}'.format(dir_tot))
             f.write('\ndir_ortho: {0}'.format(dir_ortho))
-            f.write('\nangle_input: {}\tangle_output:{}'.format(angle_mag, angle_output))
+            f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
             f.write('\n\n')
     component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
     component_values = list(dir_ortho) + list(dir_tot)
