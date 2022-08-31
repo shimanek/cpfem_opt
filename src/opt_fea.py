@@ -26,6 +26,14 @@ def main():
     # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    opt = instantiate_optimizer(in_opt, uset)
+    opt = load_opt(opt)
+    # load_subroutine()
+
+    loop(opt, uset.loop_len)
+
+
+def instantiate_optimizer(in_opt, uset):
     opt = Optimizer(
         dimensions = in_opt.bounds, 
         base_estimator = 'gp',
@@ -33,10 +41,7 @@ def main():
         acq_func = 'EI',
         acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
         )
-    load_opt(opt)
-    # load_subroutine()
-
-    loop(opt, uset.loop_len)
+    return opt
 
 
 def loop(opt, loop_len):
@@ -365,9 +370,16 @@ def load_opt(opt):
         opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
         x_in = opt_progress[:,1:-1].tolist()
         y_in = opt_progress[:,-1].tolist()
+
+        if __debug__:
+            with open('debug.txt', 'a+') as f:
+                f.write('loading previous results\n')
+                f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+
         opt.tell(x_in, y_in)
     if os.path.isfile(arrayname):
         np.save(arrayname, np.load(arrayname))
+    return opt
 
 
 def remove_out_files():

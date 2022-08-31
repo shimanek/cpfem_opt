@@ -12,7 +12,9 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import interp1d
 import opt_input as uset
-from opt_fea import InOpt
+from opt_fea import InOpt, instantiate_optimizer, load_opt
+from skopt.plots import plot_evaluations
+
 
 def main(orient):
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
@@ -146,6 +148,15 @@ def main(orient):
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot parameter distribution
+    opt = instantiate_optimizer(in_opt, uset)
+    opt = load_opt(opt)
+    plot_evaluations(opt.get_result())
+    plt.savefig(fname='res_evaluations.png', dpi=600, bbox_inches='tight')
+    plt.close()
+    # plot partial dependence
+    plot_objective(opt.get_result())
+    plt.savefig(fname='res_objective.png', dpi=600, bbox_inches='tight')
+    plt.close()
 
 
 def get_param_value(param_name):
