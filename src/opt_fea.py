@@ -27,7 +27,7 @@ def main():
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     opt = instantiate_optimizer(in_opt, uset)
-    opt = load_opt(opt)
+    if uset.do_load_previous: opt = load_opt(opt)
     # load_subroutine()
 
     loop(opt, uset.loop_len)
@@ -364,21 +364,18 @@ def load_opt(opt):
     global opt_progress
     filename = 'out_progress.txt'
     arrayname = 'out_time_disp_force.npy'
-    if uset.do_load_previous:
-        opt_progress = np.loadtxt(filename, skiprows=1)
-        # renumber iterations (negative length to zero) to distinguish from new calculations:
-        opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
-        x_in = opt_progress[:,1:-1].tolist()
-        y_in = opt_progress[:,-1].tolist()
+    opt_progress = np.loadtxt(filename, skiprows=1)
+    # renumber iterations (negative length to zero) to distinguish from new calculations:
+    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
+    x_in = opt_progress[:,1:-1].tolist()
+    y_in = opt_progress[:,-1].tolist()
 
-        if __debug__:
-            with open('debug.txt', 'a+') as f:
-                f.write('loading previous results\n')
-                f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+    if __debug__:
+        with open('debug.txt', 'a+') as f:
+            f.write('loading previous results\n')
+            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
 
-        opt.tell(x_in, y_in)
-    if os.path.isfile(arrayname):
-        np.save(arrayname, np.load(arrayname))
+    opt.tell(x_in, y_in)
     return opt
 
 
