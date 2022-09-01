@@ -2,35 +2,46 @@
 Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
 All user inputs should be in `opt_input.py` file.
 """
-if __name__ == '__main__':
-    import os
-    import shutil
-    import subprocess
-    import numpy as np
-    from skopt import Optimizer
-    from scipy.interpolate import interp1d
-    from scipy.optimize import curve_fit
-else:
+import os
+import shutil
+import subprocess
+import numpy as np
+from numpy.linalg import norm
+import opt_input as uset  # user settings file
+
+try: # Abaqus-specific imports
     from odbAccess import *
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
-import opt_input as uset  # user settings file
+except: # optimizer-specific imports
+    from skopt import Optimizer
+    from scipy.interpolate import interp1d
+    from scipy.optimize import curve_fit, root
 
 
 def main():
     remove_out_files()
-    global exp_data
+    global exp_data, in_opt
+    # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
-    opt = Optimizer(
-        dimensions = as_float_tuples(uset.param_bounds), 
-        base_estimator = 'gp',
-        n_initial_points = uset.n_initial_points
-        )
-    load_opt(opt)
-    load_subroutine()
+    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    opt = instantiate_optimizer(in_opt, uset)
+    if uset.do_load_previous: opt = load_opt(opt)
+    # load_subroutine()
 
     loop(opt, uset.loop_len)
+
+
+def instantiate_optimizer(in_opt, uset):
+    opt = Optimizer(
+        dimensions = in_opt.bounds, 
+        base_estimator = 'gp',
+        n_initial_points = uset.n_initial_points,
+        acq_func = 'EI',
+        acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
+        )
+    return opt
 
 
 def loop(opt, loop_len):
@@ -38,30 +49,31 @@ def loop(opt, loop_len):
     for i in range(loop_len):
         def single_loop(opt, i):
             global opt_progress  # global progress tracker, row:(i, params, error)
-            next_params = [round_sig(param) for param in opt.ask()]  # get and rounod parameters to test
-            write_parameters(next_params)  # write params to file
-
+            next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
             while param_check(uset.param_list):  # True if Tau0 >= TauS
                 # this tells opt that params are bad but does not record it elsewhere
                 opt.tell(next_params, max_rmse(i))
                 next_params = [round_sig(param) for param in opt.ask()] 
-                write_parameters(next_params)
             else:
-                # first orientation:
+                write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
                 for orient in uset.orientations.keys():
-                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                    shutil.copy('{0}_{1}.inp'.format(uset.jobname,orient), '{0}.inp'.format(uset.jobname))
+                    if in_opt.has_orient_opt[orient]:
+                        orient_components = get_orient_info(next_params, orient)
+                        write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+                    else:
+                        shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+                    
                     job_run()
-                    if not check_complete():
-                    # try decreasing max increment size
+                    if not check_complete(): # try decreasing max increment size
                         refine_run()
-                    if not check_complete():
-                    # if it still fails, write max_rmse, go to next parameterset
+                    if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
                         write_maxRMSE(i, next_params, opt, orientation=orient)
                         return
                     else:
                         job_extract(orient)  # extract data to temp_time_disp_force.csv
-                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), delimiter=',', skiprows=1)[:,1:2]) == 0:
+                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), 
+                                delimiter=',', skiprows=1)[:,1:2]) == 0:
                             write_maxRMSE(i, next_params, opt, orientation=orient)
                             return
                         combine_SS(zeros=False, orientation=orient)  # save stress-strain data
@@ -149,6 +161,129 @@ class ExpData():
             f.writelines(lines[bound_line_ind+1:])
 
 
+def unit_vector(vector):
+    return vector/norm(vector)
+
+def get_orient_info(next_params, orient):
+    """
+    Get components of orientation-defining vectors and their names
+    for substitution into the orientation input files.
+    """
+    dir_load = uset.orientations[orient]['dir_load']
+    dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
+
+    index_mag = in_opt.params.index(orient+'_mag')
+    index_deg = in_opt.params.index(orient+'_deg')
+    angle_deg = next_params[index_deg]
+    angle_mag = next_params[index_mag]
+
+    col_load = unit_vector(np.asarray(dir_load))
+    col_0deg = unit_vector(np.asarray(dir_0deg))
+    col_cross = unit_vector(np.cross(col_load, col_0deg))
+
+    basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
+    basis_new = np.matmul(basis_og, _mk_x_rot(np.deg2rad(angle_deg)))
+    dir_to = basis_new[:,1]
+
+    if __debug__:  # write angle_deg rotation info
+        dir_load = dir_load / norm(dir_load)
+        dir_to = dir_to / norm(dir_to)
+        dir_0deg = dir_0deg / norm(dir_0deg)
+        with open('debug.txt', 'a+') as f:
+            f.write('orientation: {}'.format(orient))
+            f.write('\nbasis OG: \n{0}'.format(basis_og))
+            f.write('\n')
+            f.write('\nrotation: \n{0}'.format(_mk_x_rot(angle_deg*np.pi/180.)))
+            f.write('\n')
+            f.write('\nbasis new: \n{0}'.format(basis_new))
+            f.write('\n\n')
+            f.write('dir_load: {0}\tdir_to: {1}\n'.format(dir_load, dir_to))
+            f.write('angle_deg_inp: {0}\n'.format(angle_deg))
+            f.write('all params: {}'.format(next_params))
+
+    sol = get_offset_angle(dir_load, dir_to, angle_mag)
+    dir_tot = dir_load + sol * dir_to
+    dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
+
+    if __debug__: # write final loading orientation info
+        angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
+        with open('debug.txt', 'a+') as f:
+            f.write('\ndir_tot: {0}'.format(dir_tot))
+            f.write('\ndir_ortho: {0}'.format(dir_ortho))
+            f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
+            f.write('\n\n')
+    component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
+    component_values = list(dir_ortho) + list(dir_tot)
+
+    return {'names':component_names, 'values':component_values}
+
+
+def _mk_x_rot(theta):
+    """
+    Generates rotation matrix for theta (radians) clockwise rotation 
+    about first column of 3D basis when applied from right.
+    """
+    rot = np.array([[1,             0,              0],
+                    [0, np.cos(theta), -np.sin(theta)],
+                    [0, np.sin(theta),  np.cos(theta)]])
+    return rot
+
+
+def get_offset_angle(direction_og, direction_to, angle):
+    def _opt_angle(offset_amt, direction_og, direction_to, angle):
+        """
+        Angle difference between original vector and new vector, which is
+        made by small offset toward new direction.  Returns zero when offset_amt 
+        produces new vector at desired angle.  Uses higher namespace variables so 
+        that the single argument can be tweaked by optimizer.
+        """
+        direction_new = direction_og + offset_amt * direction_to
+        angle_difference = \
+            np.dot(direction_og, direction_new) / \
+            ( norm(direction_og) * norm(direction_new) ) \
+            - np.cos(np.deg2rad(angle))
+        return angle_difference
+
+    sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x
+    return sol
+
+
+class InOpt:
+    def __init__(self, orientations, param_list, param_bounds):
+        """Sorted orientations here defines order for use in single list passed to optimizer."""
+        self.orients = sorted(orientations.keys())
+        self.params, self.bounds, \
+        self.material_params, self.material_bounds, \
+        self.orient_params, self.orient_bounds \
+            = ([] for i in range(6))
+        for i in range(len(param_list)):
+            self.material_params.append(param_list[i])
+            self.material_bounds.append(param_bounds[i])
+        
+        # add orientation offset info:
+        self.offsets = []
+        self.has_orient_opt = {}
+        for orient in self.orients:
+            if 'offset' in orientations[orient].keys():
+                self.offsets.append({orient:orientations[orient]['offset']})
+                self.orient_params.append(orient+'_deg')
+                self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
+                self.orient_params.append(orient+'_mag')
+                self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                self.has_orient_opt[orient] = True
+            else:
+                self.has_orient_opt[orient] = False
+        
+        # combine material and orient info into one ordered list:
+        self.params = self.material_params + self.orient_params
+        self.bounds = as_float_tuples(self.material_bounds + self.orient_bounds)
+        
+        # descriptive stats on input object:
+        self.num_params_material = len(self.material_params)
+        self.num_params_orient = len(self.orient_params)
+        self.num_params_total = len(self.params)
+
+
 def as_float_tuples(list_of_tuples):
     """
     Take list of tuples that may include ints and return list of tuples containing only floats.
@@ -162,6 +297,7 @@ def as_float_tuples(list_of_tuples):
 
 
 def round_sig(x, sig=4):
+    if x == 0.0: return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
 
@@ -172,8 +308,8 @@ def load_subroutine():
 
 def write_opt_progress():
     global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + uset.param_list + ['RMSE'])
-    np.savetxt('out_progress.txt',opt_progress, delimiter='\t', header=opt_progress_header)
+    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
+    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
 
 
 def update_progress(i, next_params, rmse):
@@ -204,10 +340,8 @@ def job_run():
 
 
 def job_extract(outname):
-    subprocess.run(
-        'abaqus python -c "from opt_fea import write2file; write2file()"', 
-        shell=True
-    )
+    run_string = 'abaqus python -c "from opt_fea import write2file; write2file()"'
+    subprocess.run(run_string, shell=True)
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
@@ -230,15 +364,19 @@ def load_opt(opt):
     global opt_progress
     filename = 'out_progress.txt'
     arrayname = 'out_time_disp_force.npy'
-    if uset.do_load_previous:
-        opt_progress = np.loadtxt(filename, skiprows=1)
-        # renumber iterations (negative length to zero) to distinguish from new calculations:
-        opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
-        x_in = opt_progress[:,1:-1].tolist()
-        y_in = opt_progress[:,-1].tolist()
-        opt.tell(x_in, y_in)
-    if os.path.isfile(arrayname):
-        np.save(arrayname, np.load(arrayname))
+    opt_progress = np.loadtxt(filename, skiprows=1)
+    # renumber iterations (negative length to zero) to distinguish from new calculations:
+    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
+    x_in = opt_progress[:,1:-1].tolist()
+    y_in = opt_progress[:,-1].tolist()
+
+    if __debug__:
+        with open('debug.txt', 'a+') as f:
+            f.write('loading previous results\n')
+            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+
+    opt.tell(x_in, y_in)
+    return opt
 
 
 def remove_out_files():
@@ -257,23 +395,18 @@ def param_check(param_list):
     True if tau0 >= tauS, which is bad, not practically but in theory.
     In theory, tau0 should always come before tauS.
     """
-    if ('TauS1' in param_list) or ('Tau01' in param_list):
-        f1 = open(uset.param_file, 'r')
-        lines = f1.readlines()
-        for line in lines:
-            if line.startswith('Tau01'): tau01 = float(line[7:])
-            if line.startswith('TauS1'): tauS1 = float(line[7:])
-        f1.close()
-    if ('TauS2' in param_list) or ('Tau02' in param_list):
-        f1 = open(uset.param_file, 'r')
-        lines = f1.readlines()
-        for line in lines:
-            if line.startswith('Tau02'): tau02 = float(line[7:])
-            if line.startswith('TauS2'): tauS2 = float(line[7:])
-        f1.close()
-    else:
-        return False
-    return (tau01 >= tauS1) & (tau02 >= tauS2)
+    # TODO: ck if it's possible to satisfy this based on mat_params and bounds, raise helpful error
+    tau0_list, tauS_list = [], []
+    for sysnum in ['', '1', '2']:
+        if ('TauS'+sysnum in param_list) or ('Tau0'+sysnum in param_list):
+            f1 = open(uset.param_file, 'r')
+            lines = f1.readlines()
+            for line in lines:
+                if line.startswith('Tau0'+sysnum): tau0_list.append(float(line[7:]))
+                if line.startswith('TauS'+sysnum): tauS_list.append(float(line[7:]))
+            f1.close()
+    is_bad = any([(tau0 >= tauS) for tau0, tauS in zip(tau0_list, tauS_list)])
+    return is_bad
 
 
 def max_rmse(loop_number):
@@ -316,7 +449,6 @@ def refine_run(ct=0):
     ct += 1
     # remove old lock file from previous unfinished simulation
     subprocess.run('rm *.lck', shell=True)
-    # find input file TODO put main input file name up top, not hardcoded as here
     filename = uset.jobname + '.inp'
     tempfile = 'temp_input.txt'
     with open(filename, 'r') as f:
@@ -436,25 +568,25 @@ def calc_error(exp_data, orientation):
     return rmse
 
 
-def write_parameters(next_params):
+def write_params(fname, param_names, param_values):
     """
-    Going in order of `uset.Param_list`, write new parameter values to the Abaqus 
-    material input file. 
+    Write parameter values to file with `=` as separator.
+    Used for material and orientation input files.
+    'param_names': list of strings, shares order with 'param_values'
     """
-    with open(uset.param_file, 'r') as f1:
+    with open(fname, 'r') as f1:
         lines = f1.readlines()
-    with open('temp_mat_file.inp', 'w+') as f2:    
+    with open('temp_' + fname, 'w+') as f2:
         for line in lines:
             skip = False
-            for param in uset.param_list:
-                if line[:line.find('=')].strip() == param:
-                    f2.write(param + ' = ' + str(next_params[uset.param_list.index(param)]) + '\n')
+            for param_name, param_value in zip(param_names, param_values):
+                if line[:line.find('=')].strip() == param_name:
+                    f2.write(param_name + ' = ' + str(param_value) + '\n')
                     skip = True
             if not skip:
                 f2.write(line)
-
-    os.remove(uset.param_file)
-    os.rename('temp_mat_file.inp', uset.param_file)
+    os.remove(fname)
+    os.rename('temp_' + fname, fname)
 
 
 class GetForceDisplacement(object):
