@@ -23,6 +23,7 @@ def main(orient):
     num_iter = len(data[0,0,:])
     #-----------------------------------------------------------------------------------------------
     # plot all trials, in order:
+    print('plotting all trial stress-strain curves...')
     fig, ax = plt.subplots()
     for i in range( num_iter ):
         eng_strain = data[:,1,i] / uset.length
@@ -73,7 +74,7 @@ def main(orient):
             f.write('Fixed parameter values:\n' + ', '.join(
                 [str(get_param_value(f)) for f in uset.param_additional_legend]) + '\n\n')
     #-----------------------------------------------------------------------------------------------
-    # plot best paramters 
+    # plot best paramters
     legend_info = []
     for i, param in enumerate(in_opt.params):
         # 1st entry in best_params is iteration number, so use i+1
@@ -85,6 +86,7 @@ def main(orient):
     legend_info.append('Error: ' + str(best_params[-1]))
     legend_info = '\n'.join(legend_info)
     
+    print('plotting best-fit stress-strain curve...')
     fig, ax = plt.subplots()
     ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
         label='Experimental ' + uset.grain_size_name)
@@ -95,6 +97,7 @@ def main(orient):
     plt.close()
     #-----------------------------------------------------------------------------------------------
     # plot convergence
+    print('plotting convergence information...')
     fig, ax = plt.subplots()
     running_min = np.empty((num_iter))
     running_min[0] = errors[0]
@@ -114,10 +117,12 @@ def main(orient):
     opt = instantiate_optimizer(in_opt, uset)
     opt = load_opt(opt)
     # plot parameter distribution
+    print('plotting parameter evaluations...')
     apply_param_labels(plot_evaluations(opt.get_result()))
     plt.savefig(fname='res_evaluations.png', dpi=600, bbox_inches='tight')
     plt.close()
     # plot partial dependence
+    print('plotting partial dependencies...')
     apply_param_labels(plot_objective(opt.get_result()))
     plt.savefig(fname='res_objective.png', dpi=600, bbox_inches='tight')
     plt.close()
