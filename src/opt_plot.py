@@ -13,10 +13,11 @@ import os
 from scipy.interpolate import interp1d
 import opt_input as uset
 from opt_fea import InOpt, instantiate_optimizer, load_opt
-from skopt.plots import plot_evaluations
+from skopt.plots import plot_evaluations, plot_objective
 
 
 def main(orient):
+    global in_opt
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
     num_iter = len(data[0,0,:])
@@ -73,44 +74,6 @@ def main(orient):
                 [str(get_param_value(f)) for f in uset.param_additional_legend]) + '\n\n')
     #-----------------------------------------------------------------------------------------------
     # plot best paramters 
-    def name_to_sym(name):
-        name_to_sym_dict = {
-            'Tau0':r'$\tau_0$',
-            'Tau01':r'$\tau_0^{(1)}$',
-            'Tau02':r'$\tau_0^{(2)}$',
-            'H0':r'$h_0$',
-            'H01':r'$h_0^{(1)}$',
-            'H02':r'$h_0^{(2)}$',
-            'TauS':r'$\tau_s$',
-            'TauS1':r'$\tau_s^{(1)}$',
-            'TauS2':r'$\tau_s^{(2)}$',
-            'q':r'$q$',
-            'q1':r'$q_1$',
-            'q2':r'$q_2$',
-            'hs':r'$h_s$',
-            'hs1':r'$h_s^{(1)}$',
-            'hs2':r'$h_s^{(2)}$',
-            'gamma0':r'$\gamma_0$',
-            'gamma01':r'$\gamma_0^{(1)}$',
-            'gamma02':r'$\gamma_0^{(2)}$',
-            'f0':r'$f_0$',
-            'f01':r'$f_0^{(1)}$',
-            'f02':r'$f_0^{(2)}$',
-            'qA1':r'$q_{A1}$',
-            'qB1':r'$q_{B1}$',
-            'qA2':r'$q_{A2}$',
-            'qB2':r'$q_{B2}$'
-            }
-        if name in name_to_sym_dict.keys():
-            return name_to_sym_dict[name]
-        elif '_deg' in name:
-            return name[:-4] + ' rot.'
-        elif '_mag' in name:
-            return name[:-4] + ' mag.'
-        else:
-            raise KeyError('Uknown parameter name')
-
-
     legend_info = []
     for i, param in enumerate(in_opt.params):
         # 1st entry in best_params is iteration number, so use i+1
@@ -147,16 +110,63 @@ def main(orient):
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
     plt.close()
     #-----------------------------------------------------------------------------------------------
-    # plot parameter distribution
+    # reload parameter guesses to use default plots
     opt = instantiate_optimizer(in_opt, uset)
     opt = load_opt(opt)
-    plot_evaluations(opt.get_result())
+    # plot parameter distribution
+    apply_param_labels(plot_evaluations(opt.get_result()))
     plt.savefig(fname='res_evaluations.png', dpi=600, bbox_inches='tight')
     plt.close()
     # plot partial dependence
-    plot_objective(opt.get_result())
+    apply_param_labels(plot_objective(opt.get_result()))
     plt.savefig(fname='res_objective.png', dpi=600, bbox_inches='tight')
     plt.close()
+
+
+def apply_param_labels(ax_array):
+    for i in range(np.shape(ax_array)[0]):
+        for j in range(np.shape(ax_array)[1]):
+            ax_array[i,j].set_ylabel(name_to_sym(in_opt.params[i]))
+            ax_array[i,j].set_xlabel(name_to_sym(in_opt.params[j]))
+    return ax_array
+
+
+def name_to_sym(name):
+    name_to_sym_dict = {
+        'Tau0':r'$\tau_0$',
+        'Tau01':r'$\tau_0^{(1)}$',
+        'Tau02':r'$\tau_0^{(2)}$',
+        'H0':r'$h_0$',
+        'H01':r'$h_0^{(1)}$',
+        'H02':r'$h_0^{(2)}$',
+        'TauS':r'$\tau_s$',
+        'TauS1':r'$\tau_s^{(1)}$',
+        'TauS2':r'$\tau_s^{(2)}$',
+        'q':r'$q$',
+        'q1':r'$q_1$',
+        'q2':r'$q_2$',
+        'hs':r'$h_s$',
+        'hs1':r'$h_s^{(1)}$',
+        'hs2':r'$h_s^{(2)}$',
+        'gamma0':r'$\gamma_0$',
+        'gamma01':r'$\gamma_0^{(1)}$',
+        'gamma02':r'$\gamma_0^{(2)}$',
+        'f0':r'$f_0$',
+        'f01':r'$f_0^{(1)}$',
+        'f02':r'$f_0^{(2)}$',
+        'qA1':r'$q_{A1}$',
+        'qB1':r'$q_{B1}$',
+        'qA2':r'$q_{A2}$',
+        'qB2':r'$q_{B2}$'
+        }
+    if name in name_to_sym_dict.keys():
+        return name_to_sym_dict[name]
+    elif '_deg' in name:
+        return name[:-4] + ' rot.'
+    elif '_mag' in name:
+        return name[:-4] + ' mag.'
+    else:
+        raise KeyError('Uknown parameter name')
 
 
 def get_param_value(param_name):
