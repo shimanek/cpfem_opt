@@ -28,7 +28,7 @@ def main():
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     opt = instantiate_optimizer(in_opt, uset)
     if uset.do_load_previous: opt = load_opt(opt)
-    # load_subroutine()
+    load_subroutine()
 
     loop(opt, uset.loop_len)
 

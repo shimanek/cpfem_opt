@@ -47,12 +47,12 @@ def main(orient):
     ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label='Best parameter set')
 
     # plot tuning:
-    def plot_settings():
+    def plot_settings(legend=True):
         ax.set_xlabel('Engineering Strain, m/m')
         ax.set_ylabel('Engineering Stress, MPa')
         ax.set_xlim(left=0)
         ax.set_ylim(bottom=0)
-        ax.legend(loc='best')
+        if legend: ax.legend(loc='best')
         plt.tick_params(which='both', direction='in', top=True, right=True)
         ax.set_title(uset.title)
 
@@ -109,7 +109,7 @@ def main(orient):
         else:
             running_min[i] = running_min[i-1]
     ax.plot(list(range(num_iter)), running_min, '-o', color='blue')
-    plot_settings()
+    plot_settings(legend=False)
     ax.set_xlabel('Iteration number')
     ax.set_ylabel('Lowest RMSE')
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
@@ -177,8 +177,6 @@ def name_to_sym(name):
 
 
 def get_param_value(param_name):
-    assert param_name in uset.param_list, \
-        "Error: can only add extra material parameters."
     with open(uset.param_file, 'r') as f1:
         lines = f1.readlines()
     for line in lines:
