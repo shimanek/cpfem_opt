@@ -101,7 +101,7 @@ def write_error_to_file(error_list, orient_list):
             f.write(','.join([str(err) for err in error_list + [np.mean(error_list)]]))
     else:
         with open(error_fname, 'w+') as f:
-            f.write('# errors for {} and mean error'.format(orient_list))
+            f.write('# errors for {} and mean error\n'.format(orient_list))
 
 
 class ExpData():
