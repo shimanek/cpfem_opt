@@ -34,11 +34,11 @@ def main():
     loop(opt, uset.loop_len)
 
 
-def instantiate_optimizer(opt_inp, uset):
+def instantiate_optimizer(opt_inp, n_initial_points):
     opt = Optimizer(
         dimensions = opt_inp.bounds, 
         base_estimator = 'gp',
-        n_initial_points = uset.n_initial_points,
+        n_initial_points = n_initial_points,
         initial_point_generator = 'lhs',
         acq_func = 'EI',
         acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
