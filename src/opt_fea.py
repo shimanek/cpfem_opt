@@ -23,7 +23,6 @@ except:  # optimizer-specific imports
 def main():
     remove_out_files()
     global exp_data, in_opt, opt_out
-    # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     opt_out = OptOut()
@@ -95,14 +94,6 @@ def loop(opt, loop_len):
         single_loop(opt, i)
 
 
-def write_error_to_file(error_list, orient_list):
-    error_fname = 'out_errors.txt'
-    if os.path.isfile(error_fname):
-        with open(error_fname, 'a+') as f:
-            f.write(error_list + [np.mean(error_list)])
-    else:
-        with open(error_fname, 'w+') as f:
-            f.write('# errors for {} and mean error'.format(orient_list))
 
 
 class OptOut():
@@ -121,6 +112,134 @@ class OptOut():
         for orient in orientations:
             temp_error_dict[orient] = errors[orient]
 
+# functions to be added to OptOut class:
+def write_error_to_file(error_list, orient_list):
+    error_fname = 'out_errors.txt'
+    if os.path.isfile(error_fname):
+        with open(error_fname, 'a+') as f:
+            f.write(error_list + [np.mean(error_list)])
+    else:
+        with open(error_fname, 'w+') as f:
+            f.write('# errors for {} and mean error'.format(orient_list))
+
+
+def write_opt_progress():
+    global opt_progress
+    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
+    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
+
+
+def update_progress(i, next_params, rmse):
+    global opt_progress
+    if (i == 0) and (uset.do_load_previous == False): 
+        opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
+    else: 
+        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
+    return opt_progress
+
+
+def write_maxRMSE(i, next_params, opt):
+    global opt_progress
+    rmse = max_rmse(i)
+    opt.tell( next_params, rmse )
+    for orientation in uset.orientations.keys():
+        combine_SS(zeros=True, orientation=orientation)
+    opt_progress = update_progress(i, next_params, rmse)
+    write_opt_progress()
+
+
+def max_rmse(loop_number):
+    """
+    Return an estimate of a "large" error value to dissuade the optimizer from repeating
+    areas in parameter space where Abaqus+UMAT can't complete calculations.
+    Often this ends up defaulting to `uset.large_error`.
+    """
+    grace = 15
+    if loop_number < grace:
+        return uset.large_error
+    elif loop_number >= grace:
+        errors = np.delete( opt_progress[:grace,-1], \
+            np.where(opt_progress[:grace,-1] == uset.large_error))
+        if len(errors) < np.round( grace/2 ):
+            return uset.large_error
+        else:
+            iq1, iq3 = np.quantile(errors, [0.25,0.75])
+            return np.ceil(np.mean(errors) + (iq3-iq1)*1.5)
+
+def combine_SS(zeros, orientation):
+    """
+    Reads npy stress-strain output and appends current results.
+    """
+    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
+    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
+    if zeros:
+        sheet = np.zeros((np.shape(sheet)))
+    if os.path.isfile(filename): 
+        dat = np.load(filename)
+        dat = np.dstack((dat,sheet))
+    else:
+        dat = sheet
+    np.save(filename, dat)
+
+
+def calc_error(exp_data, orientation):
+    """
+    Calculates root mean squared error between experimental and calculated 
+    stress-strain curves.  
+    """
+    simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[1:,1:]
+    # TODO get simulation dimensions at beginning of running this file, pass to this function
+    simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
+    simSS[:,1] = simSS[:,1] / uset.area    # force to stress
+
+    expSS = exp_data
+
+    # deal with unequal data lengths 
+    if simSS[-1,0] > expSS[-1,0]:
+        # chop off simSS
+        cutoff = np.where(simSS[:,0] > expSS[-1,0])[0][0] - 1
+        simSS = simSS[:cutoff,:]
+        cutoff_strain = simSS[-1,0]
+    elif simSS[-1,0] < expSS[-1,0]:
+        # chop off expSS
+        cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
+        expSS = expSS[:cutoff,:]
+        cutoff_strain = expSS[-1,0]
+    else:
+        cutoff_strain = simSS[-1,0]
+    begin_strain = max(min(expSS[:,0]), min(simSS[:,0]))
+
+    def powerlaw(x,k,n):
+        y = k * x**n
+        return y
+
+    def fit_powerlaw(x,y):
+        popt, _ = curve_fit(powerlaw,x,y)
+        return popt
+
+    # interpolate points in both curves
+    num_error_eval_pts = 1000
+    x_error_eval_pts = np.linspace(begin_strain, cutoff_strain, num = num_error_eval_pts)
+    smoothedSS = interp1d(simSS[:,0], simSS[:,1])
+    if not uset.i_powerlaw:
+        smoothedExp = interp1d(expSS[:,0], expSS[:,1])
+        fineSS = smoothedExp(x_error_eval_pts)
+    else:
+        popt = fit_powerlaw(expSS[:,0], expSS[:,1])
+        fineSS = powerlaw(x_error_eval_pts, *popt)
+
+    # strictly limit to interpolation
+    while x_error_eval_pts[-1] >= expSS[-1,0]:
+        fineSS = np.delete(fineSS, -1)
+        x_error_eval_pts = np.delete(x_error_eval_pts, -1)
+
+    # error function
+    # for dual opt, error is normalized by exp value (root mean percent error instead of RMSE)
+    deviations_pct = np.asarray([100*(smoothedSS(x_error_eval_pts[i]) - fineSS[i])/fineSS[i] \
+        for i in range(len(fineSS))])
+    rmse = np.sqrt(np.sum( deviations_pct**2) / len(fineSS)) 
+
+    return rmse
 
 
 class ExpData():
@@ -359,31 +478,6 @@ def load_subroutine():
     subprocess.run('abaqus make library=' + uset.umat, shell=True)
 
 
-def write_opt_progress():
-    global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
-    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
-
-
-def update_progress(i, next_params, rmse):
-    global opt_progress
-    if (i == 0) and (uset.do_load_previous == False): 
-        opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
-    else: 
-        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
-    return opt_progress
-
-
-def write_maxRMSE(i, next_params, opt):
-    global opt_progress
-    rmse = max_rmse(i)
-    opt.tell( next_params, rmse )
-    for orientation in uset.orientations.keys():
-        combine_SS(zeros=True, orientation=orientation)
-    opt_progress = update_progress(i, next_params, rmse)
-    write_opt_progress()
-
-
 def job_run():
     subprocess.run( 
         'abaqus job=' + uset.jobname \
@@ -463,25 +557,6 @@ def param_check(param_list):
     return is_bad
 
 
-def max_rmse(loop_number):
-    """
-    Return an estimate of a "large" error value to dissuade the optimizer from repeating
-    areas in parameter space where Abaqus+UMAT can't complete calculations.
-    Often this ends up defaulting to `uset.large_error`.
-    """
-    grace = 15
-    if loop_number < grace:
-        return uset.large_error
-    elif loop_number >= grace:
-        errors = np.delete( opt_progress[:grace,-1], \
-            np.where(opt_progress[:grace,-1] == uset.large_error))
-        if len(errors) < np.round( grace/2 ):
-            return uset.large_error
-        else:
-            iq1, iq3 = np.quantile(errors, [0.25,0.75])
-            return np.ceil(np.mean(errors) + (iq3-iq1)*1.5)
-
-
 def check_complete():
     """
     Return true if Abaqus has finished sucessfully.
@@ -544,82 +619,6 @@ def refine_run(ct=0):
         return
     else:
         refine_run(ct)
-
-
-def combine_SS(zeros, orientation):
-    """
-    Reads npy stress-strain output and appends current results.
-    """
-    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
-    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
-    if zeros:
-        sheet = np.zeros((np.shape(sheet)))
-    if os.path.isfile(filename): 
-        dat = np.load(filename)
-        dat = np.dstack((dat,sheet))
-    else:
-        dat = sheet
-    np.save(filename, dat)
-
-
-def calc_error(exp_data, orientation):
-    """
-    Calculates root mean squared error between experimental and calculated 
-    stress-strain curves.  
-    """
-    simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[1:,1:]
-    # TODO get simulation dimensions at beginning of running this file, pass to this function
-    simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
-    simSS[:,1] = simSS[:,1] / uset.area    # force to stress
-
-    expSS = exp_data
-
-    # deal with unequal data lengths 
-    if simSS[-1,0] > expSS[-1,0]:
-        # chop off simSS
-        cutoff = np.where(simSS[:,0] > expSS[-1,0])[0][0] - 1
-        simSS = simSS[:cutoff,:]
-        cutoff_strain = simSS[-1,0]
-    elif simSS[-1,0] < expSS[-1,0]:
-        # chop off expSS
-        cutoff = np.where(simSS[-1,0] < expSS[:,0])[0][0] - 1
-        expSS = expSS[:cutoff,:]
-        cutoff_strain = expSS[-1,0]
-    else:
-        cutoff_strain = simSS[-1,0]
-    begin_strain = max(min(expSS[:,0]), min(simSS[:,0]))
-
-    def powerlaw(x,k,n):
-        y = k * x**n
-        return y
-
-    def fit_powerlaw(x,y):
-        popt, _ = curve_fit(powerlaw,x,y)
-        return popt
-
-    # interpolate points in both curves
-    num_error_eval_pts = 1000
-    x_error_eval_pts = np.linspace(begin_strain, cutoff_strain, num = num_error_eval_pts)
-    smoothedSS = interp1d(simSS[:,0], simSS[:,1])
-    if not uset.i_powerlaw:
-        smoothedExp = interp1d(expSS[:,0], expSS[:,1])
-        fineSS = smoothedExp(x_error_eval_pts)
-    else:
-        popt = fit_powerlaw(expSS[:,0], expSS[:,1])
-        fineSS = powerlaw(x_error_eval_pts, *popt)
-
-    # strictly limit to interpolation
-    while x_error_eval_pts[-1] >= expSS[-1,0]:
-        fineSS = np.delete(fineSS, -1)
-        x_error_eval_pts = np.delete(x_error_eval_pts, -1)
-
-    # error function
-    # for dual opt, error is normalized by exp value (root mean percent error instead of RMSE)
-    deviations_pct = np.asarray([100*(smoothedSS(x_error_eval_pts[i]) - fineSS[i])/fineSS[i] \
-        for i in range(len(fineSS))])
-    rmse = np.sqrt(np.sum( deviations_pct**2) / len(fineSS)) 
-
-    return rmse
 
 
 def write_params(fname, param_names, param_values):
