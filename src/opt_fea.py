@@ -175,10 +175,16 @@ def get_orient_info(next_params, orient):
     dir_load = uset.orientations[orient]['offset']['dir_load']
     dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
 
-    index_mag = in_opt.params.index(orient+'_mag')
-    index_deg = in_opt.params.index(orient+'_deg')
-    angle_deg = next_params[index_deg]
-    angle_mag = next_params[index_mag]
+    if (orient+'_mag' in in_opt.params):
+        index_mag = in_opt.params.index(orient+'_mag')
+        angle_mag = next_params[index_mag]
+    else:
+        angle_mag = in_opt.fixed_vars[orient+'_mag']
+    if (orient+'_deg' in in_opt.params):
+        index_deg = in_opt.params.index(orient+'_deg')
+        angle_deg = next_params[index_deg]
+    else:
+        deg_mag = in_opt.fixed_vars[orient+'_deg']
 
     col_load = unit_vector(np.asarray(dir_load))
     col_0deg = unit_vector(np.asarray(dir_0deg))
@@ -266,14 +272,27 @@ class InOpt:
         # add orientation offset info:
         self.offsets = []
         self.has_orient_opt = {}
+        self.fixed_vars = {}
         for orient in self.orients:
             if 'offset' in orientations[orient].keys():
-                self.offsets.append({orient:orientations[orient]['offset']})
-                self.orient_params.append(orient+'_deg')
-                self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
-                self.orient_params.append(orient+'_mag')
-                self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
                 self.has_orient_opt[orient] = True
+                self.offsets.append({orient:orientations[orient]['offset']})
+                # ^ saves all info (TODO: check if still needed)
+                
+                # deg rotation *about* loading orientation:
+                if len(orientations[orient]['offset']['deg_bounds']) == 2:
+                    self.orient_params.append(orient+'_deg')
+                    self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
+                else:
+                    self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
+                
+                # mag rotation *away from* loading:
+                if len(orientations[orient]['offset']['mag_bounds']) == 2:
+                    self.orient_params.append(orient+'_mag')
+                    self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                else:
+                    self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
+                
             else:
                 self.has_orient_opt[orient] = False
         
