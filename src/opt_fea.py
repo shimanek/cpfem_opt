@@ -280,14 +280,14 @@ class InOpt:
                 # ^ saves all info (TODO: check if still needed)
                 
                 # deg rotation *about* loading orientation:
-                if len(orientations[orient]['offset']['deg_bounds']) == 2:
+                if isinstance(orientations[orient]['offset']['deg_bounds'], tuple):
                     self.orient_params.append(orient+'_deg')
                     self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
                 else:
                     self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
                 
                 # mag rotation *away from* loading:
-                if len(orientations[orient]['offset']['mag_bounds']) == 2:
+                if isinstance(orientations[orient]['offset']['mag_bounds'], tuple):
                     self.orient_params.append(orient+'_mag')
                     self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
                 else:
