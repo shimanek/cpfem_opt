@@ -22,11 +22,11 @@ except:  # optimizer-specific imports
 
 def main():
     remove_out_files()
-    global exp_data, in_opt, opt_out
+    global exp_data, opt_inp, opt_out
     exp_data = ExpData(uset.orientations)
-    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    opt_inp = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
     opt_out = OptOut()
-    opt = instantiate_optimizer(in_opt, uset.n_initial_points)
+    opt = instantiate_optimizer(opt_inp, uset.n_initial_points)
     if uset.do_load_previous: 
         opt = load_opt(opt)
     load_subroutine()
@@ -34,9 +34,9 @@ def main():
     loop(opt, uset.loop_len)
 
 
-def instantiate_optimizer(in_opt, uset):
+def instantiate_optimizer(opt_inp, uset):
     opt = Optimizer(
-        dimensions = in_opt.bounds, 
+        dimensions = opt_inp.bounds, 
         base_estimator = 'gp',
         n_initial_points = uset.n_initial_points,
         initial_point_generator = 'lhs',
@@ -55,9 +55,9 @@ def loop(opt, loop_len):
             opt.tell(next_params, max_rmse(i))
             next_params = [round_sig(param) for param in opt.ask()] 
         else:
-            write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+            write_params(uset.param_file, opt_inp.material_params, next_params[0:opt_inp.num_params_material])
             for orient in uset.orientations.keys():
-                if in_opt.has_orient_opt[orient]:
+                if opt_inp.has_orient_opt[orient]:
                     orient_components = get_orient_info(next_params, orient)
                     write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
                 else:
@@ -81,13 +81,14 @@ def loop(opt, loop_len):
 
             # error value:
             rmse_list = []
-            for orient in uset.orientations.keys():
+            for orient in opt_inp.orients:
                 rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
-                combine_SS(zeros=False, orientation=orient)  # save stress-strain data
-            rmse = np.mean(rmse_list)
-            opt.tell(next_params, rmse)
-            opt_progress = update_progress(i, next_params, rmse)
-            write_opt_progress()
+                combine_SS(is_zero=False, orientation=orient)  # save stress-strain data
+            opt_out.add_error(param_values=next_params, error_values=rmse_list)
+            opt_out.write_error_to_file()
+            opt.tell(next_params, np.mean(rmse_list))
+            opt_out.update_progress(i, next_params, rmse)
+            opt_out.write_opt_progress()
     
     get_first()
     for i in range(loop_len):
@@ -98,88 +99,92 @@ def loop(opt, loop_len):
 
 class OptOut():
     def __init__(self):
+        self.iteration = -1
         self.iterations = []
         self.param_values = []
         self.error_values = []
-        self.errors_per_orient = []
 
-    def add_error(self, param_values, error):
-        iter_num = len(self.iterations) + 1
-        self.iterations.append(iter_num)
+    def add_error(self, param_values, error_values):
+        self.iteration += 1
+        self.iterations.append(len(self.iterations))
         self.param_values.append(param_values)
-        self.error_values.append(error)
-        temp_error_dict = {}
-        for orient in orientations:
-            temp_error_dict[orient] = errors[orient]
-
-# functions to be added to OptOut class:
-def write_error_to_file(error_list, orient_list):
-    error_fname = 'out_errors.txt'
-    if os.path.isfile(error_fname):
-        with open(error_fname, 'a+') as f:
-            f.write(error_list + [np.mean(error_list)])
-    else:
-        with open(error_fname, 'w+') as f:
-            f.write('# errors for {} and mean error'.format(orient_list))
+        self.error_values.append(error_values)
 
 
-def write_opt_progress():
-    global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
-    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
+    def write_error_to_file(self):
+        error_fname = 'out_errors.txt'
+        if os.path.isfile(error_fname):
+            with open(error_fname, 'a+') as f:
+                f.write('\n' + ','.join([str(err) for err in self.error_values \
+                    + [np.mean(self.error_values)]]))
+        else:
+            with open(error_fname, 'w+') as f:
+                f.write('# errors for {} and mean error'.format(orient_list))
 
 
-def update_progress(i, next_params, rmse):
-    global opt_progress
-    if (i == 0) and (uset.do_load_previous == False): 
-        opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
-    else: 
-        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
-    return opt_progress
+    def write_opt_progress(self):
+        progress_fname = 'out_errors.txt'
+        progress_nums = [self.iterations[-1]] + self.param_values[-1] + [np.mean(self.error_values[-1])]
+        progress_line = '\t'.join(progress_nums)
+        if os.path.isfile(progress_fname):
+            with open(progress_fname, 'a+') as f:
+                f.write('\n' + progress_line)
+        else:
+            with open(progress_fname, 'w+') as f:
+                f.write('# ' + ','.join(opt_inp.params + ['error']))
 
 
-def write_maxRMSE(i, next_params, opt):
-    global opt_progress
-    rmse = max_rmse(i)
-    opt.tell( next_params, rmse )
-    for orientation in uset.orientations.keys():
-        combine_SS(zeros=True, orientation=orientation)
-    opt_progress = update_progress(i, next_params, rmse)
-    write_opt_progress()
+    # def update_progress(i, next_params, rmse):
+    #     global opt_progress
+    #     if (i == 0) and (uset.do_load_previous == False): 
+    #         opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
+    #     else: 
+    #         opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
+    #     return opt_progress
 
 
-def max_rmse(loop_number):
-    """
-    Return an estimate of a "large" error value to dissuade the optimizer from repeating
-    areas in parameter space where Abaqus+UMAT can't complete calculations.
-    Often this ends up defaulting to `uset.large_error`.
-    """
-    grace = 15
-    if loop_number < grace:
-        return uset.large_error
-    elif loop_number >= grace:
-        errors = np.delete( opt_progress[:grace,-1], \
-            np.where(opt_progress[:grace,-1] == uset.large_error))
-        if len(errors) < np.round( grace/2 ):
+    def write_maxRMSE(self, next_params, opt):
+        global opt_progress
+        rmse = self.max_rmse()
+        opt.tell(next_params, rmse)
+        for orientation in uset.orientations.keys():
+            combine_SS(is_zero=True, orientation=orientation)
+        self.add_error(next_params, rmse)
+        self.write_opt_progress()
+
+
+    def max_rmse(self):
+        """
+        Return an estimate of a "large" error value to dissuade the optimizer from repeating
+        areas in parameter space where Abaqus+UMAT can't complete calculations.
+        Often this ends up defaulting to `uset.large_error`.
+        """
+        grace = 15
+        if self.iterations[-1] < grace:
             return uset.large_error
         else:
-            iq1, iq3 = np.quantile(errors, [0.25,0.75])
-            return np.ceil(np.mean(errors) + (iq3-iq1)*1.5)
+            errors = np.delete( opt_progress[:grace,-1], \
+                np.where(opt_progress[:grace,-1] == uset.large_error))
+            if len(errors) < np.round( grace/2 ):
+                return uset.large_error
+            else:
+                iq1, iq3 = np.quantile(errors, [0.25,0.75])
+                return np.ceil(np.mean(errors) + (iq3-iq1)*1.5)
 
-def combine_SS(zeros, orientation):
-    """
-    Reads npy stress-strain output and appends current results.
-    """
-    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
-    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
-    if zeros:
-        sheet = np.zeros((np.shape(sheet)))
-    if os.path.isfile(filename): 
-        dat = np.load(filename)
-        dat = np.dstack((dat,sheet))
-    else:
-        dat = sheet
-    np.save(filename, dat)
+    def combine_SS(is_zero, orientation):
+        """
+        Reads npy stress-strain output and appends current results.
+        """
+        filename = 'out_time_disp_force_{0}.npy'.format(orientation)
+        sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
+        if is_zero:
+            sheet = np.zeros((np.shape(sheet)))
+        if os.path.isfile(filename): 
+            dat = np.load(filename)
+            dat = np.dstack((dat,sheet))
+        else:
+            dat = sheet
+        np.save(filename, dat)
 
 
 def calc_error(exp_data, orientation):
@@ -324,17 +329,17 @@ def get_orient_info(next_params, orient):
     dir_load = uset.orientations[orient]['offset']['dir_load']
     dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
 
-    if (orient+'_mag' in in_opt.params):
-        index_mag = in_opt.params.index(orient+'_mag')
+    if (orient+'_mag' in opt_inp.params):
+        index_mag = opt_inp.params.index(orient+'_mag')
         angle_mag = next_params[index_mag]
     else:
-        angle_mag = in_opt.fixed_vars[orient+'_mag']
+        angle_mag = opt_inp.fixed_vars[orient+'_mag']
     
-    if (orient+'_deg' in in_opt.params):
-        index_deg = in_opt.params.index(orient+'_deg')
+    if (orient+'_deg' in opt_inp.params):
+        index_deg = opt_inp.params.index(orient+'_deg')
         angle_deg = next_params[index_deg]
     else:
-        angle_deg = in_opt.fixed_vars[orient+'_deg']
+        angle_deg = opt_inp.fixed_vars[orient+'_deg']
 
     col_load = unit_vector(np.asarray(dir_load))
     col_0deg = unit_vector(np.asarray(dir_0deg))
@@ -348,7 +353,7 @@ def get_orient_info(next_params, orient):
         dir_load = dir_load / norm(dir_load)
         dir_to = dir_to / norm(dir_to)
         dir_0deg = dir_0deg / norm(dir_0deg)
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('orientation: {}'.format(orient))
             f.write('\nbasis OG: \n{0}'.format(basis_og))
             f.write('\n')
@@ -366,7 +371,7 @@ def get_orient_info(next_params, orient):
 
     if __debug__: # write final loading orientation info
         angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('\ndir_tot: {0}'.format(dir_tot))
             f.write('\ndir_ortho: {0}'.format(dir_ortho))
             f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
@@ -519,7 +524,7 @@ def load_opt(opt):
     y_in = opt_progress[:,-1].tolist()
 
     if __debug__:
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
             f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
 
