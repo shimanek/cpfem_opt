@@ -210,7 +210,7 @@ def get_orient_info(next_params, orient):
         dir_load = dir_load / norm(dir_load)
         dir_to = dir_to / norm(dir_to)
         dir_0deg = dir_0deg / norm(dir_0deg)
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('orientation: {}'.format(orient))
             f.write('\nbasis OG: \n{0}'.format(basis_og))
             f.write('\n')
@@ -228,7 +228,7 @@ def get_orient_info(next_params, orient):
 
     if __debug__: # write final loading orientation info
         angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('\ndir_tot: {0}'.format(dir_tot))
             f.write('\ndir_ortho: {0}'.format(dir_ortho))
             f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
@@ -406,7 +406,7 @@ def load_opt(opt):
     y_in = opt_progress[:,-1].tolist()
 
     if __debug__:
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
             f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
 
