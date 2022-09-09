@@ -25,10 +25,10 @@ def main():
     global exp_data, opt_inp, opt_out
     exp_data = ExpData(uset.orientations)
     opt_inp = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
-    opt_out = OptOut()
     opt = instantiate_optimizer(opt_inp, uset.n_initial_points)
-    if uset.do_load_previous: 
-        opt = load_opt(opt)
+    opt_out = OptOut(do_load_previous=uset.do_load_previous)
+    if uset.do_load_previous:
+        opt = opt_out.update_opt(opt)
     load_subroutine()
 
     loop(opt, uset.loop_len)
@@ -85,9 +85,8 @@ def loop(opt, loop_len):
                 rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
                 combine_SS(is_zero=False, orientation=orient)  # save stress-strain data
             opt_out.add_error(param_values=next_params, error_values=rmse_list)
-            opt_out.write_error_to_file()
+            # opt_out.write_error_to_file()
             opt.tell(next_params, np.mean(rmse_list))
-            opt_out.update_progress(i, next_params, rmse)
             opt_out.write_opt_progress()
     
     get_first()
@@ -98,11 +97,13 @@ def loop(opt, loop_len):
 
 
 class OptOut():
-    def __init__(self):
+    def __init__(self, do_load_previous=False):
         self.iteration = -1
         self.iterations = []
         self.param_values = []
         self.error_values = []
+        if do_load_previous:
+            self.load_opt_progress(neg_prev_iters=True)
 
     def add_error(self, param_values, error_values):
         self.iteration += 1
@@ -111,6 +112,7 @@ class OptOut():
         self.error_values.append(error_values)
 
 
+    # TODO better way to stor other errors? Read/write only works now with one error value
     def write_error_to_file(self):
         error_fname = 'out_errors.txt'
         if os.path.isfile(error_fname):
@@ -124,7 +126,7 @@ class OptOut():
 
     def write_opt_progress(self):
         progress_fname = 'out_errors.txt'
-        progress_nums = [self.iterations[-1]] + self.param_values[-1] + [np.mean(self.error_values[-1])]
+        progress_nums = [self.iterations[-1]] + self.param_values[-1] + [self.error_values[-1]]
         progress_line = '\t'.join(progress_nums)
         if os.path.isfile(progress_fname):
             with open(progress_fname, 'a+') as f:
@@ -132,15 +134,6 @@ class OptOut():
         else:
             with open(progress_fname, 'w+') as f:
                 f.write('# ' + ','.join(opt_inp.params + ['error']))
-
-
-    # def update_progress(i, next_params, rmse):
-    #     global opt_progress
-    #     if (i == 0) and (uset.do_load_previous == False): 
-    #         opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
-    #     else: 
-    #         opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
-    #     return opt_progress
 
 
     def write_maxRMSE(self, next_params, opt):
@@ -185,6 +178,41 @@ class OptOut():
         else:
             dat = sheet
         np.save(filename, dat)
+
+    def load_opt_progress(self, neg_prev_iters=False):
+        """
+        Load input files of previous optimizations to use as initial points in current optimization.
+        Note the parameter bounds for the input files must be within current parameter bounds.
+        """
+        filename = 'out_progress.txt'
+        array = np.loadtxt(filename, '\t', skiprows=1)
+        sgn = -1. if neg_prev_iters else +1.
+        self.iterations = sgn * array[:,0].tolist()
+        self.param_values = array[:,1:-1].tolist()
+        self.error_values = array[:,-1].tolist()
+        
+        opt_progress = np.loadtxt(filename, skiprows=1)
+        # renumber iterations (negative length to zero) to distinguish from new calculations:
+        opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
+        x_in = opt_progress[:,1:-1].tolist()
+        y_in = opt_progress[:,-1].tolist()
+
+        if __debug__:
+            with open('out_debug.txt', 'a+') as f:
+                f.write('loading previous results\n')
+                f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+
+        opt.tell(x_in, y_in)
+        return opt
+
+
+    def check_
+
+
+    def update_opt(self, opt):
+        opt.tell(self.param_values, self.error_values)
+        return opt
+
 
 
 def calc_error(exp_data, orientation):
@@ -507,29 +535,6 @@ def get_first():
     if not have_1st: 
         refine_run()
     job_extract('initial')
-
-
-def load_opt(opt):
-    """
-    Load input files of previous optimizations to use as initial points in current optimization.
-    Note the parameter bounds for the input files must be within current parameter bounds.
-    """
-    global opt_progress
-    filename = 'out_progress.txt'
-    arrayname = 'out_time_disp_force.npy'
-    opt_progress = np.loadtxt(filename, skiprows=1)
-    # renumber iterations (negative length to zero) to distinguish from new calculations:
-    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
-    x_in = opt_progress[:,1:-1].tolist()
-    y_in = opt_progress[:,-1].tolist()
-
-    if __debug__:
-        with open('out_debug.txt', 'a+') as f:
-            f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
-
-    opt.tell(x_in, y_in)
-    return opt
 
 
 def remove_out_files():
