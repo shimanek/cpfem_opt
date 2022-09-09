@@ -180,11 +180,12 @@ def get_orient_info(next_params, orient):
         angle_mag = next_params[index_mag]
     else:
         angle_mag = in_opt.fixed_vars[orient+'_mag']
+    
     if (orient+'_deg' in in_opt.params):
         index_deg = in_opt.params.index(orient+'_deg')
         angle_deg = next_params[index_deg]
     else:
-        deg_mag = in_opt.fixed_vars[orient+'_deg']
+        angle_deg = in_opt.fixed_vars[orient+'_deg']
 
     col_load = unit_vector(np.asarray(dir_load))
     col_0deg = unit_vector(np.asarray(dir_0deg))
