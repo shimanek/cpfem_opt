@@ -38,6 +38,7 @@ def instantiate_optimizer(in_opt, uset):
         dimensions = in_opt.bounds, 
         base_estimator = 'gp',
         n_initial_points = uset.n_initial_points,
+        initial_point_generator = 'lhs',
         acq_func = 'EI',
         acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
         )
@@ -45,48 +46,50 @@ def instantiate_optimizer(in_opt, uset):
 
 
 def loop(opt, loop_len):
+    def single_loop(opt, i):
+        global opt_progress  # global progress tracker, row:(i, params, error)
+        next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
+        while param_check(uset.param_list):  # True if Tau0 >= TauS
+            # this tells opt that params are bad but does not record it elsewhere
+            opt.tell(next_params, max_rmse(i))
+            next_params = [round_sig(param) for param in opt.ask()] 
+        else:
+            write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+            for orient in uset.orientations.keys():
+                if in_opt.has_orient_opt[orient]:
+                    orient_components = get_orient_info(next_params, orient)
+                    write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+                else:
+                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+                
+                job_run()
+                if not check_complete(): # try decreasing max increment size
+                    refine_run()
+                if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
+                    write_maxRMSE(i, next_params, opt)
+                    return
+                else:
+                    output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
+                    if os.path.isfile(output_fname): 
+                        os.remove(output_fname)
+                    job_extract(orient)  # extract data to temp_time_disp_force.csv
+                    if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
+                        write_maxRMSE(i, next_params, opt)
+                        return
+
+            # error value:
+            rmse_list = []
+            for orient in uset.orientations.keys():
+                rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
+                combine_SS(zeros=False, orientation=orient)  # save stress-strain data
+            rmse = np.mean(rmse_list)
+            opt.tell(next_params, rmse)
+            opt_progress = update_progress(i, next_params, rmse)
+            write_opt_progress()
+    
     get_first()
     for i in range(loop_len):
-        def single_loop(opt, i):
-            global opt_progress  # global progress tracker, row:(i, params, error)
-            next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
-            while param_check(uset.param_list):  # True if Tau0 >= TauS
-                # this tells opt that params are bad but does not record it elsewhere
-                opt.tell(next_params, max_rmse(i))
-                next_params = [round_sig(param) for param in opt.ask()] 
-            else:
-                write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
-                for orient in uset.orientations.keys():
-                    if in_opt.has_orient_opt[orient]:
-                        orient_components = get_orient_info(next_params, orient)
-                        write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
-                    else:
-                        shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
-                    
-                    job_run()
-                    if not check_complete(): # try decreasing max increment size
-                        refine_run()
-                    if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
-                        write_maxRMSE(i, next_params, opt, orientation=orient)
-                        return
-                    else:
-                        job_extract(orient)  # extract data to temp_time_disp_force.csv
-                        if np.sum(np.loadtxt('temp_time_disp_force_{0}.csv'.format(orient), 
-                                delimiter=',', skiprows=1)[:,1:2]) == 0:
-                            write_maxRMSE(i, next_params, opt, orientation=orient)
-                            return
-                        combine_SS(zeros=False, orientation=orient)  # save stress-strain data
-
-                # error value:
-                rmse_list = []
-                for orient in uset.orientations.keys():
-                    rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
-                rmse = np.mean(rmse_list)
-                opt.tell(next_params, rmse)
-                opt_progress = update_progress(i, next_params, rmse)
-                write_opt_progress()
-
         single_loop(opt, i)
 
 
@@ -321,11 +324,12 @@ def update_progress(i, next_params, rmse):
     return opt_progress
 
 
-def write_maxRMSE(i, next_params, opt, orientation):
+def write_maxRMSE(i, next_params, opt):
     global opt_progress
     rmse = max_rmse(i)
     opt.tell( next_params, rmse )
-    combine_SS(zeros=True, orientation=orientation)
+    for orientation in uset.orientations.keys():
+        combine_SS(zeros=True, orientation=orientation)
     opt_progress = update_progress(i, next_params, rmse)
     write_opt_progress()
 
