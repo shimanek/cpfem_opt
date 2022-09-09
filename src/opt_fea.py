@@ -83,6 +83,7 @@ def loop(opt, loop_len):
             for orient in uset.orientations.keys():
                 rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
                 combine_SS(zeros=False, orientation=orient)  # save stress-strain data
+            write_error_to_file(rmse_list, in_opt.orients)
             rmse = np.mean(rmse_list)
             opt.tell(next_params, rmse)
             opt_progress = update_progress(i, next_params, rmse)
