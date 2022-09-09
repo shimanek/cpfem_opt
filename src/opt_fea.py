@@ -206,7 +206,7 @@ class OptOut():
         return opt
 
 
-    def check_
+    # def check_
 
 
     def update_opt(self, opt):
