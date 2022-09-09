@@ -14,8 +14,8 @@ param_bounds = [
 orientations = {
 	'001':{
 		'exp':'exp_Cu-mX-001.csv',
-		'dir_load':(0,0,1),
 		'offset':{
+			'dir_load':(0,0,1),
 			'dir_0deg':(0,1,1),
 			'mag_bounds':(0,1),
 			'deg_bounds':(0,90)
@@ -23,8 +23,8 @@ orientations = {
 		},
 	'111':{
 		'exp':'exp_Cu-mX-111.csv',
-		'dir_load':(1,1,1),
 		'offset':{
+			'dir_load':(1,1,1),
 			'dir_0deg':(0,1,1),
 			'mag_bounds':(0,1),
 			'deg_bounds':(0,90)
