@@ -9,12 +9,12 @@ import numpy as np
 from numpy.linalg import norm
 import opt_input as uset  # user settings file
 
-try: # Abaqus-specific imports
+try:  # Abaqus-specific imports
     from odbAccess import *
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
-except: # optimizer-specific imports
+except:  # optimizer-specific imports
     from skopt import Optimizer
     from scipy.interpolate import interp1d
     from scipy.optimize import curve_fit, root
@@ -22,12 +22,14 @@ except: # optimizer-specific imports
 
 def main():
     remove_out_files()
-    global exp_data, in_opt
+    global exp_data, in_opt, opt_out
     # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
-    opt = instantiate_optimizer(in_opt, uset)
-    if uset.do_load_previous: opt = load_opt(opt)
+    opt_out = OptOut()
+    opt = instantiate_optimizer(in_opt, uset.n_initial_points)
+    if uset.do_load_previous: 
+        opt = load_opt(opt)
     load_subroutine()
 
     loop(opt, uset.loop_len)
@@ -101,6 +103,24 @@ def write_error_to_file(error_list, orient_list):
     else:
         with open(error_fname, 'w+') as f:
             f.write('# errors for {} and mean error'.format(orient_list))
+
+
+class OptOut():
+    def __init__(self):
+        self.iterations = []
+        self.param_values = []
+        self.error_values = []
+        self.errors_per_orient = []
+
+    def add_error(self, param_values, error):
+        iter_num = len(self.iterations) + 1
+        self.iterations.append(iter_num)
+        self.param_values.append(param_values)
+        self.error_values.append(error)
+        temp_error_dict = {}
+        for orient in orientations:
+            temp_error_dict[orient] = errors[orient]
+
 
 
 class ExpData():
