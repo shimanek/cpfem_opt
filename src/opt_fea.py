@@ -41,7 +41,7 @@ def instantiate_optimizer(in_opt, uset):
         initial_point_generator = 'lhs',
         acq_func = 'EI',
         acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
-        )
+    )
     return opt
 
 
@@ -91,6 +91,16 @@ def loop(opt, loop_len):
     get_first()
     for i in range(loop_len):
         single_loop(opt, i)
+
+
+def write_error_to_file(error_list, orient_list):
+    error_fname = 'out_errors.txt'
+    if os.path.isfile(error_fname):
+        with open(error_fname, 'a+') as f:
+            f.write(error_list + [np.mean(error_list)])
+    else:
+        with open(error_fname, 'w+') as f:
+            f.write('# errors for {} and mean error'.format(orient_list))
 
 
 class ExpData():
