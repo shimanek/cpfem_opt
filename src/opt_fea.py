@@ -291,11 +291,15 @@ def as_float_tuples(list_of_tuples):
     """
     Take list of tuples that may include ints and return list of tuples containing only floats.
     Useful for optimizer param bounds since type of input determines type of param guesses.
+    Skips non-tuple items in list.
     """
     new_list = []
-    for tup in list_of_tuples:
-        float_tup = tuple(float(value) for value in tup)
-        new_list.append(float_tup)
+    for old_item in list_of_tuples:
+        if isinstance(old_item, tuple):
+            new_item = tuple(float(value) for value in tup)
+        else:
+            new_item = old_item
+        new_list.append(new_item)
     return new_list
 
 
