@@ -380,8 +380,8 @@ def load_opt(opt):
 
     if __debug__:
         with open('debug.txt', 'a+') as f:
-            f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+            f.write('# loading previous results\n')
+            f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
 
     opt.tell(x_in, y_in)
     return opt
