@@ -296,7 +296,7 @@ def as_float_tuples(list_of_tuples):
     new_list = []
     for old_item in list_of_tuples:
         if isinstance(old_item, tuple):
-            new_item = tuple(float(value) for value in tup)
+            new_item = tuple(float(value) for value in old_item)
         else:
             new_item = old_item
         new_list.append(new_item)
