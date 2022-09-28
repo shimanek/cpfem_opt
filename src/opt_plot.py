@@ -193,7 +193,7 @@ def name_to_sym(name):
         'qB2':r'$q_{B2}$'
         }
     name_to_sym_dict_lower = {k.lower():v for k, v in name_to_sym_dict.items()}
-    if name in name_to_sym_dict_lower.keys():
+    if name.lower() in name_to_sym_dict_lower.keys():
         return name_to_sym_dict_lower[name.lower()]
     elif '_deg' in name:
         return name[:-4] + ' rot.'
