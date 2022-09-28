@@ -389,10 +389,8 @@ def get_first():
     Run one simulation, using its output dimensions to get shape of output data.
     """
     job_run()
-    have_1st = check_complete()
-    if not have_1st: 
         refine_run()
-    job_extract('initial')
+    job_extract('first')
 
 
 def load_opt(opt):
