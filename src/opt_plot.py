@@ -192,14 +192,15 @@ def name_to_sym(name):
         'qA2':r'$q_{A2}$',
         'qB2':r'$q_{B2}$'
         }
-    if name in name_to_sym_dict.keys():
-        return name_to_sym_dict[name]
+    name_to_sym_dict_lower = {k.lower():v for k, v in name_to_sym_dict.items()}
+    if name in name_to_sym_dict_lower.keys():
+        return name_to_sym_dict_lower[name.lower()]
     elif '_deg' in name:
         return name[:-4] + ' rot.'
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError('Uknown parameter name')
+        raise KeyError('Uknown parameter name:', name)
 
 
 def get_param_value(param_name):
