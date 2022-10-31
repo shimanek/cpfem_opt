@@ -1,10 +1,8 @@
 
-============
-Heading Here
-============
+==============
+Input Settings
+==============
 
-Subheading
-==========
 
 Body text hereeee.
 

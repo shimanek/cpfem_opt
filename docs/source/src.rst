@@ -1,10 +1,7 @@
-src package
-===========
+cpfem_opt package
+=================
 
-Submodules
-----------
-
-src.mk\_orthoModel module
+mk\_orthoModel
 -------------------------
 
 .. automodule:: src.mk_orthoModel
@@ -12,7 +9,7 @@ src.mk\_orthoModel module
    :undoc-members:
    :show-inheritance:
 
-src.mk\_singleModel module
+mk\_singleModel
 --------------------------
 
 .. automodule:: src.mk_singleModel
@@ -20,7 +17,7 @@ src.mk\_singleModel module
    :undoc-members:
    :show-inheritance:
 
-src.opt\_fea module
+opt\_fea
 -------------------
 
 .. automodule:: src.opt_fea
@@ -28,7 +25,7 @@ src.opt\_fea module
    :undoc-members:
    :show-inheritance:
 
-src.opt\_input module
+opt\_input
 ---------------------
 
 .. automodule:: src.opt_input
@@ -36,7 +33,7 @@ src.opt\_input module
    :undoc-members:
    :show-inheritance:
 
-src.opt\_plot module
+opt\_plot
 --------------------
 
 .. automodule:: src.opt_plot
