@@ -2,6 +2,7 @@
 Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
 All user inputs should be in `opt_input.py` file.
 """
+
 import os
 import shutil
 import subprocess
@@ -375,7 +376,7 @@ def job_run():
         + ' user=' + uset.umat[:-2] + '-std.o' \
         + ' cpus=' + str(uset.cpus) \
         + ' double int ask_delete=OFF', shell=True
-        )
+    )
 
 
 def job_extract(outname):

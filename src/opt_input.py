@@ -35,7 +35,7 @@ loop_len = 15
 n_initial_points = 5
 large_error = 1e2
 # ^ backup RMSE of runs which don't finish; first option uses 1.5 * IQR(first few RMSE)
-param_file = [f for f in os.listdir(os.getcwd()) if f.startswith('mat_param')][0]
+param_file = 'mat_params.inp'
 length = 1
 area = 1 * 1
 jobname = 'UT_mX'

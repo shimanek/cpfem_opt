@@ -11,8 +11,7 @@ Welcome to the documentation!
    :caption: Contents:
 
    modules
-   example_page
-   api
+   input_file
 
 
 Indices and tables
