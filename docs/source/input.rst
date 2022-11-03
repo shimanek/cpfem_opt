@@ -23,13 +23,13 @@ orientations
 .. code-block:: python3
 
 	orientations = {
-		'001':{  # nickname string for simulation
-			'exp':'exp_Cu-mX-001.csv',  # file name of experimental data
-			'offset':{
-				'dir_load':(0,0,1),  # loading direction in Miller indices
-				'dir_0deg':(0,1,1),  # orthogonal load corresponding to how you choose 0˚ twisting
-				'mag_bounds':(0,1),  # magnitude of tilt
-				'deg_bounds':(0,90),  # direction of tilt as a right hand twist about dir_load
+		'001': {  # nickname string for simulation
+			'exp': 'exp_Cu-mX-001.csv',  # file name of experimental data
+			'offset': {
+				'dir_load': (0,0,1),  # loading direction in Miller indices
+				'dir_0deg': (0,1,1),  # orthogonal load corresponding to how you choose 0˚ twisting
+				'mag_bounds': (0,1),  # magnitude of tilt
+				'deg_bounds': (0,90),  # direction of tilt as a right hand twist about dir_load
 			}
 		},
 	}
@@ -41,17 +41,17 @@ Alternatively to specifying an ``orientations`` dictionary, one can pass informa
 .. code-block:: python3
 
 	orientations = {
-		'x':{
-			'exp':'exp_W_mX_111_plus15.0deg_towards001.csv',
-			'inp':'mat_orient_15_plus2.0deg_towards213.inp'
+		'x': {
+			'exp': 'exp_W_mX_111_plus15.0deg_towards001.csv',
+			'inp': 'mat_orient_15_plus2.0deg_towards213.inp'
 		},
-		'y':{
-			'exp':'exp_W_mX_111_plus27.9deg_towards001.csv',
-			'inp':'mat_orient_27_plus2.0deg_towards213.inp'
+		'y': {
+			'exp': 'exp_W_mX_111_plus27.9deg_towards001.csv',
+			'inp': 'mat_orient_27_plus2.0deg_towards213.inp'
 		},
-		'z':{
-			'exp':'exp_W_mX_111_plus36.5deg_towards001.csv',
-			'inp':'mat_orient_36_plus2.0deg_towards213.inp'
+		'z': {
+			'exp': 'exp_W_mX_111_plus36.5deg_towards001.csv',
+			'inp': 'mat_orient_36_plus2.0deg_towards213.inp'
 		},
 	}
 
@@ -80,12 +80,12 @@ large_error
 
 length
 ======
-**float:** Axial length along uniaxial loading direction (y-direction by default) to convert displacements into engineering strains.
+**float:** Axial length along uniaxial loading direction (y-direction by default) to convert displacements into engineering strains. ToDo: find automatically from mesh.
 
 
 area
 ====
-**float:** Model area normal to the uniaxial loading direction to convert forces to engineering strains.
+**float:** Model area normal to the uniaxial loading direction to convert forces to engineering strains. ToDo: find automatically from mesh.
 
 
 jobname
@@ -100,7 +100,7 @@ recursion_depth
 
 max_strain
 ==========
-**float:** 0 for max exp value, fractional strain (0.01=1%) otherwise
+**float:** Maximum strain to consider from the experimental data and therefore a maximum strain to run the CPFEM calculations until. Set 0 for max experimental value, or use fractional strain (0.01=1%) otherwise.
 
 
 i_powerlaw
@@ -125,7 +125,7 @@ cpus
 
 do_load_previous
 ================
-**boolean:** True if the optimizer should load the previous ``out_progress`` file. Currently, reloading requires that all output was strictly within the current bounds specified in :ref:`param_bounds`, although this could be autmatically determined in the future if needed. Note that, for clarity, previous runs are given negative iteration numbers in the new ``out_progress`` file.
+**boolean:** True if the optimizer should load the previous ``out_progress`` file. Currently, reloading requires that all output was strictly within the current bounds specified in :ref:`param_bounds`. Note that, for clarity, previous runs are given negative iteration numbers in the new ``out_progress`` file. ToDo: automatically filter through output and only reload entries that fall within current parameter bounds.
 
 
 grain_size_name
