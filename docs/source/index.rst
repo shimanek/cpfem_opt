@@ -10,8 +10,10 @@ Welcome to the documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   modules
-   input_file
+   input
+   output
+   theory
+   src
 
 
 Indices and tables
