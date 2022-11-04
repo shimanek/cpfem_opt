@@ -1,7 +1,3 @@
-"""
-Make orthorhombic model with orthorhombic grains.
-Inputs crystal plasticity parameters, assigns random orientations to all grains.
-"""
 from random import randrange
 import numpy as np
 import shutil
@@ -9,75 +5,23 @@ import sys
 import os
 
 
-def main():
-    #--------------------------------------------------------------------------------------------------
-    ## preamble
-    #--------------------------------------------------------------------------------------------------
-    # data structures
-    class dim(object):
-        """
-        A place to store details of model dimensions.
+def ask_dimensions():
+    """
+    Get user input for model dimensions.
 
-        variables:
-            edge_x, _y, _z  : edge length of model
-            grain_x, _y, _z : edge length of grains within model
-            eng_strain      : engineering strain to be applied to model (y dimension currently)
-            disp            : displacement (calculated from strain) to be applied in y-direction
-            num_nodes       : total number of nodes
-            num_elements    : total number of elements in model
-            num_grains      : total number of grains in model
-            ref_node        : beginning number of nodes added as reference points
-        """
-    class mesh(object):
-        """
-        For information about nodes and elements.
+    Args:
+        None
 
-        variables:
-            nodes       : array of node locations (x,y,z)
-            elements    : array of elements (number of node 1, 2, ..., 8)
-                          note that node numbers used in `elements` are 1-indexed
-            right, left
-            top, bottom
-            front, back : node sets for the faces farthest in the directions +x, -x, +y, -y, +z, -z
-        
-        internal variables:
-            nodes0,1,2    : column slices of `nodes` for faster searching
-            rel_nodes     : array of 8 nearest node positions of current marker
-            element_nodes : array of element numbers nearest to current marker
-        """
-    class orient(object):
-        """
-        For orientation information.
+    Returns:
+        edge_x (int): length of model in the x direction
+        edge_y (int): length of model in the y (loading) direction
+        edge_z (int): length of model in the z direction
+        grain_x (int): length of grain in the x direction
+        grain_y (int): length of grain in the y (loading) direction
+        grain_z (int): length of grain in the z direction
+        eng_strain (float): engineering strain to be applied as uniaxial tension
 
-        variables:
-            max_index   : maximum Miller index for grain orientations
-
-        internal variables:
-            x      : [x,y,z] directions for local direction
-            y      : [x,y,z] directions for 
-        """
-        def __init__(self):
-            self.max_index = 7 
-        def assign(self, x, y):
-            self.x = x
-            self.y = y
-    class files(object):
-        """
-        A place for filenames and the like.
-        """
-        def __init__(self):
-            self.main       = 'job.inp'
-            self.nodes      = 'Mesh_nodes.inp'
-            self.nodeset    = 'Mesh_nset.inp'
-            self.elements   = 'Mesh_elements.inp'
-            self.elset      = 'Mesh_elset.inp'
-            self.sections   = 'Mat_sects.inp'
-            self.orients    = 'Mat_orient.inp'
-            self.mesh_extra = 'Mesh_param.inp'
-            self.material   = 'Mat_BW.inp'
-            self.slip       = 'Mat_props.inp'
-    #--------------------------------------------------------------------------------------------------
-    # inputs
+    """
     dim.edge_x = int(input('Enter edge length of cubic model (integer): '))
     dim.edge_y = input('If cubic model, hit enter now. Else, enter second edge length (y): ')
     if dim.edge_y == '':
@@ -97,8 +41,37 @@ def main():
         dim.grain_z = int(input('Enter third grain dimension (z): '))
     dim.eng_strain = float(input('Input Engineering strain [default = 0.2]:  ') or '0.2')
     dim.disp = dim.edge_y * dim.eng_strain
+
+    return dim
+
+def mk_orthoModel():
+    """
+    Make orthorhombic CPFEM model with orthorhombic grains.
+
+    Inputs crystal plasticity parameters, assigns random orientations to all grains.
+    Asks for user input for all arguments given here. Input includes option for
+    cubic models.
+
+    Args:
+        edge_x (int): length of model in the x direction
+        edge_y (int): length of model in the y (loading) direction
+        edge_z (int): length of model in the z direction
+        grain_x (int): length of grain in the x direction
+        grain_y (int): length of grain in the y (loading) direction
+        grain_z (int): length of grain in the z direction
+        eng_strain (float): engineering strain to be applied as uniaxial tension
+
+    Returns:
+        Nothing; prints all CPFEM input files.
+
+    Notes:
+        Requires (and checks) that ``(edge_i % grain_i) == 0`` 
+        for each dimension.
+    """
+    
     # instantiate filenames
-    files = files()
+    dim = ask_dimensions()
+    files = Files()
     #--------------------------------------------------------------------------------------------------
     # check if dimensions are appropriate
     assert (dim.edge_x % dim.grain_x == 0), 'Dimension mismatch in x-direction'
@@ -425,5 +398,90 @@ def main():
         for line in range(len(mesh.grain_lines)):
             f.write(str(mesh.grain_lines[line]))
 
+
+class dim(object):
+    """
+    A place to store details of model dimensions.
+
+    Attributes:
+        edge_x, _y, _z (int): length of model in each direction (loading along y)
+        grain_x, _y, _z (int): length of grain in in each direction (loading along y)
+        eng_strain (float): engineering strain to be applied as uniaxial tension
+        disp (float): displacement (calculated from strain) to be applied in y-direction
+        num_nodes (int): total number of nodes
+        num_elements (int): total number of elements in model
+        num_grains (int): total number of grains in model
+        ref_node (int): beginning number of nodes added as reference points
+
+    Note:
+        Loading is applied in the `y` direction.
+    """
+
+
+class mesh(object):
+    """
+    For information about nodes and elements.
+
+    Attributes:
+        nodes (tuple): array of node locations (x,y,z)
+        elements (list): array of elements (number of node 1, 2, ..., 8)
+            note that node numbers used in `elements` are 1-indexed
+        right, left, top, bottom, front, back (list): 
+            node sets for face towards +x, -x, +y, -y, +z, -z
+        nodes0,1,2 (ndarray): column slices of `nodes` for faster searching
+        rel_nodes (ndarray): array of 8 nearest node positions of current marker
+        element_nodes (ndarray): element numbers nearest to current marker
+    """
+
+
+class orient(object):
+    """
+    For orientation information.
+
+    Attributes:
+        max_index (int): maximum Miller index for grain orientations
+        x (tuple): [x,y,z] directions for local direction
+        y (tuple): [x,y,z] directions for lab direction
+    """
+    def __init__(self):
+        self.max_index = 7 
+    def assign(self, x, y):
+        self.x = x
+        self.y = y
+
+
+class Files(object):
+    """
+    A place for filenames and the like. All attributes are filenames (strings).
+
+    Attributes:
+        main: Main job file for Abaqus job with ``include`` statements
+            for other files.
+        nodes: Node numbers and [x,y,z] locations.
+        nodeset: Node sets for faces and reference nodes.
+        elements: Defines each C3D8 element in terms of constituent nodes.
+        elset: Defines the grains from all elements.
+        sections: Assigns material properties (esp. orientation) to each 
+            grain, as defined by the element sets.
+        orients: Defines crystallographic orientations for each grain.
+        mesh_extra: Defines reference nodes and midpoint nodes for 
+            more convenient analysis.
+        material: Hardening parameters for a single material.
+        slip: Formatted crystal plasticity inputs for each grain. Takes 
+            orientation and hardening properties from other files.
+    """
+    def __init__(self):
+        self.main       = 'job.inp'
+        self.nodes      = 'Mesh_nodes.inp'
+        self.nodeset    = 'Mesh_nset.inp'
+        self.elements   = 'Mesh_elements.inp'
+        self.elset      = 'Mesh_elset.inp'
+        self.sections   = 'Mat_sects.inp'
+        self.orients    = 'Mat_orient.inp'
+        self.mesh_extra = 'Mesh_param.inp'
+        self.material   = 'Mat_BW.inp'
+        self.slip       = 'Mat_props.inp'
+
+
 if __name__ == '__main__':
-    main()
+    mk_orthoModel()
