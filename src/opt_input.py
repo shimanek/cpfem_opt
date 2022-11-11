@@ -1,5 +1,5 @@
 """
-User settings for opt_fea.py and opt_plot.py
+User settings for ``opt_fea.py`` and ``opt_plot.py``.  See :ref:`Input Settings`.
 """
 import os
 

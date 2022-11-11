@@ -1,20 +1,48 @@
-'''
-creates input files for multiple vertical elements
-Jan 31, 2020
-'''
-
+"""
+Creates input files for multiple vertical elements.
+Jan 31, 2020.
+"""
 import os 
 
 
 def main():
-	number_of_elements = int(input('Number of elements: '))
+	num_el = ask_dimensions()
+	mk_singleModel(num_el)
+
+
+def ask_dimensions():
+    """
+    Get user input for model dimensions.
+
+    Args:
+        None
+
+    Returns:
+        number_of_elements (int): Length of model in the y (loading) direction
+
+    """
+    number_of_elements = int(input('Number of elements: '))
+    return number_of_elements
+
+
+def mk_singleModel(number_of_elements):
+	"""
+		Make a chain of elements for single crystal modeling.
+
+		Args:
+			number_of_elements (int): Length of chain model along loading
+				direction, which is y
+
+		Returns:
+			Nothing; writes out mesh input file.
+	"""
 
 	# name = 'Mesh_' + str(number_of_elements) + '_elements.inp'
 	name = 'Mesh_Xelement.inp'
 	try: os.remove(name)
 	except: pass
 
-	f = open(name, 'x')
+	f = open(name, 'w+')
 
 	# write nodes 
 	f.write(

@@ -1,8 +1,17 @@
+"""
+Creates input files for polycrystal plasticity models,
+where each grain and the whole RVE are orthorhombic.
+"""
 from random import randrange
 import numpy as np
 import shutil
 import sys
 import os
+
+
+def main():
+    dim = ask_dimensions()
+    mk_orthoModel(dim)
 
 
 def ask_dimensions():
@@ -13,13 +22,7 @@ def ask_dimensions():
         None
 
     Returns:
-        edge_x (int): length of model in the x direction
-        edge_y (int): length of model in the y (loading) direction
-        edge_z (int): length of model in the z direction
-        grain_x (int): length of grain in the x direction
-        grain_y (int): length of grain in the y (loading) direction
-        grain_z (int): length of grain in the z direction
-        eng_strain (float): engineering strain to be applied as uniaxial tension
+        obj: Dimensions of the model as outlined in :class:`dim`.
 
     """
     dim.edge_x = int(input('Enter edge length of cubic model (integer): '))
@@ -44,7 +47,7 @@ def ask_dimensions():
 
     return dim
 
-def mk_orthoModel():
+def mk_orthoModel(dim):
     """
     Make orthorhombic CPFEM model with orthorhombic grains.
 
@@ -53,16 +56,14 @@ def mk_orthoModel():
     cubic models.
 
     Args:
-        edge_x (int): length of model in the x direction
-        edge_y (int): length of model in the y (loading) direction
-        edge_z (int): length of model in the z direction
-        grain_x (int): length of grain in the x direction
-        grain_y (int): length of grain in the y (loading) direction
-        grain_z (int): length of grain in the z direction
-        eng_strain (float): engineering strain to be applied as uniaxial tension
+        dim (obj): Structure outlined in :class:`dim` containing the dimensions 
+            of both the RVE and the constituent grains as well as the maximum 
+            engineering strain for uniaxial tension (``eng_strain``). 
+            This object is generated from interactive user input by 
+            :func:`ask_dimensions` within this module.
 
     Returns:
-        Nothing; prints all CPFEM input files.
+        Nothing; writes out all CPFEM input files.
 
     Notes:
         Requires (and checks) that ``(edge_i % grain_i) == 0`` 
@@ -70,7 +71,6 @@ def mk_orthoModel():
     """
     
     # instantiate filenames
-    dim = ask_dimensions()
     files = Files()
     #--------------------------------------------------------------------------------------------------
     # check if dimensions are appropriate
@@ -252,115 +252,121 @@ def mk_orthoModel():
     with open(files.mesh_extra, 'w') as f:
         dim.ref_node = int( np.ceil(dim.num_nodes/1e7) * 1e7 )
         # ^ start ref numbering at next 10 millionth node for clear separation from regular nodes
-        f.write("""** mesh parameters
-    *Parameter
-    xmax = """ + str(dim.edge_x) + """
-    ymax = """ + str(dim.edge_y) + """
-    zmax = """ + str(dim.edge_z) + """
-    xmin = """ + str(0) + """
-    ymin = """ + str(0) + """
-    zmin = """ + str(0) + """
-    x_Half = (xmax-xmin)/2
-    y_Half = (ymax-ymin)/2
-    z_Half = (zmax-zmin)/2
-    *Node
-    """ + str(dim.ref_node + 0) + """,    <x_Half>,      <y_Half>,          <zmin>
-    """ + str(dim.ref_node + 1) + """,    <x_Half>,      <y_Half>,          <zmax>
-    """ + str(dim.ref_node + 2) + """,    <x_Half>,        <ymax>,        <z_Half>
-    """ + str(dim.ref_node + 3) + """,      <xmax>,      <y_Half>,        <z_Half>
-    """ + str(dim.ref_node + 4) + """,      <xmin>,      <y_Half>,        <z_Half>
-    """ + str(dim.ref_node + 5) + """,    <x_Half>,        <ymin>,        <z_Half>
-    *Nset, nset=RP-Back
-    """ + str(dim.ref_node + 0) + """
-    *Nset, nset=RP-Front
-    """ + str(dim.ref_node + 1) + """
-    *Nset, nset=RP-Top
-    """ + str(dim.ref_node + 2) + """
-    *Nset, nset=RP-Right
-    """ + str(dim.ref_node + 3) + """
-    *Nset, nset=RP-Left
-    """ + str(dim.ref_node + 4) + """
-    *Nset, nset=RP-Bottom
-    """ + str(dim.ref_node + 5) + """
-    **""")
+        f.write(
+"""** mesh parameters
+*Parameter
+xmax = """ + str(dim.edge_x) + """
+ymax = """ + str(dim.edge_y) + """
+zmax = """ + str(dim.edge_z) + """
+xmin = """ + str(0) + """
+ymin = """ + str(0) + """
+zmin = """ + str(0) + """
+x_Half = (xmax-xmin)/2
+y_Half = (ymax-ymin)/2
+z_Half = (zmax-zmin)/2
+*Node
+""" + str(dim.ref_node + 0) + """,    <x_Half>,      <y_Half>,          <zmin>
+""" + str(dim.ref_node + 1) + """,    <x_Half>,      <y_Half>,          <zmax>
+""" + str(dim.ref_node + 2) + """,    <x_Half>,        <ymax>,        <z_Half>
+""" + str(dim.ref_node + 3) + """,      <xmax>,      <y_Half>,        <z_Half>
+""" + str(dim.ref_node + 4) + """,      <xmin>,      <y_Half>,        <z_Half>
+""" + str(dim.ref_node + 5) + """,    <x_Half>,        <ymin>,        <z_Half>
+*Nset, nset=RP-Back
+""" + str(dim.ref_node + 0) + """
+*Nset, nset=RP-Front
+""" + str(dim.ref_node + 1) + """
+*Nset, nset=RP-Top
+""" + str(dim.ref_node + 2) + """
+*Nset, nset=RP-Right
+""" + str(dim.ref_node + 3) + """
+*Nset, nset=RP-Left
+""" + str(dim.ref_node + 4) + """
+*Nset, nset=RP-Bottom
+""" + str(dim.ref_node + 5) + """
+**"""
+        )
     #--------------------------------------------------------------------------------------------------
     # main input file
     with open(files.main,'w') as f:
-        f.write("""** main input file
-    *include, input=""" + files.elements + """
-    *include, input=""" + files.elset + """
-    *include, input=""" + files.nodes + """
-    *include, input=""" + files.nodeset + """
-    *include, input=""" + files.mesh_extra + """
-    *include, input=""" + files.sections + """
-    *include, input=""" + files.orients + """
-    *include, input=""" + files.material + """
-    *include, input=""" + files.slip + """
-    **
-    *Equation
-    2
-    Top , 2, -1
-    RP-Top, 2,  1
-    2
-    Bottom , 2, -1
-    RP-Bottom, 2,  1
-    2
-    Front , 3, -1
-    RP-Front, 3,  1
-    2
-    Back , 3, -1
-    RP-Back, 3,  1
-    2
-    Left , 1, -1
-    RP-Left, 1,  1
-    2
-    Right , 1, -1
-    RP-Right, 1,  1
-    **
-    ***RESTART,WRITE,FREQUENCY=5
-    *STEP, name=Loading, INC=1000000, NLGEOM, unsymm=YES, extrapolation=NO
-    *STATIC
-    1E-8,1.0,1E-9,0.005
-    *Boundary
-    RP-Bottom, 2, 2
-    RP-Back,   3, 3
-    RP-Left,   1, 1
-    RP-Top, 2, 2, """ + str(dim.disp) + """
-    **
-    *Output, field, Number interval=30, Time Marks=No
-    *Node output
-    RF, U
-    *Element Output, directions=YES
-    LE, PE, PEEQ, S, SDV
-    *END STEP""")
+        f.write(
+"""** main input file
+*include, input=""" + files.elements + """
+*include, input=""" + files.elset + """
+*include, input=""" + files.nodes + """
+*include, input=""" + files.nodeset + """
+*include, input=""" + files.mesh_extra + """
+*include, input=""" + files.sections + """
+*include, input=""" + files.orients + """
+*include, input=""" + files.material + """
+*include, input=""" + files.slip + """
+**
+*Equation
+2
+Top , 2, -1
+RP-Top, 2,  1
+2
+Bottom , 2, -1
+RP-Bottom, 2,  1
+2
+Front , 3, -1
+RP-Front, 3,  1
+2
+Back , 3, -1
+RP-Back, 3,  1
+2
+Left , 1, -1
+RP-Left, 1,  1
+2
+Right , 1, -1
+RP-Right, 1,  1
+**
+***RESTART,WRITE,FREQUENCY=5
+*STEP, name=Loading, INC=1000000, NLGEOM, unsymm=YES, extrapolation=NO
+*STATIC
+1E-8,1.0,1E-9,0.005
+*Boundary
+RP-Bottom, 2, 2
+RP-Back,   3, 3
+RP-Left,   1, 1
+RP-Top, 2, 2, """ + str(dim.disp) + """
+**
+*Output, field, Number interval=30, Time Marks=No
+*Node output
+RF, U
+*Element Output, directions=YES
+LE, PE, PEEQ, S, SDV
+*END STEP"""
+        )
     #--------------------------------------------------------------------------------------------------
     # material definition
     with open(files.material, 'w') as f:
-        f.write("""** Material hardening parameters in the Bassani-Wu model
-    *Parameter
-    ** Elastic Moduli
-    ** Unit: MPa
-    C11 = 265.e3
-    C12 = 161.e3
-    C44 = 127.e3
-    ** Constitutive relation (power law)
-    Gamma0 = 0.001
-    ** Unit: s^-1
-    n = 50.
-    ** should be larger than 1 (n = 1/m)
-    ** Hardening law (hyperbolic function)
-    ** Unit: MPa
-    Tau0 = 12.92
-    H0   = 40.8
-    TauS = 40
-    hs = 0.01
-    gamma0 = 0.4
-    f0 = 1
-    q = 1
-    **Second slip system family info:
-    gamma1 = 1
-    f1 = 1
-    q1 = 1""")
+        f.write(
+"""** Material hardening parameters in the Bassani-Wu model
+*Parameter
+** Elastic Moduli
+** Unit: MPa
+C11 = 265.e3
+C12 = 161.e3
+C44 = 127.e3
+** Constitutive relation (power law)
+Gamma0 = 0.001
+** Unit: s^-1
+n = 50.
+** should be larger than 1 (n = 1/m)
+** Hardening law (hyperbolic function)
+** Unit: MPa
+Tau0 = 12.92
+H0   = 40.8
+TauS = 40
+hs = 0.01
+gamma0 = 0.4
+f0 = 1
+q = 1
+**Second slip system family info:
+gamma1 = 1
+f1 = 1
+q1 = 1"""
+        )
     #--------------------------------------------------------------------------------------------------
     # material properties for each grain
     with open(files.slip, 'w+') as f:
@@ -368,31 +374,31 @@ def mk_orthoModel():
     mesh.grain_lines = []
     for n in range(dim.num_grains):
         mesh.grain_lines.append( """
-    ** ----------------------------------------------------------------------------
-    *Material, name = Grain""" + str(n+1) + """_Phase1_mat
-    *Depvar
-    125
-    *User material, Constants=160, unsymm
-        <C11> ,  <C12> ,  <C44> ,
-        0.   ,
-        0.   ,
-        1.   ,
-        1.   ,   1.   ,   1.   ,   1.   ,   1.   ,   0.   ,
-        0.   ,
-        0.   ,
-        <x"""+str(n+1)+""">   ,  <y"""+str(n+1)+""">,    <z"""+str(n+1)+""">,        1,       0,       0,
-        <u"""+str(n+1)+""">   ,  <v"""+str(n+1)+""">,    <w"""+str(n+1)+""">,        0,       1,       0,
-        <n>  ,<Gamma0>  ,
-        0.   ,   0.
-        0.   ,   0.   ,
-        <H0>  , <TauS> , <Tau0>,  <hs>,  <gamma0>,  <gamma1>,  <f0>,  <f1> 
-        <q>   ,  <q1>   ,
-        0.   ,
-        0.   ,
-        0.   ,
-        0.   ,
-        .5   ,   1.   ,
-        1.   ,   10.  , 1.E-5  ,""")
+** ----------------------------------------------------------------------------
+*Material, name = Grain""" + str(n+1) + """_Phase1_mat
+*Depvar
+125
+*User material, Constants=160, unsymm
+<C11> ,  <C12> ,  <C44> ,
+0.   ,
+0.   ,
+1.   ,
+1.   ,   1.   ,   1.   ,   1.   ,   1.   ,   0.   ,
+0.   ,
+0.   ,
+<x"""+str(n+1)+""">   ,  <y"""+str(n+1)+""">,    <z"""+str(n+1)+""">,        1,       0,       0,
+<u"""+str(n+1)+""">   ,  <v"""+str(n+1)+""">,    <w"""+str(n+1)+""">,        0,       1,       0,
+<n>  ,<Gamma0>  ,
+0.   ,   0.
+0.   ,   0.   ,
+<H0>  , <TauS> , <Tau0>,  <hs>,  <gamma0>,  <gamma1>,  <f0>,  <f1> 
+<q>   ,  <q1>   ,
+0.   ,
+0.   ,
+0.   ,
+0.   ,
+.5   ,   1.   ,
+1.   ,   10.  , 1.E-5  ,""")
     # write the rest of the file
     with open(files.slip, 'a') as f:
         for line in range(len(mesh.grain_lines)):
@@ -404,14 +410,14 @@ class dim(object):
     A place to store details of model dimensions.
 
     Attributes:
-        edge_x, _y, _z (int): length of model in each direction (loading along y)
-        grain_x, _y, _z (int): length of grain in in each direction (loading along y)
-        eng_strain (float): engineering strain to be applied as uniaxial tension
-        disp (float): displacement (calculated from strain) to be applied in y-direction
-        num_nodes (int): total number of nodes
-        num_elements (int): total number of elements in model
-        num_grains (int): total number of grains in model
-        ref_node (int): beginning number of nodes added as reference points
+        edge_x, _y, _z (int): Length of model in each direction (loading along y)
+        grain_x, _y, _z (int): Length of grain in in each direction (loading along y)
+        eng_strain (float): Engineering strain to be applied as uniaxial tension
+        disp (float): Displacement (calculated from strain) to be applied in y-direction
+        num_nodes (int): Total number of nodes
+        num_elements (int): Total number of elements in model
+        num_grains (int): Total number of grains in model
+        ref_node (int): Beginning number of nodes added as reference points
 
     Note:
         Loading is applied in the `y` direction.
@@ -423,14 +429,14 @@ class mesh(object):
     For information about nodes and elements.
 
     Attributes:
-        nodes (tuple): array of node locations (x,y,z)
-        elements (list): array of elements (number of node 1, 2, ..., 8)
+        nodes (tuple): Array of node locations (x,y,z)
+        elements (list): Array of elements (number of node 1, 2, ..., 8)
             note that node numbers used in `elements` are 1-indexed
-        right, left, top, bottom, front, back (list): 
+            right, left, top, bottom, front, back (list): 
             node sets for face towards +x, -x, +y, -y, +z, -z
-        nodes0,1,2 (ndarray): column slices of `nodes` for faster searching
-        rel_nodes (ndarray): array of 8 nearest node positions of current marker
-        element_nodes (ndarray): element numbers nearest to current marker
+        nodes0,1,2 (ndarray): Column slices of `nodes` for faster searching
+        rel_nodes (ndarray): Array of 8 nearest node positions of current marker
+        element_nodes (ndarray): Element numbers nearest to current marker
     """
 
 
@@ -439,7 +445,7 @@ class orient(object):
     For orientation information.
 
     Attributes:
-        max_index (int): maximum Miller index for grain orientations
+        max_index (int): Maximum Miller index for grain orientations
         x (tuple): [x,y,z] directions for local direction
         y (tuple): [x,y,z] directions for lab direction
     """
@@ -484,4 +490,4 @@ class Files(object):
 
 
 if __name__ == '__main__':
-    mk_orthoModel()
+    main()

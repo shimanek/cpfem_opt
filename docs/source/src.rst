@@ -24,6 +24,8 @@ opt\_fea
 .. automodule:: src.opt_fea
    :members:
    :undoc-members:
+   :private-members:
+   :special-members: __init__
 
 
 opt\_input
