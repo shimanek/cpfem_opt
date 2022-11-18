@@ -291,10 +291,13 @@ def as_float_tuples(list_of_tuples):
     """
     Take list of tuples that may include ints and return list of tuples containing only floats.
     Useful for optimizer param bounds since type of input determines type of param guesses.
+    Added lambda to ignore floating point errors in evaluated python input bounds.
     """
     new_list = []
+    prec = 10  # decimal places in scientific notation
+    sigfig = lambda val: float(('%.' + str(prec) + 'e') % val)
     for tup in list_of_tuples:
-        float_tup = tuple(float(value) for value in tup)
+        float_tup = tuple(map(sigfig, tup))
         new_list.append(float_tup)
     return new_list
 
