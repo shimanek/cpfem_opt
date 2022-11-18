@@ -48,11 +48,11 @@ def instantiate_optimizer(in_opt, uset):
 def loop(opt, loop_len):
     def single_loop(opt, i):
         global opt_progress  # global progress tracker, row:(i, params, error)
-        next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
+        next_params = get_next_param_set(opt, in_opt)
         while param_check(uset.param_list):  # True if Tau0 >= TauS
             # this tells opt that params are bad but does not record it elsewhere
             opt.tell(next_params, max_rmse(i))
-            next_params = [round_sig(param) for param in opt.ask()] 
+            next_params = get_next_param_set(opt, in_opt)
         else:
             write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
             for orient in uset.orientations.keys():
@@ -305,6 +305,22 @@ def as_float_tuples(list_of_tuples):
 def round_sig(x, sig=4):
     if x == 0.0: return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
+
+
+def get_next_param_set(opt, in_opt):
+    """
+    Give next parameter set to try using current optimizer state.
+
+    Allow to sample bounds exactly, round all else to reasonable precision.
+    """
+    raw_params = opt.ask()
+    new_params = []
+    for param, bound in zip(raw_params, in_opt.bounds):
+        if param in bound:
+            new_params.append(param)
+        else:
+            new_params.append(round_sig(param, sig=6))
+    return new_params
 
 
 def load_subroutine():
