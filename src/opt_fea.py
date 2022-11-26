@@ -74,7 +74,7 @@ def loop(opt, loop_len):
             # this tells opt that params are bad but does not record it elsewhere
             opt.tell(next_params, max_rmse(i))
             next_params = get_next_param_set(opt, in_opt)
-        write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+            write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         else:
             for orient in uset.orientations.keys():
                 if in_opt.has_orient_opt[orient]:
