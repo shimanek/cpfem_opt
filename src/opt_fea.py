@@ -28,7 +28,7 @@ def main():
     global exp_data, in_opt
     # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
-    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    in_opt = InOpt(uset.orientations, uset.params)
     opt = instantiate_optimizer(in_opt, uset)
     if uset.do_load_previous: opt = load_opt(opt)
     load_subroutine()
@@ -39,7 +39,7 @@ def main():
 def instantiate_optimizer(in_opt, uset):
     """
     Define all optimization settings, return optimizer object.
-    
+
     Args:
         in_opt (obj): Input settings defined in :class:`InOpt`.
         uset (obj): User settings from input file.
@@ -68,13 +68,14 @@ def loop(opt, loop_len):
         parameter set.
         """
         global opt_progress  # global progress tracker, row:(i, params, error)
-        next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
+        next_params = get_next_param_set(opt, in_opt)
+        write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         while param_check(uset.param_list):  # True if Tau0 >= TauS
             # this tells opt that params are bad but does not record it elsewhere
             opt.tell(next_params, max_rmse(i))
-            next_params = [round_sig(param) for param in opt.ask()] 
+            next_params = get_next_param_set(opt, in_opt)
+        write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         else:
-            write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
             for orient in uset.orientations.keys():
                 if in_opt.has_orient_opt[orient]:
                     orient_components = get_orient_info(next_params, orient)
@@ -109,7 +110,7 @@ def loop(opt, loop_len):
             opt_progress = update_progress(i, next_params, rmse)
             write_opt_progress()
     
-    get_first()
+    get_first(opt, in_opt)
     for i in range(loop_len):
         single_loop(opt, i)
 
@@ -254,7 +255,7 @@ def get_orient_info(next_params, orient):
     Args:
         next_params (list): Next set of parameters to be evaluated
             by the optimization scheme.
-        orient (str): Index string for dictionary of input 
+        orient (str): Index string for dictionary of input
             orientations specified in :ref:`orientations`.
     """
     dir_load = uset.orientations[orient]['offset']['dir_load']
@@ -265,7 +266,7 @@ def get_orient_info(next_params, orient):
         angle_mag = next_params[index_mag]
     else:
         angle_mag = in_opt.fixed_vars[orient+'_mag']
-    
+
     if (orient+'_deg' in in_opt.params):
         index_deg = in_opt.params.index(orient+'_deg')
         angle_deg = next_params[index_deg]
@@ -336,10 +337,10 @@ def get_offset_angle(direction_og, direction_to, angle):
         angle (float): The angle, in degrees, by which to tilt.
 
     Returns:
-        scipy.optimize.OptimizeResult: 
+        scipy.optimize.OptimizeResult:
             A scipy object containing the attribute
             ``x``, the solution array, which, in this case, is a scalar
-            multiplier such that the angle between ``direction_og`` 
+            multiplier such that the angle between ``direction_og``
             and ``sol.x`` * ``direction_to`` is ``angle``.
 
     """
@@ -365,61 +366,66 @@ class InOpt:
     """
     Stores information about the optimization input parameters.
 
-    Since the hardening parameters and orientation parameters are fundamentally 
-    different, this object stores information about both in such a way that they 
+    Since the hardening parameters and orientation parameters are fundamentally
+    different, this object stores information about both in such a way that they
     can still be access independently.
 
     Args:
         orientations (dict): Orientation information directly from ``opt_input``.
         param_list (list): List of material parameters to be optimized.
-        param_bounds (list): List of tuples describing optimization bounds for 
+        param_bounds (list): List of tuples describing optimization bounds for
             variables given in ``param_list``.
 
     Attributes:
-        orients (list): Nickname strings defining orientations, as given 
+        orients (list): Nickname strings defining orientations, as given
             in :ref:`orientations`.
         material_params (list): Parameter names to be optimized, as in :ref:`orientations`.
         material_bounds (list): Tuple of floats defining bounds of parameter in the same
             index of ``self.params``, again given in :ref:`orientations`.
         orient_params (list): Holds orientation parameters to be optimized, or single
-            orientation parameters if not given as a tuple in :ref:`orientations`. 
+            orientation parameters if not given as a tuple in :ref:`orientations`.
             These are labeled ``orientationNickName_deg`` for the degree value of the
             right hand rotation about the loading axis and ``orientationNickName_mag``
             for the magnitude of the offset.
         orient_bounds (list): List of tuples corresponding to the bounds for the parameters
             stored in ``self.orient_params``.
-        params (list): Combined list consisting of both ``self.material_params`` and 
+        params (list): Combined list consisting of both ``self.material_params`` and
             ``self.orient_params``.
-        bounds (list): Combined list consisting of both ``self.material_bounds`` and 
+        bounds (list): Combined list consisting of both ``self.material_bounds`` and
             ``self.orient_bounds``.
         has_orient_opt (dict): Dictionary with orientation nickname as key and boolean
             as value indicating whether slight loading offsets should be considered
             for that orientation.
-        fixed_vars (dict): Dictionary with orientation nickname as key and any fixed 
+        fixed_vars (dict): Dictionary with orientation nickname as key and any fixed
             orientation information (``_deg`` or ``_mag``) for that loading orientation
             that is not going to be optimized.
         offsets (list): List of dictionaries containing all information about the offset
-            as given in the input file. Not used/called anymore? 
+            as given in the input file. Not used/called anymore?
         num_params_material (int): Number of material parameters to be optimized.
         num_params_orient (int): Number of orientation parameters to be optimized.
         num_params_total (int): Number of parameters to be optimized in total.
 
     Note:
-        Checks if ``orientations[orient]['offset']['deg_bounds']`` 
+        Checks if ``orientations[orient]['offset']['deg_bounds']``
         in :ref:`orientations` is a tuple to determine whether
         orientation should also be optimized.
     """
     # TODO: check if ``offsets`` attribute is still needed.
-    def __init__(self, orientations, param_list, param_bounds):
+    def __init__(self, orientations, params):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
         self.orients = sorted(orientations.keys())
         self.params, self.bounds, \
         self.material_params, self.material_bounds, \
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
-        for i in range(len(param_list)):
-            self.material_params.append(param_list[i])
-            self.material_bounds.append(param_bounds[i])
+        for param, bound in params.items():
+            if type(bound) in (list, tuple):
+                self.material_params.append(param)
+                self.material_bounds.append(bound)
+            elif type(bound) in (float, int):
+                write_params(uset.param_file, param, float(bound))
+            else:
+                raise TypeError('Incorrect bound type in input file.')
         
         # add orientation offset info:
         self.offsets = []
@@ -430,21 +436,21 @@ class InOpt:
                 self.has_orient_opt[orient] = True
                 self.offsets.append({orient:orientations[orient]['offset']})
                 # ^ saves all info (TODO: check if still needed)
-                
+
                 # deg rotation *about* loading orientation:
                 if isinstance(orientations[orient]['offset']['deg_bounds'], tuple):
                     self.orient_params.append(orient+'_deg')
                     self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
                 else:
                     self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
-                
+
                 # mag rotation *away from* loading:
                 if isinstance(orientations[orient]['offset']['mag_bounds'], tuple):
                     self.orient_params.append(orient+'_mag')
                     self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
                 else:
                     self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
-                
+
             else:
                 self.has_orient_opt[orient] = False
         
@@ -463,9 +469,9 @@ def as_float_tuples(list_of_tuples):
     Make sure tuples contain only floats.
 
     Take list of tuples that may include ints and return list of tuples containing only floats. Useful for optimizer param bounds since type of input determines type of param guesses. Skips non-tuple items in list.
-    
+
     Args:
-        list_of_tuples (list): Tuples in this list may contain a mix of 
+        list_of_tuples (list): Tuples in this list may contain a mix of
             floats and ints.
     Returns:
         list[tuple[float]]: The same list of tuples containing only floats.
@@ -484,6 +490,22 @@ def as_float_tuples(list_of_tuples):
 def round_sig(x, sig=4):
     if x == 0.0: return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
+
+
+def get_next_param_set(opt, in_opt):
+    """
+    Give next parameter set to try using current optimizer state.
+
+    Allow to sample bounds exactly, round all else to reasonable precision.
+    """
+    raw_params = opt.ask()
+    new_params = []
+    for param, bound in zip(raw_params, in_opt.bounds):
+        if param in bound:
+            new_params.append(param)
+        else:
+            new_params.append(round_sig(param, sig=6))
+    return new_params
 
 
 def load_subroutine():
@@ -522,7 +544,7 @@ def write_maxRMSE(i, next_params, opt):
     """
     Write parameters and maximum error to global variable ``opt_progress``.
 
-    Also tells the optimizer that this parameter set was bad. Error value 
+    Also tells the optimizer that this parameter set was bad. Error value
     determined by :func:`max_rmse`.
 
     Args:
@@ -558,14 +580,16 @@ def job_extract(outname):
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
-def get_first():
+def get_first(opt, in_opt):
     """
     Run one simulation so its output dimensions can later inform the shape of output data.
     """
+    next_params = get_next_param_set(opt, in_opt)
+    write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
     job_run()
     if not check_complete():
         refine_run()
-    job_extract('first')
+    job_extract('initial')
 
 
 def load_opt(opt):
@@ -828,14 +852,22 @@ def write_params(fname, param_names, param_values):
     Write parameter values to file with ``=`` as separator.
 
     Used for material and orientation input files.
-    
+
     Args:
         fname (str): Name of file in which to look for parameters.
-        param_names (list): List of strings describing parameter names.
+        param_names (list/str): List of strings (or single string) describing parameter names.
             Shares order with ``param_values``.
-        param_values (list): List of parameter values to be written.
+        param_values (list/float): List of parameter values (or single value) to be written.
             Shares order with ``param_names``.
     """
+    if ((type(param_names) not in (list, tuple)) or (len(param_names) == 1)) and (
+        (type(param_values) not in (list, tuple)) or (len(param_values) == 1)
+    ):
+        param_names = [param_names]
+        param_values = [param_values]
+    elif len(param_names) != len(param_values):
+        raise IndexError('Length of names must match length of values.')
+
     with open(fname, 'r') as f1:
         lines = f1.readlines()
     with open('temp_' + fname, 'w+') as f2:

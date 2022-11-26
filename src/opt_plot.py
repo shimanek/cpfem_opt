@@ -84,7 +84,7 @@ def main(orients):
         legend_info = []
         for i, param in enumerate(in_opt.params):
             # 1st entry in best_params is iteration number, so use i+1
-            legend_info.append(name_to_sym(param) + '=' + str(best_params[i+1]))
+            legend_info.append(f'{name_to_sym(param)}={best_params[i+1]:.1f}')
         # also add additional parameters to legend:
         for param_name in uset.param_additional_legend:
             legend_info.append(name_to_sym(param_name) + '=' + str(get_param_value(param_name)))
