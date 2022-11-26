@@ -261,8 +261,13 @@ class InOpt:
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
         for param, bound in params.items():
-            self.material_params.append(param)
-            self.material_bounds.append(bound)
+            if type(bound) in (list, tuple):
+                self.material_params.append(param)
+                self.material_bounds.append(bound)
+            elif type(bound) in (float, int):
+                write_params(uset.param_file, param, float(bound))
+            else:
+                raise TypeError('Incorrect bound type in input file.')
         
         # add orientation offset info:
         self.offsets = []
@@ -600,6 +605,14 @@ def write_params(fname, param_names, param_values):
     Used for material and orientation input files.
     'param_names': list of strings, shares order with 'param_values'
     """
+    if ((type(param_names) not in (list, tuple)) or (len(param_names) == 1)) and (
+        (type(param_values) not in (list, tuple)) or (len(param_values) == 1)
+    ):
+        param_names = [param_names]
+        param_values = [param_values]
+    elif len(param_names) != len(param_values):
+        raise IndexError('Length of names must match length of values.')
+
     with open(fname, 'r') as f1:
         lines = f1.readlines()
     with open('temp_' + fname, 'w+') as f2:
