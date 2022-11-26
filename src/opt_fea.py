@@ -25,7 +25,7 @@ def main():
     global exp_data, in_opt
     # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
-    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    in_opt = InOpt(uset.orientations, uset.params)
     opt = instantiate_optimizer(in_opt, uset)
     if uset.do_load_previous: opt = load_opt(opt)
     load_subroutine()
@@ -49,12 +49,13 @@ def loop(opt, loop_len):
     def single_loop(opt, i):
         global opt_progress  # global progress tracker, row:(i, params, error)
         next_params = get_next_param_set(opt, in_opt)
-        while param_check(uset.param_list):  # True if Tau0 >= TauS
+        write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+        while param_check(uset.params.keys()):  # True if Tau0 >= TauS (bad)
             # this tells opt that params are bad but does not record it elsewhere
             opt.tell(next_params, max_rmse(i))
             next_params = get_next_param_set(opt, in_opt)
-        else:
             write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+        else:
             for orient in uset.orientations.keys():
                 if in_opt.has_orient_opt[orient]:
                     orient_components = get_orient_info(next_params, orient)
@@ -88,7 +89,7 @@ def loop(opt, loop_len):
             opt_progress = update_progress(i, next_params, rmse)
             write_opt_progress()
     
-    get_first()
+    get_first(opt, in_opt)
     for i in range(loop_len):
         single_loop(opt, i)
 
@@ -252,16 +253,16 @@ def get_offset_angle(direction_og, direction_to, angle):
 
 
 class InOpt:
-    def __init__(self, orientations, param_list, param_bounds):
+    def __init__(self, orientations, params):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
         self.orients = sorted(orientations.keys())
         self.params, self.bounds, \
         self.material_params, self.material_bounds, \
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
-        for i in range(len(param_list)):
-            self.material_params.append(param_list[i])
-            self.material_bounds.append(param_bounds[i])
+        for param, bound in params.items():
+            self.material_params.append(param)
+            self.material_bounds.append(bound)
         
         # add orientation offset info:
         self.offsets = []
@@ -368,15 +369,17 @@ def job_extract(outname):
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
-def get_first():
+def get_first(opt, in_opt):
     """
     Run one simulation, using its output dimensions to get shape of output data.
     """
+    next_params = get_next_param_set(opt, in_opt)
+    write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
     job_run()
     have_1st = check_complete()
     if not have_1st: 
         refine_run()
-    job_extract('111')
+    job_extract('initial')
 
 
 def load_opt(opt):
