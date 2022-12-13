@@ -8,13 +8,21 @@ Input Settings
 The input file ``opt_input.py`` contains many parameters relevant to specifying file names and also optimization controls and options. Some detailed optimizer settings are currently still housed within ``opt_fea.py`` in an attempt to simplify the input file. The inputs are outlined below.
 
 
-param_list
-==========
-**list of strings:** Contains hardening parameter names. Values having these names in the file specified as the ``param_file`` variable will be found and modified during optimization.
+params
+======
+**dictionary:** Contains hardening parameter names as keys. 
+Values having these names in the file specified as the ``param_file`` variable will be found and modified during optimization. 
+Values are lower and upper bounds on each parameter, in a tuple.
+If the dictionary value is a single number, that parameter value is written to the ``param_file`` and not cosidered during optimization, as in the first value in the following example:
 
-param_bounds
-============
-**list of tuples of floats:** Lower and upper bounds on each parameter given in the same index of :ref:`param_list`. Really, these should be combined into one dictionary-type input.
+.. code-block:: python3
+
+	params = {
+		'Tau0': 25,
+		'H0': (1400,2400),
+		'TauS': (400,800),
+	}
+
 
 orientations
 ============
@@ -58,7 +66,7 @@ Alternatively to specifying an ``orientations`` dictionary, one can pass informa
 
 param_file
 ==========
-**string:** Name of the file containing the parameters, in Abaqus ``parameter`` format, for the CPFEM run. The values in this file will be modified if listed in :ref:`param_list`.
+**string:** Name of the file containing the parameters, in Abaqus ``parameter`` format, for the CPFEM run. The values in this file will be modified if listed in :ref:`params`.
 
 Since the inputs are in Python, this could be specified semi-automatically by something like :py:`[f for f in os.listdir(os.getcwd()) if f.startswith('mat_param')][0]`, as long as one is sure which single file matches that description; this was useful in an early iteration of the project.
 
@@ -125,7 +133,7 @@ cpus
 
 do_load_previous
 ================
-**boolean:** True if the optimizer should load the previous ``out_progress`` file. Currently, reloading requires that all output was strictly within the current bounds specified in :ref:`param_bounds`. Note that, for clarity, previous runs are given negative iteration numbers in the new ``out_progress`` file. ToDo: automatically filter through output and only reload entries that fall within current parameter bounds.
+**boolean:** True if the optimizer should load the previous ``out_progress`` file. Currently, reloading requires that all output was strictly within the current bounds specified in :ref:`params` as ``params.values()``. Note that, for clarity, previous runs are given negative iteration numbers in the new ``out_progress`` file. ToDo: automatically filter through output and only reload entries that fall within current parameter bounds.
 
 
 grain_size_name
@@ -140,4 +148,4 @@ title
 
 param_additional_legend
 =======================
-**list of strings:** Extra parameters in addition to those in :ref:`param_list` that will be plotted in the single stress-strain plots showing the best-fit parameter set and its comparable experimental curve. Useful if one hardening parameter has been manually set in :ref:`param_file` but is still of interest to the plotted results.
+**list of strings:** Extra parameters in addition to those in :ref:`params` that will be plotted in the single stress-strain plots showing the best-fit parameter set and its comparable experimental curve. Useful if one hardening parameter has been manually set in :ref:`param_file` but is still of interest to the plotted results.

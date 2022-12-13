@@ -48,12 +48,12 @@ Optimization convergence behavior: cumulative lowest error value as a function o
 
 res_evaluations.png
 -------------------
-NxN lower triangular plot (where N is the length of :ref:`param_list`) showing the sampling of each parameter to be optimized.
+NxN lower triangular plot (where N is the length of optimizeable parameters in :ref:`params`) showing the sampling of each parameter to be optimized.
 
 
 res_objective.png
 -----------------
-NxN lower triangular plot (where N is the length of :ref:`param_list`) showing the objective function as predicted by the surrogate model over all of parameter space. Note that this involves grid sampling and averaging that may not be appropriate for the true function to be examined.
+NxN lower triangular plot (where N is the length of optimizeable parameters in :ref:`params`) showing the objective function as predicted by the surrogate model over all of parameter space. Note that this involves grid sampling and averaging that may not be appropriate for the true function to be examined.
 
 
 res_opt_name.png

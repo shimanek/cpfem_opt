@@ -37,6 +37,7 @@ extensions = [
 
 add_module_names = False
 napoleon_google_docstring = True
+numfig = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
