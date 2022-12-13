@@ -123,12 +123,12 @@ def main(orients):
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
-    plt.savefig(fname='res_evaluations.png', dpi=600, transparent=True)
+    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=True)
     plt.close()
     # plot partial dependence
     if __debug__: print('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
-    plt.savefig(fname='res_objective.png', dpi=600, transparent=True)
+    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=True)
     plt.close()
 
     if __debug__: print('# stop plotting\n')
