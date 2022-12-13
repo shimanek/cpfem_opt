@@ -26,7 +26,7 @@ There are currently two methods of model generation: those for monocrystal and p
 The former consists of a single C3D8 element with complex boundary conditions that allows for lattice rotation on the top and bottom face – this rotation is crucial to capture the behavior seen in single crystal tensile tests. 
 For example, see :numref:`fig-mX-compare` for a comparison.
 
-.. figure:: _static/fig_ModelCompare_128_fullGeo.png
+.. figure:: _static/compareNewSingleXtalModel/figures/fig_ModelCompare_128_fullGeo.png
    :name: fig-mX-compare
 
    Engineering stress-strain behavior of single crystal models.
