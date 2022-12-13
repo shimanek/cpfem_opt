@@ -14,6 +14,7 @@ figure_dir = os.path.join(os.getcwd(), 'figures')
 
 def main():
     """import each dataset and save plot"""
+    plt.style.use('dark_background')
     ## data:
     old235 = get_strain_stress('old100EL_235.csv', length=100, area=1)
     new235 = get_strain_stress('new_235.csv', length=1, area=1)
@@ -41,11 +42,22 @@ def get_strain_stress(filename, length, area):
 def plot_SS(strain_stress, labels, title, filename):
     """plot stress vs strain and apply common settings"""
     fig, ax = plt.subplots()
-    colors = ['black', 'brown'] if len(labels)==2 else ['black','brown','blue']
+    # colors = ['black', 'brown'] if len(labels)==2 else ['black','brown','blue']
+    colors = ['white', 'brown'] if len(labels)==2 else ['white','brown','blue']
     styles = ['solid']*10
     markers = ['s', 'x'] if len(labels)==2 else ['s', 'x', 'o']
     for i, ss in enumerate(strain_stress):
-        ax.plot(ss[:,0],ss[:,1], marker=markers[i], label=labels[i], color=colors[i], linestyle=styles[i], markerfacecolor='None', linewidth=1)
+        ax.plot(
+            ss[:,0], 
+            ss[:,1], 
+            markevery=10, 
+            marker=markers[i], 
+            label=labels[i], 
+            color=colors[i], 
+            linestyle=styles[i], 
+            markerfacecolor='None', 
+            linewidth=2, 
+        )
 
     # legend:
     handles, labels = plt.gca().get_legend_handles_labels()
