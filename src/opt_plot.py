@@ -21,7 +21,7 @@ from skopt.plots import plot_evaluations, plot_objective
 def main(orients):
     if __debug__: print('\n# start plotting')
     global in_opt
-    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    in_opt = InOpt(uset.orientations, uset.params)
     for orient in orients:
         data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
         num_iter = len(data[0,0,:])
