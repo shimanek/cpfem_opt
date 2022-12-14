@@ -25,7 +25,7 @@ def main():
     global exp_data, in_opt
     # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
-    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    in_opt = InOpt(uset.orientations, uset.params)
     opt = instantiate_optimizer(in_opt, uset)
     if uset.do_load_previous: opt = load_opt(opt)
     load_subroutine()
@@ -48,13 +48,14 @@ def instantiate_optimizer(in_opt, uset):
 def loop(opt, loop_len):
     def single_loop(opt, i):
         global opt_progress  # global progress tracker, row:(i, params, error)
-        next_params = [round_sig(param) for param in opt.ask()]  # get and round parameters to test
-        while param_check(uset.param_list):  # True if Tau0 >= TauS
+        next_params = get_next_param_set(opt, in_opt)
+        write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+        while param_check(uset.params.keys()):  # True if Tau0 >= TauS (bad)
             # this tells opt that params are bad but does not record it elsewhere
             opt.tell(next_params, max_rmse(i))
-            next_params = [round_sig(param) for param in opt.ask()] 
-        else:
+            next_params = get_next_param_set(opt, in_opt)
             write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
+        else:
             for orient in uset.orientations.keys():
                 if in_opt.has_orient_opt[orient]:
                     orient_components = get_orient_info(next_params, orient)
@@ -88,7 +89,7 @@ def loop(opt, loop_len):
             opt_progress = update_progress(i, next_params, rmse)
             write_opt_progress()
     
-    get_first()
+    get_first(opt, in_opt)
     for i in range(loop_len):
         single_loop(opt, i)
 
@@ -252,16 +253,21 @@ def get_offset_angle(direction_og, direction_to, angle):
 
 
 class InOpt:
-    def __init__(self, orientations, param_list, param_bounds):
+    def __init__(self, orientations, params):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
         self.orients = sorted(orientations.keys())
         self.params, self.bounds, \
         self.material_params, self.material_bounds, \
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
-        for i in range(len(param_list)):
-            self.material_params.append(param_list[i])
-            self.material_bounds.append(param_bounds[i])
+        for param, bound in params.items():
+            if type(bound) in (list, tuple):
+                self.material_params.append(param)
+                self.material_bounds.append(bound)
+            elif type(bound) in (float, int):
+                write_params(uset.param_file, param, float(bound))
+            else:
+                raise TypeError('Incorrect bound type in input file.')
         
         # add orientation offset info:
         self.offsets = []
@@ -291,21 +297,36 @@ def as_float_tuples(list_of_tuples):
     """
     Take list of tuples that may include ints and return list of tuples containing only floats.
     Useful for optimizer param bounds since type of input determines type of param guesses.
-    Skips non-tuple items in list.
+    Added lambda to ignore floating point errors in evaluated python input bounds.
     """
     new_list = []
-    for old_item in list_of_tuples:
-        if isinstance(old_item, tuple):
-            new_item = tuple(float(value) for value in old_item)
-        else:
-            new_item = old_item
-        new_list.append(new_item)
+    prec = 10  # decimal places in scientific notation
+    sigfig = lambda val: float(('%.' + str(prec) + 'e') % val)
+    for tup in list_of_tuples:
+        float_tup = tuple(map(sigfig, tup))
+        new_list.append(float_tup)
     return new_list
 
 
 def round_sig(x, sig=4):
     if x == 0.0: return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
+
+
+def get_next_param_set(opt, in_opt):
+    """
+    Give next parameter set to try using current optimizer state.
+
+    Allow to sample bounds exactly, round all else to reasonable precision.
+    """
+    raw_params = opt.ask()
+    new_params = []
+    for param, bound in zip(raw_params, in_opt.bounds):
+        if param in bound:
+            new_params.append(param)
+        else:
+            new_params.append(round_sig(param, sig=6))
+    return new_params
 
 
 def load_subroutine():
@@ -353,15 +374,17 @@ def job_extract(outname):
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
-def get_first():
+def get_first(opt, in_opt):
     """
     Run one simulation, using its output dimensions to get shape of output data.
     """
+    next_params = get_next_param_set(opt, in_opt)
+    write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
     job_run()
     have_1st = check_complete()
     if not have_1st: 
         refine_run()
-    job_extract('111')
+    job_extract('initial')
 
 
 def load_opt(opt):
@@ -380,8 +403,8 @@ def load_opt(opt):
 
     if __debug__:
         with open('debug.txt', 'a+') as f:
-            f.write('# loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
+            f.write('loading previous results\n')
+            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
 
     opt.tell(x_in, y_in)
     return opt
@@ -582,6 +605,14 @@ def write_params(fname, param_names, param_values):
     Used for material and orientation input files.
     'param_names': list of strings, shares order with 'param_values'
     """
+    if ((type(param_names) not in (list, tuple)) or (len(param_names) == 1)) and (
+        (type(param_values) not in (list, tuple)) or (len(param_values) == 1)
+    ):
+        param_names = [param_names]
+        param_values = [param_values]
+    elif len(param_names) != len(param_values):
+        raise IndexError('Length of names must match length of values.')
+
     with open(fname, 'r') as f1:
         lines = f1.readlines()
     with open('temp_' + fname, 'w+') as f2:

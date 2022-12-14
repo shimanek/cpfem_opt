@@ -82,7 +82,7 @@ def main(orients):
         legend_info = []
         for i, param in enumerate(in_opt.params):
             # 1st entry in best_params is iteration number, so use i+1
-            legend_info.append(name_to_sym(param) + '=' + str(best_params[i+1]))
+            legend_info.append(f'{name_to_sym(param)}={best_params[i+1]:.1f}')
         # also add additional parameters to legend:
         for param_name in uset.param_additional_legend:
             legend_info.append(name_to_sym(param_name) + '=' + str(get_param_value(param_name)))
@@ -123,12 +123,12 @@ def main(orients):
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
-    plt.savefig(fname='res_evaluations.png', dpi=600, transparent=True)
+    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=True)
     plt.close()
     # plot partial dependence
     if __debug__: print('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
-    plt.savefig(fname='res_objective.png', dpi=600, transparent=True)
+    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=True)
     plt.close()
 
     if __debug__: print('# stop plotting\n')
@@ -192,15 +192,14 @@ def name_to_sym(name):
         'qA2':r'$q_{A2}$',
         'qB2':r'$q_{B2}$'
         }
-    name_to_sym_dict_lower = {k.lower():v for k, v in name_to_sym_dict.items()}
-    if name in name_to_sym_dict_lower.keys():
-        return name_to_sym_dict_lower[name.lower()]
+    if name in name_to_sym_dict.keys():
+        return name_to_sym_dict[name]
     elif '_deg' in name:
         return name[:-4] + ' rot.'
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError('Uknown parameter name:', name)
+        raise KeyError('Uknown parameter name')
 
 
 def get_param_value(param_name):

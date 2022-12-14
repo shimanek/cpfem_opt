@@ -3,14 +3,12 @@ User settings for opt_fea.py and opt_plot.py
 """
 import os
 
-param_list = [
-	'Tau01', 'H01', 'TauS1', 
-	'Tau02', 'H02', 'TauS2'
-	]
-param_bounds = [
-	(100,200), (1400,2400), (400,800), 
-	(500,800), (4100,6000), (100,300)
-	]
+params = {
+	'Tau0': (100,200),
+	'H0': (1400,2400),
+	'TauS': (400,800),
+}
+
 orientations = {
 	'001':{
 		'exp':'exp_Cu-mX-001.csv',
