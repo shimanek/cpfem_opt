@@ -164,7 +164,7 @@ def apply_param_labels(ax_array, diag_label):
     return ax_array
 
 
-def name_to_sym(name):
+def name_to_sym(name, cap_sense=False):
     name_to_sym_dict = {
         'Tau0':r'$\tau_0$',
         'Tau01':r'$\tau_0^{(1)}$',
@@ -184,6 +184,7 @@ def name_to_sym(name):
         'gamma0':r'$\gamma_0$',
         'gamma01':r'$\gamma_0^{(1)}$',
         'gamma02':r'$\gamma_0^{(2)}$',
+        'g0': r'$\gamma_0$',
         'f0':r'$f_0$',
         'f01':r'$f_0^{(1)}$',
         'f02':r'$f_0^{(2)}$',
@@ -192,14 +193,21 @@ def name_to_sym(name):
         'qA2':r'$q_{A2}$',
         'qB2':r'$q_{B2}$'
         }
-    if name in name_to_sym_dict.keys():
+    if cap_sense == True:
+        have_key = name in name_to_sym_dict.keys()
+    else:
+        have_key = name.lower() in [key.lower() for key in name_to_sym_dict.keys()]
+        name_to_sym_dict = {key.lower(): value for key, value in name_to_sym_dict.items()}
+        name = name.lower()
+
+    if have_key:
         return name_to_sym_dict[name]
     elif '_deg' in name:
         return name[:-4] + ' rot.'
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError('Uknown parameter name')
+        raise KeyError(f'Uknown parameter name {name}')
 
 
 def get_param_value(param_name):
