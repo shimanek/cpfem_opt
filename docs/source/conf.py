@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
+    'sphinx_autodoc_typehints',
 ]
 
 add_module_names = False
