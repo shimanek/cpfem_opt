@@ -150,7 +150,7 @@ class ExpData():
         strain (unitless), and stress (matching the CPFEM inputs, often MPa).
 
     """
-    def __init__(self, orientations):
+    def __init__(self, orientations: dict):
         self.data = {}
         for orient in orientations.keys():
             expname = orientations[orient]['exp']
@@ -164,23 +164,23 @@ class ExpData():
                 'raw':self.raw
             }
 
-    def _load(self, fname):
+    def _load(self, fname: str):
         """
         Load original experimental stress-strain data and order it by strain.
 
         Args:
-            fname (str): Filename for experimental stress-strain data
+            fname: Filename for experimental stress-strain data
         """
         original_SS = np.loadtxt(fname, skiprows=1, delimiter=',')
         original_SS = original_SS[original_SS[:,0].argsort()]
         return original_SS
 
-    def _get_max_strain(self, fname):
+    def _get_max_strain(self, fname: str):
         """
         Take either user max strain or file max strain.
         
         Args:
-            fname (str): Filename for experimental stress-strain data
+            fname: Filename for experimental stress-strain data
         """
         if float(uset.max_strain) == 0.0:
             max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
@@ -188,12 +188,12 @@ class ExpData():
             max_strain = uset.max_strain
         return max_strain
 
-    def _get_SS(self, fname):
+    def _get_SS(self, fname: str):
         """
         Limit experimental data to within max_strain. 
         
         Args:
-            fname (str): Filename for experimental stress-strain data
+            fname: Filename for experimental stress-strain data
         """
         expSS = self._load(fname)
         max_strain = self._max_strain
@@ -205,12 +205,12 @@ class ExpData():
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 
-    def _write_strain_inp(self, jobname):
+    def _write_strain_inp(self, jobname: str):
         """
         Modify boundary conditions in main Abaqus input file to match max strain.
         
         Args:
-            jobname (str): Filename for main Abaqus job -- unique to 
+            jobname: Filename for main Abaqus job -- unique to 
                 orientation if applicable.
 
         Note:
@@ -245,7 +245,7 @@ class ExpData():
             f.writelines(lines[bound_line_ind+1:])
 
 
-def unit_vector(vector):
+def unit_vector(vector: NDArray[Shape['3'], Floating]) -> NDArray[Shape['3'], Floating]:
     """Gives a normalized vector using ``numpy.linalg.norm``."""
     return vector/norm(vector)
 
@@ -350,7 +350,11 @@ def get_offset_angle(
             and ``sol.x`` * ``direction_to`` is ``angle``.
 
     """
-    def _opt_angle(offset_amt, direction_og, direction_to, angle):
+    def _opt_angle(
+        offset_amt: float, 
+        direction_og: NDArray[Shape['3'], Floating], 
+        direction_to: NDArray[Shape['3'], Floating], 
+        angle: float):
         """
         Angle difference between original vector and new vector, which is
         made by small offset toward new direction.  Returns zero when offset_amt 
