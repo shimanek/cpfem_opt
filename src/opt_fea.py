@@ -84,6 +84,7 @@ def loop(opt, loop_len):
             for orient in uset.orientations.keys():
                 rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
                 combine_SS(zeros=False, orientation=orient)  # save stress-strain data
+            write_error_to_file(rmse_list, in_opt.orients)
             rmse = np.mean(rmse_list)
             opt.tell(next_params, rmse)
             opt_progress = update_progress(i, next_params, rmse)
@@ -92,6 +93,16 @@ def loop(opt, loop_len):
     get_first(opt, in_opt)
     for i in range(loop_len):
         single_loop(opt, i)
+
+
+def write_error_to_file(error_list, orient_list):
+    error_fname = 'out_errors.txt'
+    if os.path.isfile(error_fname):
+        with open(error_fname, 'a+') as f:
+            f.write('\n' + ','.join([str(err) for err in error_list + [np.mean(error_list)]]))
+    else:
+        with open(error_fname, 'w+') as f:
+            f.write('# errors for {} and mean error'.format(orient_list))
 
 
 class ExpData():
@@ -173,13 +184,20 @@ def get_orient_info(next_params, orient):
     Get components of orientation-defining vectors and their names
     for substitution into the orientation input files.
     """
-    dir_load = uset.orientations[orient]['dir_load']
+    dir_load = uset.orientations[orient]['offset']['dir_load']
     dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
 
-    index_mag = in_opt.params.index(orient+'_mag')
-    index_deg = in_opt.params.index(orient+'_deg')
-    angle_deg = next_params[index_deg]
-    angle_mag = next_params[index_mag]
+    if (orient+'_mag' in in_opt.params):
+        index_mag = in_opt.params.index(orient+'_mag')
+        angle_mag = next_params[index_mag]
+    else:
+        angle_mag = in_opt.fixed_vars[orient+'_mag']
+    
+    if (orient+'_deg' in in_opt.params):
+        index_deg = in_opt.params.index(orient+'_deg')
+        angle_deg = next_params[index_deg]
+    else:
+        angle_deg = in_opt.fixed_vars[orient+'_deg']
 
     col_load = unit_vector(np.asarray(dir_load))
     col_0deg = unit_vector(np.asarray(dir_0deg))
@@ -193,7 +211,7 @@ def get_orient_info(next_params, orient):
         dir_load = dir_load / norm(dir_load)
         dir_to = dir_to / norm(dir_to)
         dir_0deg = dir_0deg / norm(dir_0deg)
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('orientation: {}'.format(orient))
             f.write('\nbasis OG: \n{0}'.format(basis_og))
             f.write('\n')
@@ -211,7 +229,7 @@ def get_orient_info(next_params, orient):
 
     if __debug__: # write final loading orientation info
         angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('\ndir_tot: {0}'.format(dir_tot))
             f.write('\ndir_ortho: {0}'.format(dir_ortho))
             f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
@@ -272,14 +290,27 @@ class InOpt:
         # add orientation offset info:
         self.offsets = []
         self.has_orient_opt = {}
+        self.fixed_vars = {}
         for orient in self.orients:
             if 'offset' in orientations[orient].keys():
-                self.offsets.append({orient:orientations[orient]['offset']})
-                self.orient_params.append(orient+'_deg')
-                self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
-                self.orient_params.append(orient+'_mag')
-                self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
                 self.has_orient_opt[orient] = True
+                self.offsets.append({orient:orientations[orient]['offset']})
+                # ^ saves all info (TODO: check if still needed)
+                
+                # deg rotation *about* loading orientation:
+                if isinstance(orientations[orient]['offset']['deg_bounds'], tuple):
+                    self.orient_params.append(orient+'_deg')
+                    self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
+                else:
+                    self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
+                
+                # mag rotation *away from* loading:
+                if isinstance(orientations[orient]['offset']['mag_bounds'], tuple):
+                    self.orient_params.append(orient+'_mag')
+                    self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                else:
+                    self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
+                
             else:
                 self.has_orient_opt[orient] = False
         
@@ -298,13 +329,17 @@ def as_float_tuples(list_of_tuples):
     Take list of tuples that may include ints and return list of tuples containing only floats.
     Useful for optimizer param bounds since type of input determines type of param guesses.
     Added lambda to ignore floating point errors in evaluated python input bounds.
+    Skips non-tuple items in list.
     """
     new_list = []
     prec = 10  # decimal places in scientific notation
     sigfig = lambda val: float(('%.' + str(prec) + 'e') % val)
-    for tup in list_of_tuples:
-        float_tup = tuple(map(sigfig, tup))
-        new_list.append(float_tup)
+    for old_item in list_of_tuples:
+        if isinstance(old_item, tuple):
+            new_item = tuple(map(sigfig, old_item))
+        else:
+            new_item = old_item
+        new_list.append(new_item)
     return new_list
 
 
@@ -378,11 +413,8 @@ def get_first(opt, in_opt):
     """
     Run one simulation, using its output dimensions to get shape of output data.
     """
-    next_params = get_next_param_set(opt, in_opt)
-    write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
     job_run()
-    have_1st = check_complete()
-    if not have_1st: 
+    if not check_complete():
         refine_run()
     job_extract('initial')
 
@@ -402,7 +434,7 @@ def load_opt(opt):
     y_in = opt_progress[:,-1].tolist()
 
     if __debug__:
-        with open('debug.txt', 'a+') as f:
+        with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
             f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
 
