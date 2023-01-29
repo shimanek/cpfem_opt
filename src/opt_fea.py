@@ -488,9 +488,11 @@ def as_float_tuples(list_of_tuples: list[tuple[Union[int,float]]]) -> list[tuple
 
     """
     new_list = []
+    prec = 10  # decimal places in scientific notation
+    sigfig = lambda val: float(('%.' + str(prec) + 'e') % val)
     for old_item in list_of_tuples:
         if isinstance(old_item, tuple):
-            new_item = tuple(float(value) for value in old_item)
+            new_item = tuple(map(sigfig, old_item))
         else:
             new_item = old_item
         new_list.append(new_item)
@@ -594,8 +596,6 @@ def get_first(opt: object, in_opt: object) -> None:
     """
     Run one simulation so its output dimensions can later inform the shape of output data.
     """
-    next_params = get_next_param_set(opt, in_opt)
-    write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
     job_run()
     if not check_complete():
         refine_run()

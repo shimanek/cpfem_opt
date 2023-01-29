@@ -23,7 +23,7 @@ from skopt.plots import plot_evaluations, plot_objective
 def main(orients):
     if __debug__: print('\n# start plotting')
     global in_opt
-    in_opt = InOpt(uset.orientations, uset.param_list, uset.param_bounds)
+    in_opt = InOpt(uset.orientations, uset.params)
     for orient in orients:
         data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
         num_iter = len(data[0,0,:])
@@ -125,12 +125,12 @@ def main(orients):
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
-    plt.savefig(fname='res_evaluations.png', dpi=600, transparent=True)
+    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=True)
     plt.close()
     # plot partial dependence
     if __debug__: print('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
-    plt.savefig(fname='res_objective.png', dpi=600, transparent=True)
+    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=True)
     plt.close()
 
     if __debug__: print('# stop plotting\n')
@@ -166,7 +166,7 @@ def apply_param_labels(ax_array, diag_label):
     return ax_array
 
 
-def name_to_sym(name):
+def name_to_sym(name, cap_sense=False):
     name_to_sym_dict = {
         'Tau0':r'$\tau_0$',
         'Tau01':r'$\tau_0^{(1)}$',
@@ -186,6 +186,7 @@ def name_to_sym(name):
         'gamma0':r'$\gamma_0$',
         'gamma01':r'$\gamma_0^{(1)}$',
         'gamma02':r'$\gamma_0^{(2)}$',
+        'g0': r'$\gamma_0$',
         'f0':r'$f_0$',
         'f01':r'$f_0^{(1)}$',
         'f02':r'$f_0^{(2)}$',
@@ -194,15 +195,21 @@ def name_to_sym(name):
         'qA2':r'$q_{A2}$',
         'qB2':r'$q_{B2}$'
         }
-    name_to_sym_dict_lower = {k.lower():v for k, v in name_to_sym_dict.items()}
-    if name.lower() in name_to_sym_dict_lower.keys():
-        return name_to_sym_dict_lower[name.lower()]
+    if cap_sense == True:
+        have_key = name in name_to_sym_dict.keys()
+    else:
+        have_key = name.lower() in [key.lower() for key in name_to_sym_dict.keys()]
+        name_to_sym_dict = {key.lower(): value for key, value in name_to_sym_dict.items()}
+        name = name.lower()
+
+    if have_key:
+        return name_to_sym_dict[name]
     elif '_deg' in name:
         return name[:-4] + ' rot.'
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError('Uknown parameter name:', name)
+        raise KeyError(f'Unknown parameter name {name}')
 
 
 def get_param_value(param_name):
