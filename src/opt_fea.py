@@ -57,12 +57,13 @@ def loop(opt, loop_len):
             write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         else:
             for orient in uset.orientations.keys():
-                if in_opt.has_orient_opt[orient]:
-                    orient_components = get_orient_info(next_params, orient)
-                    write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
-                else:
-                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+                if len(uset.orientations[orient]) > 1:
+                    if in_opt.has_orient_opt[orient]:
+                        orient_components = get_orient_info(next_params, orient)
+                        write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+                    else:
+                        shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
                 
                 job_run()
                 if not check_complete(): # try decreasing max increment size
