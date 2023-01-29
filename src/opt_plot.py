@@ -1,10 +1,12 @@
 """
-Plots 3 figures per input orientation:
-1. Stress-strain curves of all parameter sets
-2. Stress-strain curve of best parameter set
+Plots several figures per optimization:
+
+1. Stress-strain curves of all parameter sets (per orientation, if applicable)
+2. Stress-strain curve of best parameter set (per orientation, if applicable)
 3. Convergence (lowest error as a function of iteration)
 4. Histograms of parameter evaluations
 5. Partial dependencies of the objective function
+
 Prints best parameters to file out_best_params.txt
 """
 import numpy as np
@@ -207,7 +209,7 @@ def name_to_sym(name, cap_sense=False):
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError(f'Uknown parameter name {name}')
+        raise KeyError(f'Unknown parameter name {name}')
 
 
 def get_param_value(param_name):
