@@ -190,7 +190,7 @@ class ExpData():
             else:
                 max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
         else:
-            max_strain = uset.max_strain
+            max_strain = uset.max_strain if not uset.is_compression else (-1 * uset.max_strain)
         return max_strain
 
     def _get_SS(self, fname: str):
