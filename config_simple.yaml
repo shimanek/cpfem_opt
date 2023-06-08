@@ -1,4 +1,4 @@
-name: opt
+name: opt-dev
 channels:
   - conda-forge
   - defaults

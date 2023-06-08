@@ -404,7 +404,9 @@ def job_run():
 
 
 def job_extract(outname):
-    run_string = 'abaqus python -c "from opt_fea import write2file; write2file()"'
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    extractions_script_path = os.path.join(src_dir, "opt_abaqus.py")
+    run_string = f'abaqus python {extractions_script_path}'
     subprocess.run(run_string, shell=True)
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
