@@ -1,0 +1,71 @@
+*Node, nset=All
+	1,	0.,	0.,	0.
+	2,	1.,	0.,	0.
+	3,	1.,	1.,	0.
+	4,	0.,	1.,	0.
+	5,	0.,	0.,	1.
+	6,	1.,	0.,	1.
+	7,	1.,	1.,	1.
+	8,	0.,	1.,	1.
+**
+*Element, type=C3D8, elset=All
+1, 1, 2, 3, 4, 5, 6, 7, 8
+*Nset, nset=Left
+1, 5, 4, 8
+*Nset, nset=Right
+2, 6, 3, 7
+*Nset, nset=Front
+5, 6, 7, 8
+*Nset, nset=Back
+1, 2, 3, 4
+*Nset, nset=Top
+3, 4, 7, 8, 
+*Nset, nset=Bottom
+1, 2, 5, 6, 
+*Nset, nset=T1
+3
+*Nset, nset=T2
+4
+*Nset, nset=T3
+7
+*Nset, nset=T4
+8
+*Nset, nset=B1
+1
+*Nset, nset=B2
+2
+*Nset, nset=B3
+5
+*Nset, nset=B4
+6
+*Nset, nset=Backends
+1, 2, 3, 4, 
+*Nset, nset=Origin
+1
+**
+*Parameter
+x=1.
+y=1.
+z=1.
+x_Half=x/2
+y_Half=y/2
+z_Half=z/2
+*Node
+20000000,	<x_Half>,	<y_Half>,	0.
+20000001,	<x_Half>,	<y_Half>,	<z_Half>
+20000002,	<x_Half>,	<y>,		0.
+20000003,	<x>,		<y_Half>,	0.
+20000004,	0.,		<y_Half>,	0.
+20000005,	<x_Half>,	0.,		0.
+*Nset, nset=RP-Back
+20000000
+*Nset, nset=RP-Front
+20000001
+*Nset, nset=RP-Top
+20000002
+*Nset, nset=RP-Right
+20000003
+*Nset, nset=RP-Left
+20000004
+*Nset, nset=RP-Bottom
+20000005

@@ -1,7 +1,8 @@
 .DS_Store
 .run*
 docs/build/*
-src/__pychache__/*
+src/__pychache__/
 docs/source/generated/*
 docs/generated/*
 **/*.pyc
+**/*.png

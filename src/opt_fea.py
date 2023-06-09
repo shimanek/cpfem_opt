@@ -1,6 +1,8 @@
 """
 Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
-All user inputs should be in `opt_input.py` file.
+All user inputs should be in the ``opt_input.py`` file.
+Two import modes: tries to load Abaqus modules (when running to extract stress-strain
+info) or else imports sciki-optimize library (when running as main outside of Abaqus).
 """
 import os
 import shutil
@@ -14,13 +16,17 @@ try: # Abaqus-specific imports
     from abaqusConstants import *
     from odbMaterial import *
     from odbSection import *
-except: # optimizer-specific imports
+except: # optimizer-specific imports and typing
     from skopt import Optimizer
     from scipy.interpolate import interp1d
     from scipy.optimize import curve_fit, root
 
+    from typing import Union
+    from nptyping import NDArray, Shape, Floating
+
 
 def main():
+    """Instantiate data structures, start optimization loop."""
     remove_out_files()
     global exp_data, in_opt
     # TODO declare out_progress global up here?
@@ -33,7 +39,17 @@ def main():
     loop(opt, uset.loop_len)
 
 
-def instantiate_optimizer(in_opt, uset):
+def instantiate_optimizer(in_opt: object, uset: object) -> object:
+    """
+    Define all optimization settings, return optimizer object.
+
+    Args:
+        in_opt: Input settings defined in :class:`InOpt`.
+        uset : User settings from input file.
+
+    Returns:
+        skopt.Optimize: Instantiated optimization object.
+    """
     opt = Optimizer(
         dimensions = in_opt.bounds, 
         base_estimator = 'gp',
@@ -41,16 +57,23 @@ def instantiate_optimizer(in_opt, uset):
         initial_point_generator = 'lhs',
         acq_func = 'EI',
         acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
-        )
+    )
     return opt
 
 
 def loop(opt, loop_len):
+    """Holds all optimization iteration instructions."""
     def single_loop(opt, i):
+        """
+        Run single iteration (one parameter set) of the optimization scheme.
+
+        Single loops need to be separate function calls to allow empty returns to exit one
+        parameter set.
+        """
         global opt_progress  # global progress tracker, row:(i, params, error)
         next_params = get_next_param_set(opt, in_opt)
         write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
-        while param_check(uset.params.keys()):  # True if Tau0 >= TauS (bad)
+        while param_check(uset.param_list):  # True if Tau0 >= TauS
             # this tells opt that params are bad but does not record it elsewhere
             opt.tell(next_params, max_rmse(i))
             next_params = get_next_param_set(opt, in_opt)
@@ -95,7 +118,15 @@ def loop(opt, loop_len):
         single_loop(opt, i)
 
 
-def write_error_to_file(error_list, orient_list):
+def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None:
+    """
+    Write error values separated by orientation, if applicable.
+
+    Args:
+        error_list: List of floats indicated error values for each orientation
+            in ``orient_list``, with which this list shares an order.
+        orient_list: List of strings holding orientation nicknames.
+    """
     error_fname = 'out_errors.txt'
     if os.path.isfile(error_fname):
         with open(error_fname, 'a+') as f:
@@ -106,7 +137,20 @@ def write_error_to_file(error_list, orient_list):
 
 
 class ExpData():
-    def __init__(self, orientations):
+    """
+    Loads and stores experimental data.
+
+    Attributes:
+        data (dict): Indexed by orientation name defined in :ref:`orientations`, 
+            with values of max strain (internal: ``_max_strain``) and ``raw``, 
+            which houses the experimental stress strain data truncated by max strain.
+
+    Note:
+        Experimental stress-strain data are expected as plaintext in two columns:
+        strain (unitless), and stress (matching the CPFEM inputs, often MPa).
+
+    """
+    def __init__(self, orientations: dict):
         self.data = {}
         for orient in orientations.keys():
             expname = orientations[orient]['exp']
@@ -120,22 +164,37 @@ class ExpData():
                 'raw':self.raw
             }
 
-    def _load(self, fname):
-        """Load original exp_SS data, order it."""
+    def _load(self, fname: str):
+        """
+        Load original experimental stress-strain data and order it by strain.
+
+        Args:
+            fname: Filename for experimental stress-strain data
+        """
         original_SS = np.loadtxt(fname, skiprows=1, delimiter=',')
         original_SS = original_SS[original_SS[:,0].argsort()]
         return original_SS
 
-    def _get_max_strain(self, fname):
-        """Take either user max strain or file max strain."""
+    def _get_max_strain(self, fname: str):
+        """
+        Take either user max strain or file max strain.
+        
+        Args:
+            fname: Filename for experimental stress-strain data
+        """
         if float(uset.max_strain) == 0.0:
             max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
         else:
             max_strain = uset.max_strain
         return max_strain
 
-    def _get_SS(self, fname):
-        """Limit experimental data to within max_strain"""
+    def _get_SS(self, fname: str):
+        """
+        Limit experimental data to within max_strain. 
+        
+        Args:
+            fname: Filename for experimental stress-strain data
+        """
         expSS = self._load(fname)
         max_strain = self._max_strain
         if not (float(uset.max_strain) == 0.0):
@@ -146,8 +205,18 @@ class ExpData():
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 
-    def _write_strain_inp(self, jobname):
-        """Modify displacement B.C. in main Abaqus input file to match max strain."""
+    def _write_strain_inp(self, jobname: str):
+        """
+        Modify boundary conditions in main Abaqus input file to match max strain.
+        
+        Args:
+            jobname: Filename for main Abaqus job -- unique to 
+                orientation if applicable.
+
+        Note:
+            Relies on finding ``RP-TOP`` under ``*Boundary`` keyword in main
+            input file.
+        """
         # input file:
         max_bound = round(self._max_strain * uset.length, 4) #round to 4 digits
 
@@ -176,13 +245,21 @@ class ExpData():
             f.writelines(lines[bound_line_ind+1:])
 
 
-def unit_vector(vector):
+def unit_vector(vector: NDArray[Shape['3'], Floating]) -> NDArray[Shape['3'], Floating]:
+    """Gives a normalized vector using ``numpy.linalg.norm``."""
     return vector/norm(vector)
 
-def get_orient_info(next_params, orient):
+
+def get_orient_info(next_params: list, orient: str) -> dict:
     """
     Get components of orientation-defining vectors and their names
     for substitution into the orientation input files.
+
+    Args:
+        next_params: Next set of parameters to be evaluated
+            by the optimization scheme.
+        orient: Index string for dictionary of input
+            orientations specified in :ref:`orientations`.
     """
     dir_load = uset.orientations[orient]['offset']['dir_load']
     dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
@@ -192,7 +269,7 @@ def get_orient_info(next_params, orient):
         angle_mag = next_params[index_mag]
     else:
         angle_mag = in_opt.fixed_vars[orient+'_mag']
-    
+
     if (orient+'_deg' in in_opt.params):
         index_deg = in_opt.params.index(orient+'_deg')
         angle_deg = next_params[index_deg]
@@ -240,7 +317,7 @@ def get_orient_info(next_params, orient):
     return {'names':component_names, 'values':component_values}
 
 
-def _mk_x_rot(theta):
+def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:
     """
     Generates rotation matrix for theta (radians) clockwise rotation 
     about first column of 3D basis when applied from right.
@@ -251,8 +328,33 @@ def _mk_x_rot(theta):
     return rot
 
 
-def get_offset_angle(direction_og, direction_to, angle):
-    def _opt_angle(offset_amt, direction_og, direction_to, angle):
+def get_offset_angle(
+    direction_og: NDArray[Shape['3'], Floating], 
+    direction_to: NDArray[Shape['3'], Floating], 
+    angle: float) -> object:
+    """
+    Iterative solution to finding vectors tilted toward other vectors.
+
+    Args:
+        direction_og: Real space vector defining
+            the original direction to be tilted away from.
+        direction_to: Real space vector defining
+            the direction to be tilted towards.
+        angle: The angle, in degrees, by which to tilt.
+
+    Returns:
+        scipy.optimize.OptimizeResult:
+            A scipy object containing the attribute
+            ``x``, the solution array, which, in this case, is a scalar
+            multiplier such that the angle between ``direction_og``
+            and ``sol.x`` * ``direction_to`` is ``angle``.
+
+    """
+    def _opt_angle(
+        offset_amt: float, 
+        direction_og: NDArray[Shape['3'], Floating], 
+        direction_to: NDArray[Shape['3'], Floating], 
+        angle: float):
         """
         Angle difference between original vector and new vector, which is
         made by small offset toward new direction.  Returns zero when offset_amt 
@@ -271,6 +373,54 @@ def get_offset_angle(direction_og, direction_to, angle):
 
 
 class InOpt:
+    """
+    Stores information about the optimization input parameters.
+
+    Since the hardening parameters and orientation parameters are fundamentally
+    different, this object stores information about both in such a way that they
+    can still be access independently.
+
+    Args:
+        orientations (dict): Orientation information directly from ``opt_input``.
+        param_list (list): List of material parameters to be optimized.
+        param_bounds (list): List of tuples describing optimization bounds for
+            variables given in ``param_list``.
+
+    Attributes:
+        orients (list): Nickname strings defining orientations, as given
+            in :ref:`orientations`.
+        material_params (list): Parameter names to be optimized, as in :ref:`orientations`.
+        material_bounds (list): Tuple of floats defining bounds of parameter in the same
+            index of ``self.params``, again given in :ref:`orientations`.
+        orient_params (list): Holds orientation parameters to be optimized, or single
+            orientation parameters if not given as a tuple in :ref:`orientations`.
+            These are labeled ``orientationNickName_deg`` for the degree value of the
+            right hand rotation about the loading axis and ``orientationNickName_mag``
+            for the magnitude of the offset.
+        orient_bounds (list): List of tuples corresponding to the bounds for the parameters
+            stored in ``self.orient_params``.
+        params (list): Combined list consisting of both ``self.material_params`` and
+            ``self.orient_params``.
+        bounds (list): Combined list consisting of both ``self.material_bounds`` and
+            ``self.orient_bounds``.
+        has_orient_opt (dict): Dictionary with orientation nickname as key and boolean
+            as value indicating whether slight loading offsets should be considered
+            for that orientation.
+        fixed_vars (dict): Dictionary with orientation nickname as key and any fixed
+            orientation information (``_deg`` or ``_mag``) for that loading orientation
+            that is not going to be optimized.
+        offsets (list): List of dictionaries containing all information about the offset
+            as given in the input file. Not used/called anymore?
+        num_params_material (int): Number of material parameters to be optimized.
+        num_params_orient (int): Number of orientation parameters to be optimized.
+        num_params_total (int): Number of parameters to be optimized in total.
+
+    Note:
+        Checks if ``orientations[orient]['offset']['deg_bounds']``
+        in :ref:`orientations` is a tuple to determine whether
+        orientation should also be optimized.
+    """
+    # TODO: check if ``offsets`` attribute is still needed.
     def __init__(self, orientations, params):
         """Sorted orientations here defines order for use in single list passed to optimizer."""
         self.orients = sorted(orientations.keys())
@@ -296,21 +446,21 @@ class InOpt:
                 self.has_orient_opt[orient] = True
                 self.offsets.append({orient:orientations[orient]['offset']})
                 # ^ saves all info (TODO: check if still needed)
-                
+
                 # deg rotation *about* loading orientation:
                 if isinstance(orientations[orient]['offset']['deg_bounds'], tuple):
                     self.orient_params.append(orient+'_deg')
                     self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
                 else:
                     self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
-                
+
                 # mag rotation *away from* loading:
                 if isinstance(orientations[orient]['offset']['mag_bounds'], tuple):
                     self.orient_params.append(orient+'_mag')
                     self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
                 else:
                     self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
-                
+
             else:
                 self.has_orient_opt[orient] = False
         
@@ -324,12 +474,18 @@ class InOpt:
         self.num_params_total = len(self.params)
 
 
-def as_float_tuples(list_of_tuples):
+def as_float_tuples(list_of_tuples: list[tuple[Union[int,float]]]) -> list[tuple[float]]:
     """
-    Take list of tuples that may include ints and return list of tuples containing only floats.
-    Useful for optimizer param bounds since type of input determines type of param guesses.
-    Added lambda to ignore floating point errors in evaluated python input bounds.
-    Skips non-tuple items in list.
+    Make sure tuples contain only floats.
+
+    Take list of tuples that may include ints and return list of tuples containing only floats. Useful for optimizer param bounds since type of input determines type of param guesses. Skips non-tuple items in list.
+
+    Args:
+        list_of_tuples: Tuples in this list may contain a mix of
+            floats and ints.
+    Returns:
+        The same list of tuples containing only floats.
+
     """
     new_list = []
     prec = 10  # decimal places in scientific notation
@@ -343,12 +499,12 @@ def as_float_tuples(list_of_tuples):
     return new_list
 
 
-def round_sig(x, sig=4):
+def round_sig(x: float, sig: int=4) -> float:
     if x == 0.0: return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
 
-def get_next_param_set(opt, in_opt):
+def get_next_param_set(opt: object, in_opt: object) -> list[float]:
     """
     Give next parameter set to try using current optimizer state.
 
@@ -365,26 +521,49 @@ def get_next_param_set(opt, in_opt):
 
 
 def load_subroutine():
-    """Compile the user subroutine uset.umat as a shared library in the directory"""
+    """
+    Compile the user subroutine uset.umat as a shared library in the directory.
+    """
     subprocess.run('abaqus make library=' + uset.umat, shell=True)
 
 
 def write_opt_progress():
+    """Writes global variable ``opt_progress`` to file."""
     global opt_progress
     opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
     np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
 
 
-def update_progress(i, next_params, rmse):
+def update_progress(i:int, next_params:tuple, error:float) -> None:
+    """
+    Writes parameters and error value to global variable ``opt_progress``.
+
+    Args:
+        i: Optimization iteration loop number.
+        next_params: Parameter values evaluated during iteration ``i``.
+        error: Error value of these parameters, which is defined in 
+            :func:`calc_error`.
+    """
     global opt_progress
     if (i == 0) and (uset.do_load_previous == False): 
-        opt_progress = np.transpose(np.asarray([i] + next_params + [rmse]))
+        opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
     else: 
-        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [rmse])))
+        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))
     return opt_progress
 
 
-def write_maxRMSE(i, next_params, opt):
+def write_maxRMSE(i: int, next_params: tuple, opt: object):
+    """
+    Write parameters and maximum error to global variable ``opt_progress``.
+
+    Also tells the optimizer that this parameter set was bad. Error value
+    determined by :func:`max_rmse`.
+
+    Args:
+        i : Optimization iteration loop number.
+        next_params: Parameter values evaluated during iteration ``i``.
+        opt: Current instance of skopt.Optimizer object.
+    """
     global opt_progress
     rmse = max_rmse(i)
     opt.tell( next_params, rmse )
@@ -395,25 +574,27 @@ def write_maxRMSE(i, next_params, opt):
 
 
 def job_run():
+    """Run the Abaqus job!"""
     subprocess.run( 
         'abaqus job=' + uset.jobname \
         + ' user=' + uset.umat[:-2] + '-std.o' \
         + ' cpus=' + str(uset.cpus) \
         + ' double int ask_delete=OFF', shell=True
-        )
+    )
 
 
-def job_extract(outname):
-    src_dir = os.path.dirname(os.path.abspath(__file__))
-    extractions_script_path = os.path.join(src_dir, "opt_abaqus.py")
-    run_string = f'abaqus python {extractions_script_path}'
+def job_extract(outname: str):
+    """
+    Call :class:`GetForceDisplacement` from new shell to extract force-displacement data.
+    """
+    run_string = 'abaqus python -c "from opt_fea import write2file; write2file()"'
     subprocess.run(run_string, shell=True)
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
-def get_first(opt, in_opt):
+def get_first(opt: object, in_opt: object) -> None:
     """
-    Run one simulation, using its output dimensions to get shape of output data.
+    Run one simulation so its output dimensions can later inform the shape of output data.
     """
     job_run()
     if not check_complete():
@@ -421,10 +602,20 @@ def get_first(opt, in_opt):
     job_extract('initial')
 
 
-def load_opt(opt):
+def load_opt(opt: object) -> object:
     """
     Load input files of previous optimizations to use as initial points in current optimization.
-    Note the parameter bounds for the input files must be within current parameter bounds.
+    
+    Looks for a file named ``out_progress.txt`` from which to load previous results.
+    Requires access to global variable ``opt_progress`` that stores optimization output. 
+    The parameter bounds for the input files must be within current parameter bounds.
+    Renumbers old/loaded results in ``opt_progress`` to have negative iteration numbers.
+
+    Args:
+        opt: Current instance of the optimizer object.
+
+    Returns:
+        skopt.Optimizer: Updated instance of the optimizer object.
     """
     global opt_progress
     filename = 'out_progress.txt'
@@ -445,6 +636,7 @@ def load_opt(opt):
 
 
 def remove_out_files():
+    """Delete files from previous optimization runs if not reloading results."""
     if not uset.do_load_previous:
         out_files = [f for f in os.listdir(os.getcwd()) \
             if (f.startswith('out_') or f.startswith('res_') or f.startswith('temp_'))]
@@ -455,10 +647,13 @@ def remove_out_files():
         if (f.startswith(uset.jobname)) and not (f.endswith('.inp'))]
 
 
-def param_check(param_list):
+def param_check(param_list: list[str]):
     """
-    True if tau0 >= tauS, which is bad, not practically but in theory.
-    In theory, tau0 should always come before tauS.
+    True if tau0 >= tauS
+
+    In theory, tau0 should always come before tauS, even though it doesn't make a difference
+    mathematically/practically. Function checks for multiple systems if numbered in the form
+    ``TauS``, ``TauS1``, ``TauS2`` and ``Tau0``, ``Tau01``, ``Tau02``.
     """
     # TODO: ck if it's possible to satisfy this based on mat_params and bounds, raise helpful error
     tau0_list, tauS_list = [], []
@@ -474,11 +669,18 @@ def param_check(param_list):
     return is_bad
 
 
-def max_rmse(loop_number):
+def max_rmse(loop_number: int):
     """
-    Return an estimate of a "large" error value to dissuade the optimizer from repeating
-    areas in parameter space where Abaqus+UMAT can't complete calculations.
-    Often this ends up defaulting to `uset.large_error`.
+    Give a "large" error value.
+
+    Return an estimate of a large enough error value to dissuade the optimizer 
+    from repeating areas in parameter space where Abaqus+UMAT can't complete calculations.
+    Often this ends up defaulting to `uset.large_error`, but a closer match to realistic
+    errors is desireable so that the optimizer sees a smoother and more reaslisti function.
+
+    Note:
+        Grace period of 15 iterations is hardcoded here, as is the factor of 1.5 times the 
+        interquartile range of previous error values.
     """
     grace = 15
     if loop_number < grace:
@@ -495,7 +697,7 @@ def max_rmse(loop_number):
 
 def check_complete():
     """
-    Return true if Abaqus has finished sucessfully.
+    Return ``True`` if Abaqus has finished sucessfully.
     """
     stafile = uset.jobname + '.sta'
     if os.path.isfile(stafile):
@@ -505,10 +707,19 @@ def check_complete():
     return ('SUCCESSFULLY' in last_line)
 
 
-def refine_run(ct=0):
+def refine_run(ct: int=0):
     """
-    Cut max increment size by `factor`, possibly multiple times (up to 
-    `uset.recursion_depth` or until Abaqus finished successfully).
+    Restart simulation with smaller maximum increment size.
+
+    Cut max increment size by ``factor`` (hardcoded), possibly multiple 
+    times up to ``uset.recursion_depth`` or until Abaqus finished successfully.
+    After eventual success or failure, rewrites original input file so that the 
+    next run starts with the initial, large maximum increment. 
+    Recursive calls tracked through ``ct`` parameter.
+
+    Args:
+        ct: Number of times this function has already been called. Starts
+        at 0 and can go up to ``uset.recursion_depth``.
     """
     factor = 5.0
     ct += 1
@@ -557,9 +768,18 @@ def refine_run(ct=0):
         refine_run(ct)
 
 
-def combine_SS(zeros, orientation):
+def combine_SS(zeros: bool, orientation: str) -> None:
     """
     Reads npy stress-strain output and appends current results.
+
+    Loads from ``temp_time_disp_force_{orientation}.csv`` and writes to 
+    ``out_time_disp_force_{orientation}.npy``. Should only be called after all
+    orientations have run, since ``zeros==True`` if any one fails.
+
+    Args:
+        zeros: True if the run failed and a sheet of zeros should be written
+            in place of real time-force-displacement data.
+        orientation: Orientation nickname to keep temporary output files separate.
     """
     filename = 'out_time_disp_force_{0}.npy'.format(orientation)
     sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
@@ -573,10 +793,20 @@ def combine_SS(zeros, orientation):
     np.save(filename, dat)
 
 
-def calc_error(exp_data, orientation):
+def calc_error(
+        exp_data: NDArray[Shape['*, 2'], Floating], 
+        orientation: str
+    ) -> float:
     """
-    Calculates root mean squared error between experimental and calculated 
-    stress-strain curves.  
+    Give error value for run compared to experimental data.
+
+    Calculates relative (%) root mean squared error between experimental and calculated 
+    stress-strain curves. Interpolation of experimental data depends on :ref:`i_powerlaw`.
+
+    Args:
+        exp_data: Array of experimental strain-stress, as from 
+            ``exp_data.data[orientation]['raw']``.
+        orientation: Orientation nickname.
     """
     simSS = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)[1:,1:]
     # TODO get simulation dimensions at beginning of running this file, pass to this function
@@ -633,11 +863,22 @@ def calc_error(exp_data, orientation):
     return rmse
 
 
-def write_params(fname, param_names, param_values):
+def write_params(
+        fname: str, 
+        param_names: Union[list[str], str], 
+        param_values: Union[list[float], float],
+    ) -> None:
     """
-    Write parameter values to file with `=` as separator.
+    Write parameter values to file with ``=`` as separator.
+
     Used for material and orientation input files.
-    'param_names': list of strings, shares order with 'param_values'
+
+    Args:
+        fname: Name of file in which to look for parameters.
+        param_names: List of strings (or single string) describing parameter names.
+            Shares order with ``param_values``.
+        param_values: List of parameter values (or single value) to be written.
+            Shares order with ``param_names``.
     """
     if ((type(param_names) not in (list, tuple)) or (len(param_names) == 1)) and (
         (type(param_values) not in (list, tuple)) or (len(param_values) == 1)
