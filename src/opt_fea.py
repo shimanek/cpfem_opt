@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import numpy as np
 from numpy.linalg import norm
+from copy import deepcopy
 import opt_input as uset  # user settings file
 
 try: # Abaqus-specific imports
@@ -172,7 +173,8 @@ class ExpData():
             fname: Filename for experimental stress-strain data
         """
         original_SS = np.loadtxt(fname, skiprows=1, delimiter=',')
-        original_SS = original_SS[original_SS[:,0].argsort()]
+        order = -1 if uset.is_compression else 1
+        original_SS = original_SS[original_SS[:,0].argsort()][::order]
         return original_SS
 
     def _get_max_strain(self, fname: str):
@@ -183,9 +185,12 @@ class ExpData():
             fname: Filename for experimental stress-strain data
         """
         if float(uset.max_strain) == 0.0:
-            max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+            if uset.is_compression == True:
+                max_strain = min(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+            else:
+                max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
         else:
-            max_strain = uset.max_strain
+            max_strain = uset.max_strain if not uset.is_compression else (-1 * uset.max_strain)
         return max_strain
 
     def _get_SS(self, fname: str):
@@ -813,8 +818,12 @@ def calc_error(
     simSS[:,0] = simSS[:,0] / uset.length  # disp to strain
     simSS[:,1] = simSS[:,1] / uset.area    # force to stress
 
-    expSS = exp_data
+    expSS = deepcopy(exp_data)
 
+    if uset.is_compression:
+        expSS *= -1.
+        simSS *= -1.
+    
     # deal with unequal data lengths 
     if simSS[-1,0] > expSS[-1,0]:
         # chop off simSS

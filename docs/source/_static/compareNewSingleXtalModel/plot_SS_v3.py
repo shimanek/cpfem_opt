@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import os
 from matplotlib.ticker import AutoMinorLocator
 
+
+
 ## i/o folders
 data_dir = os.path.join(os.getcwd(), 'data')
 figure_dir = os.path.join(os.getcwd(), 'figures')
@@ -15,6 +17,7 @@ figure_dir = os.path.join(os.getcwd(), 'figures')
 def main():
     """import each dataset and save plot"""
     plt.style.use('dark_background')
+    plt.rcParams.update({'axes.facecolor':'#131416', 'figure.facecolor':'#131416', 'savefig.facecolor':'#131416', 'patch.facecolor':'#131416'})
     ## data:
     old235 = get_strain_stress('old100EL_235.csv', length=100, area=1)
     new235 = get_strain_stress('new_235.csv', length=1, area=1)
@@ -42,6 +45,8 @@ def get_strain_stress(filename, length, area):
 def plot_SS(strain_stress, labels, title, filename):
     """plot stress vs strain and apply common settings"""
     fig, ax = plt.subplots()
+    # fig.patch.set_facecolor('#131416')
+    # ax.patch.set_facecolor('#131416')
     # colors = ['black', 'brown'] if len(labels)==2 else ['black','brown','blue']
     colors = ['white', 'brown'] if len(labels)==2 else ['white','brown','blue']
     styles = ['solid']*10
