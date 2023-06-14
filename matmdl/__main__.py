@@ -1,2 +1,5 @@
-from matmdl.opt_fea import main
-main()
+from matmdl.run import main as run
+from matmdl.plot import main as plot
+
+run()
+plot()
