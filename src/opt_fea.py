@@ -19,6 +19,7 @@ from scipy.optimize import curve_fit, root
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
+import .utilities as util
 
 def main():
     """Instantiate data structures, start optimization loop."""
@@ -244,11 +245,6 @@ class ExpData():
             f.writelines(lines[bound_line_ind+1:])
 
 
-def unit_vector(vector: NDArray[Shape['3'], Floating]) -> NDArray[Shape['3'], Floating]:
-    """Gives a normalized vector using ``numpy.linalg.norm``."""
-    return vector/norm(vector)
-
-
 def get_orient_info(next_params: list, orient: str) -> dict:
     """
     Get components of orientation-defining vectors and their names
@@ -275,9 +271,9 @@ def get_orient_info(next_params: list, orient: str) -> dict:
     else:
         angle_deg = in_opt.fixed_vars[orient+'_deg']
 
-    col_load = unit_vector(np.asarray(dir_load))
-    col_0deg = unit_vector(np.asarray(dir_0deg))
-    col_cross = unit_vector(np.cross(col_load, col_0deg))
+    col_load = util.unit_vector(np.asarray(dir_load))
+    col_0deg = util.unit_vector(np.asarray(dir_0deg))
+    col_cross = util.unit_vector(np.cross(col_load, col_0deg))
 
     basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
     basis_new = np.matmul(basis_og, _mk_x_rot(np.deg2rad(angle_deg)))
@@ -465,42 +461,12 @@ class InOpt:
         
         # combine material and orient info into one ordered list:
         self.params = self.material_params + self.orient_params
-        self.bounds = as_float_tuples(self.material_bounds + self.orient_bounds)
+        self.bounds = util.as_float_tuples(self.material_bounds + self.orient_bounds)
         
         # descriptive stats on input object:
         self.num_params_material = len(self.material_params)
         self.num_params_orient = len(self.orient_params)
         self.num_params_total = len(self.params)
-
-
-def as_float_tuples(list_of_tuples: list[tuple[Union[int,float]]]) -> list[tuple[float]]:
-    """
-    Make sure tuples contain only floats.
-
-    Take list of tuples that may include ints and return list of tuples containing only floats. Useful for optimizer param bounds since type of input determines type of param guesses. Skips non-tuple items in list.
-
-    Args:
-        list_of_tuples: Tuples in this list may contain a mix of
-            floats and ints.
-    Returns:
-        The same list of tuples containing only floats.
-
-    """
-    new_list = []
-    prec = 10  # decimal places in scientific notation
-    sigfig = lambda val: float(('%.' + str(prec) + 'e') % val)
-    for old_item in list_of_tuples:
-        if isinstance(old_item, tuple):
-            new_item = tuple(map(sigfig, old_item))
-        else:
-            new_item = old_item
-        new_list.append(new_item)
-    return new_list
-
-
-def round_sig(x: float, sig: int=4) -> float:
-    if x == 0.0: return 0.
-    return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
 
 def get_next_param_set(opt: object, in_opt: object) -> list[float]:
@@ -515,7 +481,7 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
         if param in bound:
             new_params.append(param)
         else:
-            new_params.append(round_sig(param, sig=6))
+            new_params.append(util.round_sig(param, sig=6))
     return new_params
 
 
