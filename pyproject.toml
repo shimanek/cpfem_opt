@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cpfem_opt"
+name = "matmdl"
 version = "0.0.1"
 dependencies = [
     "scikit-optimize",

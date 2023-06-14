@@ -19,7 +19,8 @@ from scipy.optimize import curve_fit, root
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
-from .utilities import unit_vector, as_float_tuples, round_sig
+from matmdl.utilities imunit_vector, as_float_tuples, round_sig
+
 
 def main():
     """Instantiate data structures, start optimization loop."""
@@ -271,9 +272,9 @@ def get_orient_info(next_params: list, orient: str) -> dict:
     else:
         angle_deg = in_opt.fixed_vars[orient+'_deg']
 
-    col_load = util.unit_vector(np.asarray(dir_load))
-    col_0deg = util.unit_vector(np.asarray(dir_0deg))
-    col_cross = util.unit_vector(np.cross(col_load, col_0deg))
+    col_load = unit_vector(np.asarray(dir_load))
+    col_0deg = unit_vector(np.asarray(dir_0deg))
+    col_cross = unit_vector(np.cross(col_load, col_0deg))
 
     basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
     basis_new = np.matmul(basis_og, _mk_x_rot(np.deg2rad(angle_deg)))
@@ -461,7 +462,7 @@ class InOpt:
         
         # combine material and orient info into one ordered list:
         self.params = self.material_params + self.orient_params
-        self.bounds = util.as_float_tuples(self.material_bounds + self.orient_bounds)
+        self.bounds = as_float_tuples(self.material_bounds + self.orient_bounds)
         
         # descriptive stats on input object:
         self.num_params_material = len(self.material_params)
@@ -481,7 +482,7 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
         if param in bound:
             new_params.append(param)
         else:
-            new_params.append(util.round_sig(param, sig=6))
+            new_params.append(round_sig(param, sig=6))
     return new_params
 
 

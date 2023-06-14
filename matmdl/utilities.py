@@ -1,6 +1,7 @@
 """
 Utility functions.
 """
+import numpy as np
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
