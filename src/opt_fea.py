@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit, root
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
-import .utilities as util
+from . import utilities as util
 
 def main():
     """Instantiate data structures, start optimization loop."""
