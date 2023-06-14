@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit, root
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
-from . import utilities as util
+from .utilities import unit_vector, as_float_tuples, round_sig
 
 def main():
     """Instantiate data structures, start optimization loop."""

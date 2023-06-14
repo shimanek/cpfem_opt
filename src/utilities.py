@@ -1,6 +1,9 @@
 """
 Utility functions.
 """
+from typing import Union
+from nptyping import NDArray, Shape, Floating
+
 
 def unit_vector(vector: NDArray[Shape['3'], Floating]) -> NDArray[Shape['3'], Floating]:
     """Gives a normalized vector using ``numpy.linalg.norm``."""
