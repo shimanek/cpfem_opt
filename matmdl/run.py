@@ -22,7 +22,9 @@ from nptyping import NDArray, Shape, Floating
 from matmdl.utilities import unit_vector, as_float_tuples, round_sig
 from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt
-
+from matmdl.optimizer import instantiate_optimizer, get_next_param_set, write_opt_progress, update_progress, load_opt
+from matmdl.runner import get_first, remove_out_files, combine_SS, write_params, refine_run
+from matmdl.crystalPlasticity import get_orient_info, _mk_x_rot, get_offset_angle, load_subroutine, param_check
 
 def main():
     """Instantiate data structures, start optimization loop."""
@@ -36,28 +38,6 @@ def main():
     load_subroutine()
 
     loop(opt, uset.loop_len)
-
-
-def instantiate_optimizer(in_opt: object, uset: object) -> object:
-    """
-    Define all optimization settings, return optimizer object.
-
-    Args:
-        in_opt: Input settings defined in :class:`InOpt`.
-        uset : User settings from input file.
-
-    Returns:
-        skopt.Optimize: Instantiated optimization object.
-    """
-    opt = Optimizer(
-        dimensions = in_opt.bounds, 
-        base_estimator = 'gp',
-        n_initial_points = uset.n_initial_points,
-        initial_point_generator = 'lhs',
-        acq_func = 'EI',
-        acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
-    )
-    return opt
 
 
 def loop(opt, loop_len):
@@ -135,176 +115,6 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
             f.write('# errors for {} and mean error'.format(orient_list))
 
 
-def get_orient_info(next_params: list, orient: str) -> dict:
-    """
-    Get components of orientation-defining vectors and their names
-    for substitution into the orientation input files.
-
-    Args:
-        next_params: Next set of parameters to be evaluated
-            by the optimization scheme.
-        orient: Index string for dictionary of input
-            orientations specified in :ref:`orientations`.
-    """
-    dir_load = uset.orientations[orient]['offset']['dir_load']
-    dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
-
-    if (orient+'_mag' in in_opt.params):
-        index_mag = in_opt.params.index(orient+'_mag')
-        angle_mag = next_params[index_mag]
-    else:
-        angle_mag = in_opt.fixed_vars[orient+'_mag']
-
-    if (orient+'_deg' in in_opt.params):
-        index_deg = in_opt.params.index(orient+'_deg')
-        angle_deg = next_params[index_deg]
-    else:
-        angle_deg = in_opt.fixed_vars[orient+'_deg']
-
-    col_load = unit_vector(np.asarray(dir_load))
-    col_0deg = unit_vector(np.asarray(dir_0deg))
-    col_cross = unit_vector(np.cross(col_load, col_0deg))
-
-    basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
-    basis_new = np.matmul(basis_og, _mk_x_rot(np.deg2rad(angle_deg)))
-    dir_to = basis_new[:,1]
-
-    if __debug__:  # write angle_deg rotation info
-        dir_load = dir_load / norm(dir_load)
-        dir_to = dir_to / norm(dir_to)
-        dir_0deg = dir_0deg / norm(dir_0deg)
-        with open('out_debug.txt', 'a+') as f:
-            f.write('orientation: {}'.format(orient))
-            f.write('\nbasis OG: \n{0}'.format(basis_og))
-            f.write('\n')
-            f.write('\nrotation: \n{0}'.format(_mk_x_rot(angle_deg*np.pi/180.)))
-            f.write('\n')
-            f.write('\nbasis new: \n{0}'.format(basis_new))
-            f.write('\n\n')
-            f.write('dir_load: {0}\tdir_to: {1}\n'.format(dir_load, dir_to))
-            f.write('angle_deg_inp: {0}\n'.format(angle_deg))
-            f.write('all params: {}'.format(next_params))
-
-    sol = get_offset_angle(dir_load, dir_to, angle_mag)
-    dir_tot = dir_load + sol * dir_to
-    dir_ortho = np.array([1, 0, -dir_tot[0]/dir_tot[2]])
-
-    if __debug__: # write final loading orientation info
-        angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
-        with open('out_debug.txt', 'a+') as f:
-            f.write('\ndir_tot: {0}'.format(dir_tot))
-            f.write('\ndir_ortho: {0}'.format(dir_ortho))
-            f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
-            f.write('\n\n')
-    component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
-    component_values = list(dir_ortho) + list(dir_tot)
-
-    return {'names':component_names, 'values':component_values}
-
-
-def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:
-    """
-    Generates rotation matrix for theta (radians) clockwise rotation 
-    about first column of 3D basis when applied from right.
-    """
-    rot = np.array([[1,             0,              0],
-                    [0, np.cos(theta), -np.sin(theta)],
-                    [0, np.sin(theta),  np.cos(theta)]])
-    return rot
-
-
-def get_offset_angle(
-    direction_og: NDArray[Shape['3'], Floating], 
-    direction_to: NDArray[Shape['3'], Floating], 
-    angle: float) -> object:
-    """
-    Iterative solution to finding vectors tilted toward other vectors.
-
-    Args:
-        direction_og: Real space vector defining
-            the original direction to be tilted away from.
-        direction_to: Real space vector defining
-            the direction to be tilted towards.
-        angle: The angle, in degrees, by which to tilt.
-
-    Returns:
-        scipy.optimize.OptimizeResult:
-            A scipy object containing the attribute
-            ``x``, the solution array, which, in this case, is a scalar
-            multiplier such that the angle between ``direction_og``
-            and ``sol.x`` * ``direction_to`` is ``angle``.
-
-    """
-    def _opt_angle(
-        offset_amt: float, 
-        direction_og: NDArray[Shape['3'], Floating], 
-        direction_to: NDArray[Shape['3'], Floating], 
-        angle: float):
-        """
-        Angle difference between original vector and new vector, which is
-        made by small offset toward new direction.  Returns zero when offset_amt 
-        produces new vector at desired angle.  Uses higher namespace variables so 
-        that the single argument can be tweaked by optimizer.
-        """
-        direction_new = direction_og + offset_amt * direction_to
-        angle_difference = \
-            np.dot(direction_og, direction_new) / \
-            ( norm(direction_og) * norm(direction_new) ) \
-            - np.cos(np.deg2rad(angle))
-        return angle_difference
-
-    sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x
-    return sol
-
-
-def get_next_param_set(opt: object, in_opt: object) -> list[float]:
-    """
-    Give next parameter set to try using current optimizer state.
-
-    Allow to sample bounds exactly, round all else to reasonable precision.
-    """
-    raw_params = opt.ask()
-    new_params = []
-    for param, bound in zip(raw_params, in_opt.bounds):
-        if param in bound:
-            new_params.append(param)
-        else:
-            new_params.append(round_sig(param, sig=6))
-    return new_params
-
-
-def load_subroutine():
-    """
-    Compile the user subroutine uset.umat as a shared library in the directory.
-    """
-    subprocess.run('abaqus make library=' + uset.umat, shell=True)
-
-
-def write_opt_progress():
-    """Writes global variable ``opt_progress`` to file."""
-    global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
-    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
-
-
-def update_progress(i:int, next_params:tuple, error:float) -> None:
-    """
-    Writes parameters and error value to global variable ``opt_progress``.
-
-    Args:
-        i: Optimization iteration loop number.
-        next_params: Parameter values evaluated during iteration ``i``.
-        error: Error value of these parameters, which is defined in 
-            :func:`calc_error`.
-    """
-    global opt_progress
-    if (i == 0) and (uset.do_load_previous == False): 
-        opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
-    else: 
-        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))
-    return opt_progress
-
-
 def write_maxRMSE(i: int, next_params: tuple, opt: object):
     """
     Write parameters and maximum error to global variable ``opt_progress``.
@@ -347,83 +157,6 @@ def job_extract(outname: str):
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
-def get_first(opt: object, in_opt: object) -> None:
-    """
-    Run one simulation so its output dimensions can later inform the shape of output data.
-    """
-    job_run()
-    if not check_complete():
-        refine_run()
-    job_extract('initial')
-
-
-def load_opt(opt: object) -> object:
-    """
-    Load input files of previous optimizations to use as initial points in current optimization.
-    
-    Looks for a file named ``out_progress.txt`` from which to load previous results.
-    Requires access to global variable ``opt_progress`` that stores optimization output. 
-    The parameter bounds for the input files must be within current parameter bounds.
-    Renumbers old/loaded results in ``opt_progress`` to have negative iteration numbers.
-
-    Args:
-        opt: Current instance of the optimizer object.
-
-    Returns:
-        skopt.Optimizer: Updated instance of the optimizer object.
-    """
-    global opt_progress
-    filename = 'out_progress.txt'
-    arrayname = 'out_time_disp_force.npy'
-    opt_progress = np.loadtxt(filename, skiprows=1)
-    # renumber iterations (negative length to zero) to distinguish from new calculations:
-    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
-    x_in = opt_progress[:,1:-1].tolist()
-    y_in = opt_progress[:,-1].tolist()
-
-    if __debug__:
-        with open('out_debug.txt', 'a+') as f:
-            f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
-
-    opt.tell(x_in, y_in)
-    return opt
-
-
-def remove_out_files():
-    """Delete files from previous optimization runs if not reloading results."""
-    if not uset.do_load_previous:
-        out_files = [f for f in os.listdir(os.getcwd()) \
-            if (f.startswith('out_') or f.startswith('res_') or f.startswith('temp_'))]
-        if len(out_files) > 0:
-            for f in out_files:
-                os.remove(f)
-    job_files = [f for f in os.listdir(os.getcwd()) \
-        if (f.startswith(uset.jobname)) and not (f.endswith('.inp'))]
-
-
-def param_check(param_list: list[str]):
-    """
-    True if tau0 >= tauS
-
-    In theory, tau0 should always come before tauS, even though it doesn't make a difference
-    mathematically/practically. Function checks for multiple systems if numbered in the form
-    ``TauS``, ``TauS1``, ``TauS2`` and ``Tau0``, ``Tau01``, ``Tau02``.
-    """
-    # TODO: ck if it's possible to satisfy this based on mat_params and bounds, raise helpful error
-    tau0_list, tauS_list = [], []
-    for sysnum in ['', '1', '2']:
-        if ('TauS'+sysnum in param_list) or ('Tau0'+sysnum in param_list):
-            f1 = open(uset.param_file, 'r')
-            lines = f1.readlines()
-            for line in lines:
-                if line.startswith('Tau0'+sysnum): tau0_list.append(float(line[7:]))
-                if line.startswith('TauS'+sysnum): tauS_list.append(float(line[7:]))
-            f1.close()
-    is_bad = any([(tau0 >= tauS) for tau0, tauS in zip(tau0_list, tauS_list)])
-    return is_bad
-
-
 def max_rmse(loop_number: int):
     """
     Give a "large" error value.
@@ -462,90 +195,6 @@ def check_complete():
     return ('SUCCESSFULLY' in last_line)
 
 
-def refine_run(ct: int=0):
-    """
-    Restart simulation with smaller maximum increment size.
-
-    Cut max increment size by ``factor`` (hardcoded), possibly multiple 
-    times up to ``uset.recursion_depth`` or until Abaqus finished successfully.
-    After eventual success or failure, rewrites original input file so that the 
-    next run starts with the initial, large maximum increment. 
-    Recursive calls tracked through ``ct`` parameter.
-
-    Args:
-        ct: Number of times this function has already been called. Starts
-        at 0 and can go up to ``uset.recursion_depth``.
-    """
-    factor = 5.0
-    ct += 1
-    # remove old lock file from previous unfinished simulation
-    subprocess.run('rm *.lck', shell=True)
-    filename = uset.jobname + '.inp'
-    tempfile = 'temp_input.txt'
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-    
-    # exit strategy:
-    if ct == 1:  # need to save original parameters outside of this recursive function
-        with open(tempfile, 'w') as f:
-            f.writelines(lines)
-    def write_original(filename):
-        with open(tempfile, 'r') as f:
-            lines = f.readlines()
-        with open(filename, 'w') as f:
-            f.writelines(lines)
-
-    # find line after step line:
-    step_line_ind = [ i for i, line in enumerate(lines) \
-        if line.lower().startswith('*static')][0] + 1 
-    step_line = [number.strip() for number in lines[step_line_ind].strip().split(',')]
-    original_increment = float(step_line[-1])
-
-    # use original / factor:
-    new_step_line = step_line[:-1] + ['%.4E' % (original_increment/factor)]
-    new_step_line_str = str(new_step_line[0])
-    for i in range(1, len(new_step_line)):
-        new_step_line_str = new_step_line_str + ', '
-        new_step_line_str = new_step_line_str + str(new_step_line[i])
-    new_step_line_str = new_step_line_str + '\n'
-    with open(filename, 'w') as f:
-        f.writelines(lines[:step_line_ind])
-        f.writelines(new_step_line_str)
-        f.writelines(lines[step_line_ind+1:])
-    job_run()
-    if check_complete():
-        write_original(filename)
-        return
-    elif ct >= uset.recursion_depth:
-        write_original(filename)
-        return
-    else:
-        refine_run(ct)
-
-
-def combine_SS(zeros: bool, orientation: str) -> None:
-    """
-    Reads npy stress-strain output and appends current results.
-
-    Loads from ``temp_time_disp_force_{orientation}.csv`` and writes to 
-    ``out_time_disp_force_{orientation}.npy``. Should only be called after all
-    orientations have run, since ``zeros==True`` if any one fails.
-
-    Args:
-        zeros: True if the run failed and a sheet of zeros should be written
-            in place of real time-force-displacement data.
-        orientation: Orientation nickname to keep temporary output files separate.
-    """
-    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
-    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
-    if zeros:
-        sheet = np.zeros((np.shape(sheet)))
-    if os.path.isfile(filename): 
-        dat = np.load(filename)
-        dat = np.dstack((dat,sheet))
-    else:
-        dat = sheet
-    np.save(filename, dat)
 
 
 def calc_error(
@@ -620,46 +269,6 @@ def calc_error(
     rmse = np.sqrt(np.sum( deviations_pct**2) / len(fineSS)) 
 
     return rmse
-
-
-def write_params(
-        fname: str, 
-        param_names: Union[list[str], str], 
-        param_values: Union[list[float], float],
-    ) -> None:
-    """
-    Write parameter values to file with ``=`` as separator.
-
-    Used for material and orientation input files.
-
-    Args:
-        fname: Name of file in which to look for parameters.
-        param_names: List of strings (or single string) describing parameter names.
-            Shares order with ``param_values``.
-        param_values: List of parameter values (or single value) to be written.
-            Shares order with ``param_names``.
-    """
-    if ((type(param_names) not in (list, tuple)) or (len(param_names) == 1)) and (
-        (type(param_values) not in (list, tuple)) or (len(param_values) == 1)
-    ):
-        param_names = [param_names]
-        param_values = [param_values]
-    elif len(param_names) != len(param_values):
-        raise IndexError('Length of names must match length of values.')
-
-    with open(fname, 'r') as f1:
-        lines = f1.readlines()
-    with open('temp_' + fname, 'w+') as f2:
-        for line in lines:
-            skip = False
-            for param_name, param_value in zip(param_names, param_values):
-                if line[:line.find('=')].strip() == param_name:
-                    f2.write(param_name + ' = ' + str(param_value) + '\n')
-                    skip = True
-            if not skip:
-                f2.write(line)
-    os.remove(fname)
-    os.rename('temp_' + fname, fname)
 
 
 if __name__ == '__main__':

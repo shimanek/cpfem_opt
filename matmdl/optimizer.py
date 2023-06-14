@@ -98,3 +98,99 @@ class InOpt:
         self.num_params_material = len(self.material_params)
         self.num_params_orient = len(self.orient_params)
         self.num_params_total = len(self.params)
+
+
+def instantiate_optimizer(in_opt: object, uset: object) -> object:
+    """
+    Define all optimization settings, return optimizer object.
+
+    Args:
+        in_opt: Input settings defined in :class:`InOpt`.
+        uset : User settings from input file.
+
+    Returns:
+        skopt.Optimize: Instantiated optimization object.
+    """
+    opt = Optimizer(
+        dimensions = in_opt.bounds, 
+        base_estimator = 'gp',
+        n_initial_points = uset.n_initial_points,
+        initial_point_generator = 'lhs',
+        acq_func = 'EI',
+        acq_func_kwargs = {'xi':1.0} # default is 0.01, higher values favor exploration
+    )
+    return opt
+
+
+def get_next_param_set(opt: object, in_opt: object) -> list[float]:
+    """
+    Give next parameter set to try using current optimizer state.
+
+    Allow to sample bounds exactly, round all else to reasonable precision.
+    """
+    raw_params = opt.ask()
+    new_params = []
+    for param, bound in zip(raw_params, in_opt.bounds):
+        if param in bound:
+            new_params.append(param)
+        else:
+            new_params.append(round_sig(param, sig=6))
+    return new_params
+
+
+def write_opt_progress():
+    """Writes global variable ``opt_progress`` to file."""
+    global opt_progress
+    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
+    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
+
+
+def update_progress(i:int, next_params:tuple, error:float) -> None:
+    """
+    Writes parameters and error value to global variable ``opt_progress``.
+
+    Args:
+        i: Optimization iteration loop number.
+        next_params: Parameter values evaluated during iteration ``i``.
+        error: Error value of these parameters, which is defined in 
+            :func:`calc_error`.
+    """
+    global opt_progress
+    if (i == 0) and (uset.do_load_previous == False): 
+        opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
+    else: 
+        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))
+    return opt_progress
+
+
+def load_opt(opt: object) -> object:
+    """
+    Load input files of previous optimizations to use as initial points in current optimization.
+    
+    Looks for a file named ``out_progress.txt`` from which to load previous results.
+    Requires access to global variable ``opt_progress`` that stores optimization output. 
+    The parameter bounds for the input files must be within current parameter bounds.
+    Renumbers old/loaded results in ``opt_progress`` to have negative iteration numbers.
+
+    Args:
+        opt: Current instance of the optimizer object.
+
+    Returns:
+        skopt.Optimizer: Updated instance of the optimizer object.
+    """
+    global opt_progress
+    filename = 'out_progress.txt'
+    arrayname = 'out_time_disp_force.npy'
+    opt_progress = np.loadtxt(filename, skiprows=1)
+    # renumber iterations (negative length to zero) to distinguish from new calculations:
+    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
+    x_in = opt_progress[:,1:-1].tolist()
+    y_in = opt_progress[:,-1].tolist()
+
+    if __debug__:
+        with open('out_debug.txt', 'a+') as f:
+            f.write('loading previous results\n')
+            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+
+    opt.tell(x_in, y_in)
+    return opt
