@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit, root
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
-from matmdl.utilities import unit_vector, as_float_tuples, round_sig
+from matmdl.components.utilities import unit_vector, as_float_tuples, round_sig
 
 
 def main():
