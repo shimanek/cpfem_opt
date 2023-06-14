@@ -7,3 +7,4 @@ docs/generated/*
 **/*.pyc
 **/*.png
 *egg-info
+.notes
