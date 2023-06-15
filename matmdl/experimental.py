@@ -1,3 +1,7 @@
+import opt_input as uset
+import numpy as np
+
+
 class ExpData():
     """
     Loads and stores experimental data.
@@ -46,7 +50,7 @@ class ExpData():
             fname: Filename for experimental stress-strain data
         """
         if float(uset.max_strain) == 0.0:
-            if uset.is_compression == True:
+            if uset.is_compression is True:
                 max_strain = min(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
             else:
                 max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])

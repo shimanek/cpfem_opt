@@ -1,9 +1,4 @@
 import os
-import shutil
-import subprocess
-import numpy as np
-from numpy.linalg import norm
-import opt_input as uset  # user settings file
 
 from odbAccess import *
 from abaqusConstants import *

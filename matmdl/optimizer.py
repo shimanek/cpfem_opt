@@ -1,3 +1,10 @@
+from matmdl.runner import write_params
+from matmdl.utilities import as_float_tuples, round_sig
+from skopt import Optimizer
+import opt_input as uset
+import numpy as np
+
+
 class InOpt:
     """
     Stores information about the optimization input parameters.
@@ -138,7 +145,9 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
     return new_params
 
 
-def write_opt_progress():
+def write_opt_progress(
+        in_opt: object,
+    ) -> None:
     """Writes global variable ``opt_progress`` to file."""
     global opt_progress
     opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
@@ -156,7 +165,7 @@ def update_progress(i:int, next_params:tuple, error:float) -> None:
             :func:`calc_error`.
     """
     global opt_progress
-    if (i == 0) and (uset.do_load_previous == False): 
+    if (i == 0) and (uset.do_load_previous is False): 
         opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
     else: 
         opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))

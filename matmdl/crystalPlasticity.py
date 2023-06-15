@@ -1,4 +1,18 @@
-def get_orient_info(next_params: list, orient: str) -> dict:
+import subprocess
+import numpy as np
+from numpy.linalg import norm
+from nptyping import NDArray
+from scipy.optimize import root
+
+from matmdl.utilities import unit_vector
+import opt_input as uset
+
+
+def get_orient_info(
+        next_params: list, 
+        orient: str,
+        in_opt: object,
+    ) -> dict:
     """
     Get components of orientation-defining vectors and their names
     for substitution into the orientation input files.
@@ -65,7 +79,7 @@ def get_orient_info(next_params: list, orient: str) -> dict:
     return {'names':component_names, 'values':component_values}
 
 
-def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:
+def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:  # noqa: F821
     """
     Generates rotation matrix for theta (radians) clockwise rotation 
     about first column of 3D basis when applied from right.
@@ -100,8 +114,8 @@ def get_offset_angle(
     """
     def _opt_angle(
         offset_amt: float, 
-        direction_og: NDArray[Shape['3'], Floating], 
-        direction_to: NDArray[Shape['3'], Floating], 
+        direction_og: NDArray[Shape['3'], Floating],   # noqa: F821
+        direction_to: NDArray[Shape['3'], Floating],   # noqa: F821
         angle: float):
         """
         Angle difference between original vector and new vector, which is

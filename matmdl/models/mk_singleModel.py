@@ -39,8 +39,10 @@ def mk_singleModel(number_of_elements):
 
 	# name = 'Mesh_' + str(number_of_elements) + '_elements.inp'
 	name = 'Mesh_Xelement.inp'
-	try: os.remove(name)
-	except: pass
+	try:
+		os.remove(name)
+	except:
+		pass
 
 	f = open(name, 'w+')
 

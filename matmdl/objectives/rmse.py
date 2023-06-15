@@ -1,3 +1,14 @@
+import os
+import numpy as np
+from copy import deepcopy
+from nptyping import Floating, NDArray, Shape
+from scipy.optimize import curve_fit, interp1d
+
+import opt_input as uset
+from matmdl.runner import combine_SS
+from matmdl.optimizer import update_progress, write_opt_progress
+
+
 def calc_error(
         exp_data: NDArray[Shape['*, 2'], Floating], 
         orientation: str
@@ -91,7 +102,7 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
 
 
 
-def write_maxRMSE(i: int, next_params: tuple, opt: object):
+def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object):
     """
     Write parameters and maximum error to global variable ``opt_progress``.
 
@@ -109,7 +120,7 @@ def write_maxRMSE(i: int, next_params: tuple, opt: object):
     for orientation in uset.orientations.keys():
         combine_SS(zeros=True, orientation=orientation)
     opt_progress = update_progress(i, next_params, rmse)
-    write_opt_progress()
+    write_opt_progress(in_opt)
 
 
 def max_rmse(loop_number: int):

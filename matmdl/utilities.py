@@ -2,6 +2,7 @@
 Utility functions.
 """
 import numpy as np
+from numpy.linalg import norm
 from typing import Union
 from nptyping import NDArray, Shape, Floating
 
@@ -37,5 +38,6 @@ def as_float_tuples(list_of_tuples: list[tuple[Union[int,float]]]) -> list[tuple
 
 
 def round_sig(x: float, sig: int=4) -> float:
-    if x == 0.0: return 0.
+    if x == 0.0: 
+        return 0.
     return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)

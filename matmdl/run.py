@@ -6,25 +6,14 @@ info) or else imports sciki-optimize library (when running as main outside of Ab
 """
 import os
 import shutil
-import subprocess
 import numpy as np
-from numpy.linalg import norm
-from copy import deepcopy
-import opt_input as uset  # user settings file
+import opt_input as uset  # user settings file in run folder
 
-from skopt import Optimizer
-from scipy.interpolate import interp1d
-from scipy.optimize import curve_fit, root
-
-from typing import Union
-from nptyping import NDArray, Shape, Floating
-
-from matmdl.utilities import unit_vector, as_float_tuples, round_sig
 from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt
 from matmdl.optimizer import instantiate_optimizer, get_next_param_set, write_opt_progress, update_progress, load_opt
 from matmdl.runner import get_first, remove_out_files, combine_SS, write_params, refine_run
-from matmdl.crystalPlasticity import get_orient_info, _mk_x_rot, get_offset_angle, load_subroutine, param_check
+from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
 from matmdl.engines.abaqus import job_run, job_extract, check_complete
 from matmdl.objectives.rmse import write_error_to_file, write_maxRMSE, calc_error, max_rmse
 
@@ -63,7 +52,7 @@ def loop(opt, loop_len):
         else:
             for orient in uset.orientations.keys():
                 if in_opt.has_orient_opt[orient]:
-                    orient_components = get_orient_info(next_params, orient)
+                    orient_components = get_orient_info(next_params, orient, in_opt)
                     write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
                 else:
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
@@ -73,7 +62,7 @@ def loop(opt, loop_len):
                 if not check_complete(): # try decreasing max increment size
                     refine_run()
                 if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt)
+                    write_maxRMSE(i, next_params, opt, in_opt)
                     return
                 else:
                     output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
@@ -81,7 +70,7 @@ def loop(opt, loop_len):
                         os.remove(output_fname)
                     job_extract(orient)  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt)
+                        write_maxRMSE(i, next_params, opt, in_opt)
                         return
 
             # error value:
@@ -93,7 +82,7 @@ def loop(opt, loop_len):
             rmse = np.mean(rmse_list)
             opt.tell(next_params, rmse)
             opt_progress = update_progress(i, next_params, rmse)
-            write_opt_progress()
+            write_opt_progress(in_opt)
     
     get_first(opt, in_opt)
     for i in range(loop_len):

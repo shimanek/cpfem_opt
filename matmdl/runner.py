@@ -1,3 +1,11 @@
+from matmdl.engines.abaqus import job_run, check_complete, job_extract
+import opt_input as uset
+from typing import Union
+import numpy as np
+import subprocess
+import os
+
+
 def get_first(opt: object, in_opt: object) -> None:
     """
     Run one simulation so its output dimensions can later inform the shape of output data.
@@ -18,6 +26,8 @@ def remove_out_files():
                 os.remove(f)
     job_files = [f for f in os.listdir(os.getcwd()) \
         if (f.startswith(uset.jobname)) and not (f.endswith('.inp'))]
+    for f in job_files:
+        os.remove(f)
 
 
 def combine_SS(zeros: bool, orientation: str) -> None:

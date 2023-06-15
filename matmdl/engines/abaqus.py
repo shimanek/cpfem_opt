@@ -1,3 +1,8 @@
+import opt_input as uset
+import subprocess
+import os
+
+
 def job_run():
     """Run the Abaqus job!"""
     subprocess.run( 
