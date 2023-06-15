@@ -21,7 +21,8 @@ matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 
 
-def main(orients):
+def main():
+    orients = uset.orientations.keys()
     if __debug__: print('\n# start plotting')
     global in_opt
     in_opt = InOpt(uset.orientations, uset.params)
@@ -222,4 +223,4 @@ def get_param_value(param_name):
 
 
 if __name__ == '__main__':
-    main(uset.orientations.keys())
+    main()
