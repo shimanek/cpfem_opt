@@ -1,7 +1,7 @@
 import subprocess
 import numpy as np
 from numpy.linalg import norm
-from nptyping import NDArray
+from nptyping import NDArray, Shape, Floating
 from scipy.optimize import root
 
 from matmdl.utilities import unit_vector
