@@ -2,7 +2,8 @@ import os
 import numpy as np
 from copy import deepcopy
 from nptyping import Floating, NDArray, Shape
-from scipy.interpolate import curve_fit, interp1d
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 
 import opt_input as uset
 from matmdl.runner import combine_SS
