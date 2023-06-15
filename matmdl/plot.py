@@ -9,15 +9,16 @@ Plots several figures per optimization:
 
 Prints best parameters to file out_best_params.txt
 """
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import os
-from scipy.interpolate import interp1d
-import opt_input as uset
-from opt_fea import InOpt, instantiate_optimizer, load_opt
 from skopt.plots import plot_evaluations, plot_objective
+
+import numpy as np
+from matmdl.optimizer import InOpt, load_opt, instantiate_optimizer
+import opt_input as uset
+
+import matplotlib
+matplotlib.use('Agg')  # backend selected for cluster compatibility
+import matplotlib.pyplot as plt  # noqa: E402
 
 
 def main(orients):
@@ -195,7 +196,7 @@ def name_to_sym(name, cap_sense=False):
         'qA2':r'$q_{A2}$',
         'qB2':r'$q_{B2}$'
         }
-    if cap_sense == True:
+    if cap_sense is True:
         have_key = name in name_to_sym_dict.keys()
     else:
         have_key = name.lower() in [key.lower() for key in name_to_sym_dict.keys()]
