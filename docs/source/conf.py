@@ -12,15 +12,15 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'matmdl')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..')))
 print(sys.path)
 
 # -- Project information -----------------------------------------------------
 
-project = 'cpfem_opt'
-copyright = '2022, J. Shimanek'
-author = 'J. Shimanek'
+project = 'matmdl'
+copyright = '2022, J.D. Shimanek'
+author = 'J.D. Shimanek'
 
 
 # -- General configuration ---------------------------------------------------
@@ -34,11 +34,15 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
     'sphinx_autodoc_typehints',
+    'autoapi.extension',
 ]
 
 add_module_names = False
 napoleon_google_docstring = True
 numfig = True
+
+autoapi_dirs = ['../../matmdl/.']
+autoapi_template_dir = '_templates/autoapi'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -30,7 +30,6 @@ Overview
    input
    output
    theory
-   src
 
 
 Installation
@@ -46,13 +45,13 @@ or by using specific dependency versions, which have been tested:
 .. warning:: Building the documentation requires Sphinx, which remains to be added into the conda environment requirements!
 
 
-Indices
--------
-.. _Document Index: genindex.html
-.. _Source Index: py-modindex.html
+.. Indices
+.. -------
+.. .. _Document Index: genindex.html
+.. .. _Source Index: py-modindex.html
 
-* `Document Index`_
-* `Source Index`_
+.. * `Document Index`_
+.. * `Source Index`_
 
 .. * :ref:`genindex`
 .. * :ref:`modindex`
