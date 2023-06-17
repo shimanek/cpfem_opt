@@ -1,3 +1,7 @@
+"""
+This module contains functions relevant to the application of Huang's
+crystal plasticity subroutine.
+"""
 import subprocess
 import numpy as np
 from numpy.linalg import norm
@@ -95,7 +99,7 @@ def get_offset_angle(
     direction_to: NDArray[Shape['3'], Floating], 
     angle: float) -> object:
     """
-    Iterative solution to finding vectors tilted toward other vectors.
+    Iterative solution for finding vectors tilted toward other vectors.
 
     Args:
         direction_og: Real space vector defining
@@ -114,8 +118,8 @@ def get_offset_angle(
     """
     def _opt_angle(
         offset_amt: float, 
-        direction_og: NDArray[Shape['3'], Floating],   # noqa: F821
-        direction_to: NDArray[Shape['3'], Floating],   # noqa: F821
+        direction_og: NDArray[Shape['3'], Floating],
+        direction_to: NDArray[Shape['3'], Floating],
         angle: float):
         """
         Angle difference between original vector and new vector, which is
@@ -156,8 +160,10 @@ def param_check(param_list: list[str]):
             f1 = open(uset.param_file, 'r')
             lines = f1.readlines()
             for line in lines:
-                if line.startswith('Tau0'+sysnum): tau0_list.append(float(line[7:]))
-                if line.startswith('TauS'+sysnum): tauS_list.append(float(line[7:]))
+                if line.startswith('Tau0'+sysnum): 
+                    tau0_list.append(float(line[7:]))
+                if line.startswith('TauS'+sysnum): 
+                    tauS_list.append(float(line[7:]))
             f1.close()
     is_bad = any([(tau0 >= tauS) for tau0, tauS in zip(tau0_list, tauS_list)])
     return is_bad

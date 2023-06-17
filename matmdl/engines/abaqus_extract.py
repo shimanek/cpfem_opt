@@ -1,3 +1,9 @@
+"""
+This runnable module requires Abaqus libraries and must be run
+from Abaqus python. It extracts force-displacement data from 
+pre-defined reference points for use in comparison of model input
+parameters to reference data.
+"""
 import os
 
 from odbAccess import *
@@ -12,7 +18,19 @@ def main():
 
 class GetForceDisplacement(object):
     """
-    Requires Abaqus-specific libraries, must be called from Abaqus python.
+    Open ODB file and store force-displacement data from a reference point.
+
+    Args:
+        ResultFile (str): name of odb file without the '.odb'
+
+    Attributes:
+        Time: simulation time (0->1)
+        TopU2: displacement of reference point
+        TopRF2: reaction force of reference point
+
+    Note:
+        Depends on the Abaqus names of loading step, part instance, and reference point.
+        Requires Abaqus-specific libraries, must be called from Abaqus python.
     """
     
     def __init__(self,ResultFile):
@@ -24,6 +42,7 @@ class GetForceDisplacement(object):
         self.TopU2 = []
         self.TopRF2 = []
         
+        # Names that need to match the Abaqus simulation:
         step = 'Loading'
         instance = 'PART-1-1'
         TopRPset = 'RP-TOP'
@@ -32,21 +51,23 @@ class GetForceDisplacement(object):
         steps = odb.steps[step]
         frames = odb.steps[step].frames
         numFrames = len(frames)
-        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset] # if node set is in Part
-        #TopNodes = odb.rootAssembly.nodeSets[NodeSetTop] # if the node set is in Assembly
+
+        # if node set is in Part:
+        TopRP = odb.rootAssembly.instances[instance].nodeSets[TopRPset]
+        # if the node set is in Assembly:
+        #TopNodes = odb.rootAssembly.nodeSets[NodeSetTop]
         
         for x in range(numFrames):
             Frame = frames[x]
-            # Record time
-            Time1 = Frame.frameValue
-            self.Time.append(Time1) # list append
-            # Top RP results
+            self.Time.append(Frame.frameValue)
+            # Top RP results:
             Displacement = Frame.fieldOutputs['U']
             ReactionForce = Frame.fieldOutputs['RF']
             TopU  = Displacement.getSubset(region=TopRP).values
             TopRf = ReactionForce.getSubset(region=TopRP).values
-            self.TopU2  = self.TopU2  + map(lambda x:x.data[1], TopU)  # list combination
-            self.TopRF2 = self.TopRF2 + map(lambda x:x.data[1], TopRf) # list combination
+            # add to lists:
+            self.TopU2  = self.TopU2  + map(lambda x:x.data[1], TopU)
+            self.TopRF2 = self.TopRF2 + map(lambda x:x.data[1], TopRf)
         
         odb.close()
 

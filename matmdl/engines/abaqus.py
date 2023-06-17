@@ -1,3 +1,7 @@
+"""
+This module contains helper functions for dealing with Abaqus but 
+has no Abaqus-specific imports.
+"""
 import opt_input as uset
 import subprocess
 import os
@@ -15,7 +19,7 @@ def job_run():
 
 def job_extract(outname: str):
     """
-    Call :class:`GetForceDisplacement` from new shell to extract force-displacement data.
+    Call :py:mod:`matmdl.engines.abaqus_extract` from new shell to extract force-displacement data.
     """
     src_dir = os.path.dirname(os.path.abspath(__file__))
     extractions_script_path = os.path.join(src_dir, "abaqus_extract.py")
