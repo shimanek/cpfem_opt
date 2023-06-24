@@ -10,7 +10,7 @@ log_files=("${log_base}"*)
 
 if [ $# -eq 0 ]; then
     # echo "No arguments supplied"
-    numlines=12
+    numlines=8
 else
     numlines=$1
 fi
@@ -30,10 +30,10 @@ fi
 # run watch command
 watch -n ${rate} "\
     ${viewCommand} && \
-    printf '\n# Step:\n\n' && \
-    wc -l out_progress.txt && \
-    printf '\n# Log:\n\n' && \
-    tail -n ${numlines} ${log_last} && \
-    printf '\n# .sta:\n\n' && \
+    printf '\n# Step:\n\n'; \
+    wc -l out_progress.txt; \
+    printf '\n# Log:\n\n'; \
+    tail -n ${numlines} ${log_last}; \
+    printf '\n# .sta:\n\n'; \
     tail -n 4 *.sta \
 "
