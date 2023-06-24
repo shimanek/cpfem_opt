@@ -6,7 +6,7 @@ log_base="batch.o"
 viewCommand="squeue -u $LOGNAME"
 rate=1 # per second
 
-log_files=(${log_base}*)
+log_files=("${log_base}"*)
 
 if [ $# -eq 0 ]; then
     # echo "No arguments supplied"
@@ -16,17 +16,18 @@ else
 fi
 
 # check for multiple log files, take last or wait
-if [ ${#log_files[@]} -gt 0 ]; then
+if [ -f ${log_files[-1]} ]; then
     log_last=${log_files[-1]}
 else
     echo "looking for logfile..."
-    while [ ! -e ${log_base}* ]; do
+    while [ ! -f ${log_files[-1]} ]; do
         sleep 1s
+        log_files=("${log_base}*")
     done
-    log_last=${log_base}*
+    log_last=${log_files[-1]}
 fi
 
-# run watch command
+run watch command
 watch -n ${rate} "\
     ${viewCommand} && \
     printf '\n# Step:\n\n' && \
