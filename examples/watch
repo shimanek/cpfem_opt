@@ -27,7 +27,7 @@ else
     log_last=${log_files[-1]}
 fi
 
-run watch command
+# run watch command
 watch -n ${rate} "\
     ${viewCommand} && \
     printf '\n# Step:\n\n' && \
