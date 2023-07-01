@@ -7,7 +7,7 @@ info) or else imports sciki-optimize library (when running as main outside of Ab
 import os
 import shutil
 import numpy as np
-import opt_input as uset  # user settings file in run folder
+# import opt_input as uset  # user settings file in run folder
 
 from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt
@@ -16,6 +16,7 @@ from matmdl.runner import get_first, remove_out_files, combine_SS, write_params,
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
 from matmdl.engines import job_run, job_extract, check_complete
 from matmdl.objectives import write_error_to_file, write_maxRMSE, calc_error, max_rmse
+from matmdl.parser import uset
 
 
 def main():

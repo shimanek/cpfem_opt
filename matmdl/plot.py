@@ -14,7 +14,7 @@ from skopt.plots import plot_evaluations, plot_objective
 
 import numpy as np
 from matmdl.optimizer import InOpt, load_opt, instantiate_optimizer
-import opt_input as uset
+from matmdl.parser import uset
 
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
