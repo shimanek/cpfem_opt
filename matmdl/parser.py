@@ -4,7 +4,7 @@ from typing import Any
 import datetime
 import tomllib
 
-input_fname = "input_ex.toml"
+input_fname = "input.toml"
 
 
 class UserSettings:
@@ -60,7 +60,11 @@ class UserSettings:
 		# write params:
 		with self.unlock():
 			self.params = conf['params']
-			self.orientations = conf['orientations']
+			if len(conf['orientations']) > 0:
+				self.orientations = {}
+				for orient in conf['orientations']:
+					self.orientations[orient['name']] = orient
+			# error in above section to get correct structure of orientations dict
 
 			# get all input:
 			for key, value in conf['run'].items():
@@ -117,6 +121,7 @@ class UserSettings:
 date_string = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 uset = UserSettings()
 
-print(f"# matmdl printing input at {date_string}:")
-pprint(vars(uset))
-print("# end matmdl input")
+if __debug__:
+	print(f"# matmdl printing input at {date_string}:")
+	pprint(vars(uset))
+	print("# end matmdl input")
