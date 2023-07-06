@@ -97,7 +97,7 @@ def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:  # noqa: F821
 def get_offset_angle(
     direction_og: NDArray[Shape['3'], Floating], 
     direction_to: NDArray[Shape['3'], Floating], 
-    angle: float) -> object:
+    angle: float) -> float:
     """
     Iterative solution for finding vectors tilted toward other vectors.
 
@@ -109,10 +109,8 @@ def get_offset_angle(
         angle: The angle, in degrees, by which to tilt.
 
     Returns:
-        scipy.optimize.OptimizeResult:
-            A scipy object containing the attribute
-            ``x``, the solution array, which, in this case, is a scalar
-            multiplier such that the angle between ``direction_og``
+        float:
+            a scalar multiplier such that the angle between ``direction_og``
             and ``sol.x`` * ``direction_to`` is ``angle``.
 
     """
@@ -134,7 +132,7 @@ def get_offset_angle(
             - np.cos(np.deg2rad(angle))
         return angle_difference
 
-    sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x
+    sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x[0]
     return sol
 
 
