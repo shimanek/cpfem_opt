@@ -1,6 +1,5 @@
 from contextlib import contextmanager
 from pprint import pprint
-from typing import Any
 import datetime
 import tomllib
 
@@ -64,7 +63,6 @@ class UserSettings:
 				self.orientations = {}
 				for orient in conf['orientations']:
 					self.orientations[orient['name']] = orient
-			# error in above section to get correct structure of orientations dict
 
 			# get all input:
 			for key, value in conf['run'].items():
