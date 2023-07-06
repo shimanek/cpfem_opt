@@ -44,6 +44,7 @@ class UserSettings:
 			'umat': Option(types=[str]),
 			'cpus': Option(types=[int]),
 			'do_load_previous': Option(types=[bool, int]),
+			'is_compression': Option(types=[bool]),
 		},
 		'plot': {
 			'grain_size_name': Option(crit=False, types=[str]),
