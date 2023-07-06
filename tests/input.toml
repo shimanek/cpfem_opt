@@ -40,6 +40,7 @@ i_powerlaw = 0  # interpolation: 0 = linear, 1 = Holomon equation
 umat = 'umatcrystal_mod_XIT.f'
 cpus = 4
 do_load_previous = false
+is_compression = false
 
 
 [plot]
