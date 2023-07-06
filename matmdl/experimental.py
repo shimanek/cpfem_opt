@@ -2,7 +2,7 @@
 Contains the class for extracting and storing experimental data
 from plain text inputs for comparison to iterative solution attempts.
 """
-import opt_input as uset
+from matmdl.parser import uset
 import numpy as np
 
 

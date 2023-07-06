@@ -9,7 +9,7 @@ from nptyping import NDArray, Shape, Floating
 from scipy.optimize import root
 
 from matmdl.utilities import unit_vector
-import opt_input as uset
+from matmdl.parser import uset
 
 
 def get_orient_info(

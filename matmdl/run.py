@@ -7,7 +7,6 @@ info) or else imports sciki-optimize library (when running as main outside of Ab
 import os
 import shutil
 import numpy as np
-# import opt_input as uset  # user settings file in run folder
 
 from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt

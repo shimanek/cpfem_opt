@@ -1,7 +1,7 @@
 from matmdl.runner import write_params
 from matmdl.utilities import as_float_tuples, round_sig
 from skopt import Optimizer
-import opt_input as uset
+from matmdl.parser import uset
 import numpy as np
 
 
