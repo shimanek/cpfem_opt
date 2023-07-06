@@ -27,8 +27,8 @@ def get_orient_info(
         orient: Index string for dictionary of input
             orientations specified in :ref:`orientations`.
     """
-    dir_load = uset.orientations[orient]['offset']['dir_load']
-    dir_0deg = uset.orientations[orient]['offset']['dir_0deg']
+    dir_load = np.asarray(uset.orientations[orient]['offset']['dir_load'])
+    dir_0deg = np.asarray(uset.orientations[orient]['offset']['dir_0deg'])
 
     if (orient+'_mag' in in_opt.params):
         index_mag = in_opt.params.index(orient+'_mag')
