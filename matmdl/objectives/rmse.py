@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from copy import deepcopy
-from nptyping import Floating, NDArray, Shape
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
@@ -11,7 +10,7 @@ from matmdl.optimizer import update_progress, write_opt_progress
 
 
 def calc_error(
-        exp_data: NDArray[Shape['*, 2'], Floating], 
+        exp_data: 'Nx2 matrix', 
         orientation: str
     ) -> float:
     """

@@ -5,7 +5,6 @@ crystal plasticity subroutine.
 import subprocess
 import numpy as np
 from numpy.linalg import norm
-from nptyping import NDArray, Shape, Floating
 from scipy.optimize import root
 
 from matmdl.utilities import unit_vector
@@ -83,7 +82,7 @@ def get_orient_info(
     return {'names':component_names, 'values':component_values}
 
 
-def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:  # noqa: F821
+def _mk_x_rot(theta: float) -> 'vector':
     """
     Generates rotation matrix for theta (radians) clockwise rotation 
     about first column of 3D basis when applied from right.
@@ -95,8 +94,8 @@ def _mk_x_rot(theta: float) -> NDArray[Shape['3,3'], Floating]:  # noqa: F821
 
 
 def get_offset_angle(
-    direction_og: NDArray[Shape['3'], Floating], 
-    direction_to: NDArray[Shape['3'], Floating], 
+    direction_og: 'vector', 
+    direction_to: 'vector', 
     angle: float) -> float:
     """
     Iterative solution for finding vectors tilted toward other vectors.
@@ -116,8 +115,8 @@ def get_offset_angle(
     """
     def _opt_angle(
         offset_amt: float, 
-        direction_og: NDArray[Shape['3'], Floating],
-        direction_to: NDArray[Shape['3'], Floating],
+        direction_og: 'vector',
+        direction_to: 'vector',
         angle: float):
         """
         Angle difference between original vector and new vector, which is

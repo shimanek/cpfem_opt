@@ -4,10 +4,9 @@ Utility functions.
 import numpy as np
 from numpy.linalg import norm
 from typing import Union
-from nptyping import NDArray, Shape, Floating
 
 
-def unit_vector(vector: NDArray[Shape['3'], Floating]) -> NDArray[Shape['3'], Floating]:
+def unit_vector(vector: 'vector') -> 'vector':
     """Gives a normalized vector using ``numpy.linalg.norm``."""
     return vector/norm(vector)
 
