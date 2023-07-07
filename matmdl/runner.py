@@ -27,7 +27,10 @@ def remove_out_files():
     job_files = [f for f in os.listdir(os.getcwd()) \
         if (f.startswith(uset.jobname)) and not (f.endswith('.inp'))]
     for f in job_files:
-        os.remove(f)
+        if os.path.isdir(f):
+            os.rmdir(f)
+        else:
+            os.remove(f)
 
 
 def combine_SS(zeros: bool, orientation: str) -> None:
