@@ -66,10 +66,11 @@ class UserSettings:
 					self.orientations[orient['name']] = orient
 
 			# get all input:
-			for key, value in conf['run'].items():
-				if key not in self.input_reqs['run'].keys():
-					raise AttributeError(f'Unknown input: {key}')
-				self.__dict__[key] = value
+			for category in ['run', 'plot']
+				for key, value in conf[category].items():
+					if key not in self.input_reqs[category].keys():
+						raise AttributeError(f'Unknown input: {key}')
+					self.__dict__[key] = value
 
 		# general checks:
 		for key, req in self.input_reqs['run'].items():
