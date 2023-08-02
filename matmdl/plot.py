@@ -211,7 +211,7 @@ def name_to_sym(name, cap_sense=False):
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError(f'Unknown parameter name {name}')
+        raise KeyError(f'Unknown parameter name: {name}')
 
 
 def get_param_value(param_name):
