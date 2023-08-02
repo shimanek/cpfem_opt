@@ -6,3 +6,5 @@ docs/source/generated/*
 docs/generated/*
 **/*.pyc
 **/*.png
+*egg-info
+.notes

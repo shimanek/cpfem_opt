@@ -5,7 +5,8 @@ Crystal Plasticity Parameterization
 Overview
 --------
 
-``cpfem_opt`` is a portable set of scripts implementing a Bayesian `optimization framework`_ using Gaussian process regression to parameterize the hardening models within crystal plasticity finite element method calculations, which are run through a `user material subroutine`_ integrated with Abaqus. Its main features are that it:
+``matmdl`` is a package implementing a Bayesian `optimization framework`_ using Gaussian process regression to parameterize the hardening models within crystal plasticity finite element method calculations, which are run through a `user material subroutine`_ integrated with Abaqus. 
+Its main features are that it:
 
 * Wraps around existing crystal plasticity implementation using Abaqus as the finite element solver
 * Uses gradient-free optimization for the multi-dimensional parameter space describing slip system level material properties
@@ -30,12 +31,12 @@ Overview
    input
    output
    theory
-   src
 
 
 Installation
 ------------
-This requires scikit-optimize, which can be installed to a new Conda environment called `opt` with the following steps. Configuration files are located in ``src/install/``.
+This requires scikit-optimize, which can be installed to a new Conda environment called `opt` with the following steps. 
+Configuration files are located in ``src/install/``.
 
 :sh:`conda env create --file=config_simple.yaml`
 
@@ -46,13 +47,13 @@ or by using specific dependency versions, which have been tested:
 .. warning:: Building the documentation requires Sphinx, which remains to be added into the conda environment requirements!
 
 
-Indices
--------
-.. _Document Index: genindex.html
-.. _Source Index: py-modindex.html
+.. Indices
+.. -------
+.. .. _Document Index: genindex.html
+.. .. _Source Index: py-modindex.html
 
-* `Document Index`_
-* `Source Index`_
+.. * `Document Index`_
+.. * `Source Index`_
 
 .. * :ref:`genindex`
 .. * :ref:`modindex`

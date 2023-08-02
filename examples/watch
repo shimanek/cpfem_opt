@@ -1,0 +1,39 @@
+#! /usr/bin/env bash
+#export PS4="\$LINENO: "
+#set -xv
+
+log_base="batch.o"
+viewCommand="squeue -u $LOGNAME"
+rate=1 # per second
+
+log_files=("${log_base}"*)
+
+if [ $# -eq 0 ]; then
+    # echo "No arguments supplied"
+    numlines=8
+else
+    numlines=$1
+fi
+
+# check for multiple log files, take last or wait
+if [ -f ${log_files[-1]} ]; then
+    log_last=${log_files[-1]}
+else
+    echo "looking for logfile..."
+    while [ ! -f ${log_files[-1]} ]; do
+        sleep 1s
+        log_files=("${log_base}*")
+    done
+    log_last=${log_files[-1]}
+fi
+
+# run watch command
+watch -n ${rate} "\
+    ${viewCommand} && \
+    printf '\n# Step:\n\n'; \
+    wc -l out_progress.txt; \
+    printf '\n# Log:\n\n'; \
+    tail -n ${numlines} ${log_last}; \
+    printf '\n# .sta:\n\n'; \
+    tail -n 4 *.sta \
+"
