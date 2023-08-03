@@ -1,5 +1,5 @@
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
-import opt_input as uset
+from matmdl.parser import uset
 from typing import Union
 import numpy as np
 import subprocess

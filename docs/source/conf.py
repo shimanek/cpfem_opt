@@ -41,11 +41,12 @@ add_module_names = False
 napoleon_google_docstring = True
 numfig = True
 
+# autodoc_mock_imports = ["matplotlib"]
 autoapi_dirs = ['../../matmdl/.']
 autoapi_template_dir = '_templates/autoapi'
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

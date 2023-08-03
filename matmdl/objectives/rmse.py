@@ -4,7 +4,7 @@ from copy import deepcopy
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
-import opt_input as uset
+from matmdl.parser import uset
 from matmdl.runner import combine_SS
 from matmdl.optimizer import update_progress, write_opt_progress
 
