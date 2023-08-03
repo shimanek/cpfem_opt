@@ -33,7 +33,7 @@ class UserSettings:
 		'run': {
 			'loop_len': Option(types=[int], lower=2),
 			'n_initial_points': Option(types=[int], lower=2),
-			'large_error': Option(types=[float]),
+			'large_error': Option(types=[int,float]),
 			'param_file': Option(types=[str]),
 			'length': Option(types=[int,float]),
 			'area': Option(types=[int,float]),
