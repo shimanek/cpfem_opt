@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [ develop ]
+  pull_request: { branches: [develop, test_ci] }
+  # schedule: [ cron: '20 16 * * 6' ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11" ]
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Checkout scikit-opt
+        uses: actions/checkout@v2
+        with:
+          repository:shimanek/scikit-optimize
+
+      - name: Install dependencies
+        run: |
+          pip install -U pip
+          pip install -e .scikit-optimize
+          pip install -e .matmdl
+
+      - name: Test
+        run: |
+          cd tests
+          python3 -m unittest
