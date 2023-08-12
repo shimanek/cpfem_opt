@@ -26,7 +26,7 @@ jobs:
           repository: shimanek/scikit-optimize
 
       - name: install prerequirements
-        run pip install -U pip
+        run: pip install -U pip
 
       - name: install scikit-optimize
         run: |
