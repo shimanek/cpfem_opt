@@ -25,11 +25,20 @@ jobs:
         with:
           repository: shimanek/scikit-optimize
 
-      - name: Install dependencies
+      - name: install prerequirements
+        run pip install -U pip
+
+      - name: install scikit-optimize
         run: |
-          pip install -U pip
-          pip install -e scikit-optimize/.
-          pip install -e matmdl/.
+          echo $PATH
+          git clone https://github.com/shimanek/scikit-optimize
+          cd scikit-optimize
+          pip install -e .
+          cd ..
+        shell: bash
+
+      - name: Install package
+        run: pip install -e matmdl/.
 
       - name: Test
         run: |
