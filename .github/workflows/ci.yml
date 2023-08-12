@@ -23,7 +23,7 @@ jobs:
       - name: Checkout scikit-opt
         uses: actions/checkout@v2
         with:
-          repository:shimanek/scikit-optimize
+          name: shimanek/scikit-optimize
 
       - name: Install dependencies
         run: |
