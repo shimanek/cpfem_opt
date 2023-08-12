@@ -21,17 +21,6 @@ Its main features are that it:
    :language: bash
 
 
-.. Contents
-.. --------
-.. toctree::
-   :caption: Contents
-   :maxdepth: 1
-   :hidden:
-
-   input
-   output
-   theory
-
 
 Installation
 ------------
@@ -57,3 +46,16 @@ or by using specific dependency versions, which have been tested:
 
 .. * :ref:`genindex`
 .. * :ref:`modindex`
+
+
+Contents
+--------
+.. toctree::
+   :caption: Contents
+   :maxdepth: 2
+   :hidden:
+
+   input
+   output
+   theory
+   api

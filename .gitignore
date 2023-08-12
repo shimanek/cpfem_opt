@@ -3,6 +3,7 @@
 docs/build/*
 src/__pychache__/
 docs/source/generated/*
+docs/source/autoapi/*
 docs/generated/*
 **/*.pyc
 **/*.png
