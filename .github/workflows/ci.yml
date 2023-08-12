@@ -3,7 +3,6 @@ on:
   push:
     branches: [ develop ]
   pull_request: { branches: [develop, test_ci] }
-  # schedule: [ cron: '20 16 * * 6' ]
 
 jobs:
   test:
