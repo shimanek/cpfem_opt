@@ -42,5 +42,7 @@ jobs:
 
       - name: Test
         run: |
-          cd ${{ github.workspace }}/tests
+          cd ${{ github.workspace }}/.
+          ls -la
+          cd tests
           python3 -m unittest
