@@ -28,8 +28,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install -e .scikit-optimize
-          pip install -e .matmdl
+          pip install -e scikit-optimize/.
+          pip install -e matmdl/.
 
       - name: Test
         run: |
