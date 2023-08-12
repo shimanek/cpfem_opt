@@ -20,11 +20,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
-      - name: Checkout scikit-opt
-        uses: actions/checkout@v2
-        with:
-          repository: shimanek/scikit-optimize
-
       - name: install prerequirements
         run: pip install -U pip
 
