@@ -140,6 +140,9 @@ def main():
 
 def apply_param_labels(ax_array, diag_label):
     shape = np.shape(ax_array)
+    if len(shape) == 0: 
+        ax_array.set_xlabel(name_to_sym(in_opt.params[0]))
+        return
     for i in range(shape[0]):
         for j in range(shape[1]):
             ax_array[i,j].set_ylabel(name_to_sym(in_opt.params[i]))
