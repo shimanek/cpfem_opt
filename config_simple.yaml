@@ -1,7 +1,0 @@
-name: opt
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - scikit-optimize
-#prefix: /storage/home/jxs2468/.conda/envs/opt
