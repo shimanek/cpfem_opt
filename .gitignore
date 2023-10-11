@@ -4,6 +4,7 @@ docs/build/*
 src/__pychache__/
 docs/source/generated/*
 docs/generated/*
+docs/source/autoapi/
 **/*.pyc
 **/*.png
 *egg-info
