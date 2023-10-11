@@ -2,7 +2,7 @@
 This module contains helper functions for dealing with Abaqus but 
 has no Abaqus-specific imports.
 """
-import opt_input as uset
+from matmdl.parser import uset
 import subprocess
 import os
 

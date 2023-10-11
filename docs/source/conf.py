@@ -12,8 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'matmdl')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'matmdl')))
 print(sys.path)
 
 # -- Project information -----------------------------------------------------
@@ -29,8 +29,8 @@ author = 'J.D. Shimanek'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    # 'sphinx.ext.autodoc',
+    # 'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
     'sphinx_autodoc_typehints',
@@ -41,11 +41,23 @@ add_module_names = False
 napoleon_google_docstring = True
 numfig = True
 
+autoapi_add_toctree_entry = False
+autoapi_type = "python"
 autoapi_dirs = ['../../matmdl/.']
-autoapi_template_dir = '_templates/autoapi'
+# autoapi_root = "autoapi/matmdl"
+autoapi_template_dir = "_templates/autoapi"
+# autoapi_options = [
+#     "members",
+#     "undoc-members",
+#     "show-inheritance",
+#     "show-module-summary",
+#     "imported-members",
+# ]
+# autoapi_python_use_implicit_namespaces = True
+autoapi_keep_files = True
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

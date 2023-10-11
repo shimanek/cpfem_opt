@@ -5,7 +5,7 @@ Source Docs
 mk\_orthoModel
 -------------------------
 
-.. automodule:: src.mk_orthoModel
+.. automodule:: matmdl.models.mk_orthoModel
    :members:
    :undoc-members:
 
@@ -13,33 +13,25 @@ mk\_orthoModel
 mk\_singleModel
 --------------------------
 
-.. automodule:: src.mk_singleModel
+.. automodule:: matmdl.models.mk_singleModel
    :members:
    :undoc-members:
 
 
-opt\_fea
+run
 -------------------
 
-.. automodule:: src.opt_fea
+.. automodule:: matmdl.run
    :members:
    :undoc-members:
    :private-members:
    :special-members: __init__
 
 
-opt\_input
----------------------
-
-.. automodule:: src.opt_input
-   :members:
-   :undoc-members:
-
-
-opt\_plot
+plot
 --------------------
 
-.. automodule:: src.opt_plot
+.. automodule:: matmdl.plot
    :members:
    :undoc-members:
 
