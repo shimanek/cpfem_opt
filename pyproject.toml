@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matmdl"
+version = "0.0.1"
+dependencies = [
+    "scikit-optimize",
+]
+
+[tool.ruff]
+ignore =["E501"]
