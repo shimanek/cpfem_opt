@@ -6,7 +6,8 @@ from scipy.optimize import curve_fit
 
 from matmdl.parser import uset
 from matmdl.runner import combine_SS
-from matmdl.optimizer import update_progress, write_opt_progress, opt_progress
+from matmdl.optimizer import update_progress, write_opt_progress
+import matmdl.optimizer
 
 
 def calc_error(
@@ -136,7 +137,7 @@ def max_rmse(loop_number: int):
         Grace period of 15 iterations is hardcoded here, as is the factor of 1.5 times the 
         interquartile range of previous error values.
     """
-    grace = 15
+    grace = 3
     if loop_number < grace:
         return uset.large_error
     elif loop_number >= grace:
