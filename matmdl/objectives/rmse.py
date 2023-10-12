@@ -124,7 +124,7 @@ def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object):
     write_opt_progress(in_opt)
 
 
-def max_rmse(loop_number: int):
+def max_rmse(loop_number: int, opt_progress):
     """
     Give a "large" error value.
 
@@ -138,7 +138,6 @@ def max_rmse(loop_number: int):
         interquartile range of previous error values.
     """
     grace = 0
-    global opt_progress
     if loop_number < grace:
         return uset.large_error
     elif loop_number >= grace:

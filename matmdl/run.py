@@ -46,7 +46,7 @@ def loop(opt, loop_len):
         write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         while param_check(uset.params):  # True if Tau0 >= TauS
             # this tells opt that params are bad but does not record it elsewhere
-            opt.tell(next_params, max_rmse(i))
+            opt.tell(next_params, max_rmse(i, opt_progress))
             next_params = get_next_param_set(opt, in_opt)
             write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         else:
