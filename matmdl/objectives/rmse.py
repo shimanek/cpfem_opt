@@ -137,10 +137,12 @@ def max_rmse(loop_number: int):
         Grace period of 15 iterations is hardcoded here, as is the factor of 1.5 times the 
         interquartile range of previous error values.
     """
-    grace = 3
+    grace = 0
+    global opt_progress
     if loop_number < grace:
         return uset.large_error
     elif loop_number >= grace:
+        # TODO: fails here bc opt_progress is not defined??
         errors = np.delete( opt_progress[:grace,-1], \
             np.where(opt_progress[:grace,-1] == uset.large_error))
         if len(errors) < np.round( grace/2 ):
