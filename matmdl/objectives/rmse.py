@@ -123,7 +123,7 @@ def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object):
     write_opt_progress(in_opt)
 
 
-def max_rmse(loop_number: int):
+def max_rmse(loop_number: int, opt_progress):
     """
     Give a "large" error value.
 
@@ -137,12 +137,22 @@ def max_rmse(loop_number: int):
         interquartile range of previous error values.
     """
     grace = 15
-    if loop_number < grace:
+    if loop_number < grace:  # use user specified error
         return uset.large_error
-    elif loop_number >= grace:
-        errors = np.delete( opt_progress[:grace,-1], \
-            np.where(opt_progress[:grace,-1] == uset.large_error))
-        if len(errors) < np.round( grace/2 ):
+    elif loop_number >= grace:  # use previous errors
+        # first remove instances of user-specified error
+        large_error_locs = np.where(opt_progress[:grace,-1] == uset.large_error)
+        if len(large_error_locs) == 0:
+            errors = opt_progress[:,-1]
+        else:
+            errors = np.concatenate(
+                (
+                    np.delete(opt_progress[:grace,-1], large_error_locs),
+                    opt_progress[grace:,-1],
+                ),
+                axis=0
+            )
+        if len(errors) < np.round(grace/2):  # not enough error data
             return uset.large_error
         else:
             iq1, iq3 = np.quantile(errors, [0.25,0.75])
