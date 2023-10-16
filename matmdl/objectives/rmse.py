@@ -115,7 +115,7 @@ def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object):
         opt: Current instance of skopt.Optimizer object.
     """
     global opt_progress
-    rmse = max_rmse(i)
+    rmse = max_rmse(i, opt_progress)
     opt.tell( next_params, rmse )
     for orientation in uset.orientations.keys():
         combine_SS(zeros=True, orientation=orientation)
