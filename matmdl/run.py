@@ -62,7 +62,7 @@ def loop(opt, loop_len):
                 if not check_complete(): # try decreasing max increment size
                     refine_run()
                 if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt, in_opt)
+                    write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
                     return
                 else:
                     output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
@@ -70,7 +70,7 @@ def loop(opt, loop_len):
                         os.remove(output_fname)
                     job_extract(orient)  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt, in_opt)
+                        write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
                         return
 
             # error value:

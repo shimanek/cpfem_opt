@@ -102,7 +102,7 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
 
 
 
-def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object):
+def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object, opt_progress):
     """
     Write parameters and maximum error to global variable ``opt_progress``.
 
