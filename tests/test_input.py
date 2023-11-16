@@ -4,35 +4,36 @@ import numpy as np
 
 
 class TestError(unittest.TestCase):
-	def test_stress_diff(self):
+	def diff_test_linear(self, b1, m1, b2, m2, err_stress=None, err_slope=None):
 		from matmdl.objectives.rmse import _stress_diff, _slope_diff
 		x = np.linspace(0.01, 1.0, 100)
 		def curve1(x):
-			return 5*x
+			return b1 + m1*x
 		def curve2(x):
-			return 10*x
-		# def curve1(x):
-		# 	return 3000*x + 7500*x**2
-		# def curve2(x):
-		# 	return 3000*x + 7500*x**2
+			return b2 + m2*x
 		diff_stress = _stress_diff(x, curve1, curve2)
 		diff_slope = _slope_diff(x, curve1, curve2)
-		self.assertTrue(diff_slope - 50 < 1e-6)
-		self.assertTrue(diff_stress - 50 < 1e-6)
-		# print(" ")
-		# print(diff_stress)
-		# print(diff_slope)
-		def curve1(x):
-			return 5*x
-		def curve2(x):
-			return 5*x + 2
-		diff_stress = _stress_diff(x, curve1, curve2)
-		diff_slope = _slope_diff(x, curve1, curve2)
-		self.assertTrue(diff_slope < 1e-6)
-		# print(" ")
-		# print(diff_stress)
-		# print(diff_slope)		
+		if err_stress is not None:
+			try:
+				self.assertTrue(np.abs(diff_stress - err_stress) < 1e-6)
+			except AssertionError as e:
+				print("\nError in linear diff test stress with:")
+				print("linear info:", b1, m1, b2, m2)
+				print(f"expected err_stress of {err_stress}, got {diff_stress}")
+				raise e
+			self.assertTrue(np.abs(diff_slope - err_slope) < 1e-6)
+		if err_slope is not None:
+			try:
+				self.assertTrue(np.abs(diff_slope - err_slope) < 1e-6)
+			except AssertionError as e:
+				print("\nError in linear diff test stress with:")
+				print("linear info:", b1, m1, b2, m2)
+				print(f"expected err_stress of {err_slope}, got {diff_slope}")
+				raise e
 
+	def test_diff(self):
+		self.diff_test_linear(b1=0, m1=5, b2=0, m2=10, err_stress=50, err_slope=50)
+		self.diff_test_linear(b1=0, m1=5, b2=2, m2=5, err_slope=0)	
 
 
 class TestInput(unittest.TestCase):
