@@ -62,10 +62,10 @@ class InOpt:
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
         for param, bound in params.items():
-            if type(bound) in (list, tuple):
+            if type(bound) in (list, tuple):  # pass ranges to optimizer
                 self.material_params.append(param)
-                self.material_bounds.append(bound)
-            elif type(bound) in (float, int):
+                self.material_bounds.append(as_float_tuples(bound))
+            elif type(bound) in (float, int):  # write single values to file
                 write_params(uset.param_file, param, float(bound))
             else:
                 raise TypeError('Incorrect bound type in input file.')
