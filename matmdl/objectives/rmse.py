@@ -81,7 +81,7 @@ def calc_error(
     # error function
     stress_error = _stress_diff(x_error_eval_pts, smoothedSS, fineSS)
     slope_error = _slope_diff(x_error_eval_pts, smoothedSS, fineSS)
-    if uset.slope_weight:  # TODO: still needs to trigger if slope set to zero
+    if uset.slope_weight in locals():
         w = uset.slope_weight
     else:
         w = 0.4
