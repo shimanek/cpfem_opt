@@ -64,7 +64,7 @@ class InOpt:
         for param, bound in params.items():
             if type(bound) in (list, tuple):  # pass ranges to optimizer
                 self.material_params.append(param)
-                self.material_bounds.append(as_float_tuples(bound))
+                self.material_bounds.append([float(b) for b in bound])
             elif type(bound) in (float, int):  # write single values to file
                 write_params(uset.param_file, param, float(bound))
             else:
