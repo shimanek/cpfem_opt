@@ -45,6 +45,7 @@ class UserSettings:
 			'cpus': Option(types=[int]),
 			'do_load_previous': Option(types=[bool, int]),
 			'is_compression': Option(types=[bool]),
+			'slope_weight': Option(types=[int,float], crit=False),
 		},
 		'plot': {
 			'grain_size_name': Option(crit=False, types=[str]),

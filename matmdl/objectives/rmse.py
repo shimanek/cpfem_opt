@@ -81,8 +81,7 @@ def calc_error(
     # error function
     stress_error = _stress_diff(x_error_eval_pts, smoothedSS, fineSS)
     slope_error = _slope_diff(x_error_eval_pts, smoothedSS, fineSS)
-    slope_weight = 0.4
-    error = (1-slope_weight)*stress_error + slope_weight*slope_error
+    error = (1-uset.slope_weight)*stress_error + uset.slope_weight*slope_error
     return error
 
 
@@ -97,7 +96,7 @@ def _stress_diff(x, curve1, curve2):
     """
     percent_error = (curve1(x) - curve2(x))/curve2(x)*100
 
-    error = np.sqrt(np.sum(percent_error**2) / len(x)) 
+    error = np.sqrt(np.sum(percent_error**2) / len(x))
     return error
 
 
@@ -111,7 +110,7 @@ def _slope_diff(x, curve1, curve2):
         curve2: f(x) for reference curve
     """
     def ddx(curve, x):
-        return curve(x[1:]) - curve(x[:-1]) / (x[1:] - x[:-1]) 
+        return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
 
     dcurve1 = ddx(curve1, x)
     dcurve2 = ddx(curve2, x)

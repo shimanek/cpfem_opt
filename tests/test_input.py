@@ -3,6 +3,38 @@ from matmdl.parser import uset
 import numpy as np
 
 
+class TestError(unittest.TestCase):
+	def test_stress_diff(self):
+		from matmdl.objectives.rmse import _stress_diff, _slope_diff
+		x = np.linspace(0.01, 1.0, 100)
+		def curve1(x):
+			return 5*x
+		def curve2(x):
+			return 10*x
+		# def curve1(x):
+		# 	return 3000*x + 7500*x**2
+		# def curve2(x):
+		# 	return 3000*x + 7500*x**2
+		diff_stress = _stress_diff(x, curve1, curve2)
+		diff_slope = _slope_diff(x, curve1, curve2)
+		self.assertTrue(diff_slope - 50 < 1e-6)
+		self.assertTrue(diff_stress - 50 < 1e-6)
+		# print(" ")
+		# print(diff_stress)
+		# print(diff_slope)
+		def curve1(x):
+			return 5*x
+		def curve2(x):
+			return 5*x + 2
+		diff_stress = _stress_diff(x, curve1, curve2)
+		diff_slope = _slope_diff(x, curve1, curve2)
+		self.assertTrue(diff_slope < 1e-6)
+		# print(" ")
+		# print(diff_stress)
+		# print(diff_slope)		
+
+
+
 class TestInput(unittest.TestCase):
 	def test_input(self):
 		self.assertTrue(uset.params['Tau0'] == [100,200])
