@@ -41,7 +41,6 @@ umat = 'umatcrystal_mod_XIT.f'
 cpus = 4
 do_load_previous = false
 is_compression = false
-slope_weight = 0.4
 
 
 [plot]

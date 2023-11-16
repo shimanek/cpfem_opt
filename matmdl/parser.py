@@ -75,9 +75,12 @@ class UserSettings:
 
 		# general checks:
 		for key, req in self.input_reqs['run'].items():
+			if key not in self.__dict__.keys():
+				if req.crit is True:
+					raise AttributeError(f"Missing critical input: {key}")
+				else:
+					continue
 			value = self.__dict__[key]
-			if key not in self.__dict__.keys() and req.crit is True:
-				raise AttributeError(f"Missing critical input: {key}")
 			if req.types:
 				input_type = type(value)
 				if input_type not in req.types:

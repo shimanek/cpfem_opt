@@ -81,7 +81,12 @@ def calc_error(
     # error function
     stress_error = _stress_diff(x_error_eval_pts, smoothedSS, fineSS)
     slope_error = _slope_diff(x_error_eval_pts, smoothedSS, fineSS)
-    error = (1-uset.slope_weight)*stress_error + uset.slope_weight*slope_error
+    if uset.slope_weight:  # TODO: still needs to trigger if slope set to zero
+        w = uset.slope_weight
+    else:
+        w = 0.4
+        print(f"warning, using default slope weight of {w}")
+    error = (1-w)*stress_error + w*slope_error
     return error
 
 
