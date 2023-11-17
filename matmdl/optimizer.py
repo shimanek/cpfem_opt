@@ -83,14 +83,18 @@ class InOpt:
                 # deg rotation *about* loading orientation:
                 if isinstance(orientations[orient]['offset']['deg_bounds'], (tuple, list)):
                     self.orient_params.append(orient+'_deg')
-                    self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
+                    self.orient_bounds.append(
+                        [float(f) for f in orientations[orient]['offset']['deg_bounds']]
+                    )
                 else:
                     self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
 
                 # mag rotation *away from* loading:
                 if isinstance(orientations[orient]['offset']['mag_bounds'], (tuple, list)):
                     self.orient_params.append(orient+'_mag')
-                    self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                    self.orient_bounds.append(
+                        [float(f) for f in orientations[orient]['offset']['mag_bounds']]
+                    )
                 else:
                     self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
 
