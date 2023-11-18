@@ -26,7 +26,10 @@ def main():
     if __debug__: print('\n# start plotting')
     global in_opt
     in_opt = InOpt(uset.orientations, uset.params)
-    for orient in orients:
+    fig0, ax0 = plt.subplots()
+    labels0 = []
+    colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    for ct_orient, orient in enumerate(orients):
         data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
         num_iter = len(data[0,0,:])
         #-----------------------------------------------------------------------------------------------
@@ -43,6 +46,9 @@ def main():
         exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
+        ax0.plot(exp_SS[:,0], exp_SS[:,1], 's',markerfacecolor=colors0[ct_orient], color='black', 
+            label='Experimental ' + uset.grain_size_name)
+        labels0.append(f"Exp. [{orient}]")
 
         # plot best guess:
         errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
@@ -51,21 +57,13 @@ def main():
         eng_strain_best = data[:,1,loc_min_error] / uset.length
         eng_stress_best = data[:,2,loc_min_error] / uset.area
         ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label='Best parameter set')
+        ax0.plot(eng_strain_best, eng_stress_best, '-', alpha=1.0, linewidth=2, color=colors0[ct_orient], label='Best parameter set')
+        labels0.append(f"Fit [{orient}]")
 
-        # plot tuning:
-        def plot_settings(legend=True):
-            ax.set_xlabel('Engineering Strain, m/m')
-            ax.set_ylabel('Engineering Stress, MPa')
-            ax.set_xlim(left=0)
-            ax.set_ylim(bottom=0)
-            if legend: ax.legend(loc='best')
-            plt.tick_params(which='both', direction='in', top=True, right=True)
-            ax.set_title(uset.title)
-
-        plot_settings()
-        plt.savefig(os.path.join(os.getcwd(), 'res_opt_' + orient + '.png'), 
+        plot_settings(ax)
+        fig.savefig(os.path.join(os.getcwd(), 'res_opt_' + orient + '.png'), 
             bbox_inches='tight', dpi=400)
-        plt.close()
+        plt.close(fig)
         #-----------------------------------------------------------------------------------------------
         # print best paramters 
         params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')
@@ -99,10 +97,20 @@ def main():
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
         ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
-        plot_settings()
-        plt.savefig(os.path.join(os.getcwd(), 
+        plot_settings(ax)
+        fig.savefig(os.path.join(os.getcwd(), 
             'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
-        plt.close()
+        plt.close(fig)
+
+    # finish fig0, the plot of all sims and experimental data
+    if len(orients) > 1:
+        if __debug__: print('all stress-strain')
+        plot_settings(ax0, legend=False)
+        ax0.legend(loc='best', labels=labels0, fancybox=False)
+        fig0.savefig(os.path.join(os.getcwd(), 'res_all.png'), bbox_inches='tight', dpi=400)
+    else:
+        plt.close(fig0)
+
     #-----------------------------------------------------------------------------------------------
     # plot convergence
     if __debug__: print('convergence information')
@@ -115,7 +123,7 @@ def main():
         else:
             running_min[i] = running_min[i-1]
     ax.plot(list(range(num_iter)), running_min, '-o', color='blue')
-    plot_settings(legend=False)
+    plot_settings(ax, legend=False)
     ax.set_xlabel('Iteration number')
     ax.set_ylabel('Lowest RMSE')
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
@@ -137,6 +145,14 @@ def main():
 
     if __debug__: print('# stop plotting\n')
 
+def plot_settings(ax, legend=True):
+    ax.set_xlabel('Engineering Strain, m/m')
+    ax.set_ylabel('Engineering Stress, MPa')
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    if legend: ax.legend(loc='best', fancybox=False)
+    plt.tick_params(which='both', direction='in', top=True, right=True)
+    ax.set_title(uset.title)
 
 def apply_param_labels(ax_array, diag_label):
     shape = np.shape(ax_array)
