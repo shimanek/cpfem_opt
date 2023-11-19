@@ -61,6 +61,8 @@ def main():
         labels0.append(f"Fit [{orient}]")
 
         plot_settings(ax)
+        if uset.max_strain > 0:
+            ax.set_xlim(right=uset.max_strain)
         fig.savefig(os.path.join(os.getcwd(), 'res_opt_' + orient + '.png'), 
             bbox_inches='tight', dpi=400)
         plt.close(fig)
@@ -97,6 +99,8 @@ def main():
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
         ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
+        if uset.max_strain > 0:
+            ax.set_xlim(right=uset.max_strain)
         plot_settings(ax)
         fig.savefig(os.path.join(os.getcwd(), 
             'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
@@ -107,6 +111,8 @@ def main():
         if __debug__: print('all stress-strain')
         plot_settings(ax0, legend=False)
         ax0.legend(loc='best', labels=labels0, fancybox=False)
+        if uset.max_strain > 0:
+            ax0.set_xlim(right=uset.max_strain)
         fig0.savefig(os.path.join(os.getcwd(), 'res_all.png'), bbox_inches='tight', dpi=400)
     else:
         plt.close(fig0)
