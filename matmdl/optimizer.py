@@ -62,10 +62,10 @@ class InOpt:
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
         for param, bound in params.items():
-            if type(bound) in (list, tuple):
+            if type(bound) in (list, tuple):  # pass ranges to optimizer
                 self.material_params.append(param)
-                self.material_bounds.append(bound)
-            elif type(bound) in (float, int):
+                self.material_bounds.append([float(b) for b in bound])
+            elif type(bound) in (float, int):  # write single values to file
                 write_params(uset.param_file, param, float(bound))
             else:
                 raise TypeError('Incorrect bound type in input file.')
@@ -83,14 +83,18 @@ class InOpt:
                 # deg rotation *about* loading orientation:
                 if isinstance(orientations[orient]['offset']['deg_bounds'], (tuple, list)):
                     self.orient_params.append(orient+'_deg')
-                    self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
+                    self.orient_bounds.append(
+                        [float(f) for f in orientations[orient]['offset']['deg_bounds']]
+                    )
                 else:
                     self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
 
                 # mag rotation *away from* loading:
                 if isinstance(orientations[orient]['offset']['mag_bounds'], (tuple, list)):
                     self.orient_params.append(orient+'_mag')
-                    self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                    self.orient_bounds.append(
+                        [float(f) for f in orientations[orient]['offset']['mag_bounds']]
+                    )
                 else:
                     self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
 

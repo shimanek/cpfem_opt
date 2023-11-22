@@ -135,12 +135,12 @@ def main():
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
-    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=True)
+    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
     # plot partial dependence
     if __debug__: print('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
-    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=True)
+    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
 
     if __debug__: print('# stop plotting\n')
@@ -216,6 +216,7 @@ def name_to_sym(name, cap_sense=False):
         'f5':r'$f_5$',
         'f01':r'$f_0^{(1)}$',
         'f02':r'$f_0^{(2)}$',
+        'q0':r"$q_0$",
         'qA1':r'$q_{A1}$',
         'qB1':r'$q_{B1}$',
         'qA2':r'$q_{A2}$',

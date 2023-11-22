@@ -64,23 +64,65 @@ def calc_error(
     smoothedSS = interp1d(simSS[:,0], simSS[:,1])
     if not uset.i_powerlaw:
         smoothedExp = interp1d(expSS[:,0], expSS[:,1])
-        fineSS = smoothedExp(x_error_eval_pts)
+        # fineSS = smoothedExp(x_error_eval_pts)
+        def fineSS(x):
+            return smoothedExp(x)
     else:
         popt = fit_powerlaw(expSS[:,0], expSS[:,1])
-        fineSS = powerlaw(x_error_eval_pts, *popt)
+        # fineSS = powerlaw(x_error_eval_pts, *popt)
+        def fineSS(x):
+            return powerlaw(x, *popt)
 
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
-        fineSS = np.delete(fineSS, -1)
+        # fineSS = np.delete(fineSS, -1)
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    # for dual opt, error is normalized by exp value (root mean percent error instead of RMSE)
-    deviations_pct = np.asarray([100*(smoothedSS(x_error_eval_pts[i]) - fineSS[i])/fineSS[i] \
-        for i in range(len(fineSS))])
-    rmse = np.sqrt(np.sum( deviations_pct**2) / len(fineSS)) 
+    stress_error = _stress_diff(x_error_eval_pts, smoothedSS, fineSS)
+    slope_error = _slope_diff(x_error_eval_pts, smoothedSS, fineSS)
+    if hasattr(uset, "slope_weight"):
+        w = uset.slope_weight
+    else:
+        w = 0.4
+        print(f"warning, using default slope weight of {w}")
+    error = (1-w)*stress_error + w*slope_error
+    return error
 
-    return rmse
+
+def _stress_diff(x, curve1, curve2):
+    """ 
+    root mean percent error between curves
+
+    Args:
+        x: array of values at which to evaluate curve differences
+        curve1: f(x) for test curve
+        curve2: f(x) for reference curve
+    """
+    percent_error = (curve1(x) - curve2(x))/curve2(x)*100
+
+    error = np.sqrt(np.sum(percent_error**2) / len(x))
+    return error
+
+
+def _slope_diff(x, curve1, curve2):
+    """ 
+    estimate of slope error between curves
+
+    Args:
+        x: array of values at which to evaluate slope differences
+        curve1: f(x) for test curve
+        curve2: f(x) for reference curve
+    """
+    def ddx(curve, x):
+        return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
+
+    dcurve1 = ddx(curve1, x)
+    dcurve2 = ddx(curve2, x)
+    slope_diffs = (dcurve1 - dcurve2) / (dcurve2) * 100
+
+    error = np.sqrt(np.sum(slope_diffs**2) / (len(x) - 1))
+    return error
 
 
 def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None:
