@@ -5,6 +5,7 @@ from plain text inputs for comparison to iterative solution attempts.
 from matmdl.parser import uset
 import numpy as np
 
+# TODO: min/max options should be per orientation also
 
 class ExpData():
     """
