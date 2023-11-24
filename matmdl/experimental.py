@@ -76,13 +76,8 @@ class ExpData():
             min_use = min(mins)
             max_use = max(maxes)
         else:
-            print("orient:", orient)
             min_use = max(mins)
-            print("mins:", mins)
-            print("min_use:", min_use)
             max_use = min(maxes)
-            print("maxes:", maxes)
-            print("max_use:", max_use)
 
         return min_use, max_use
 
