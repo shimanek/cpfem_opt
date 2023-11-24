@@ -62,7 +62,10 @@ def loop(opt, loop_len):
                 if not check_complete(): # try decreasing max increment size
                     refine_run()
                 if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
-                    write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
+                    try:
+                        write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
+                    except NameError:
+                        print("Warning: early incomplete run, skipping to next paramter set")
                     return
                 else:
                     output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
