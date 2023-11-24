@@ -1,6 +1,7 @@
 import unittest
 from matmdl.parser import uset
 import numpy as np
+import os
 
 
 class TestExp(unittest.TestCase):
@@ -11,6 +12,7 @@ class TestExp(unittest.TestCase):
 		parsed_data = exp.data['test']['raw']
 		equal_elements = data_out==parsed_data
 		self.assertTrue(equal_elements.all())
+		os.remove("temp_expSS.csv")
 
 
 class TestError(unittest.TestCase):
