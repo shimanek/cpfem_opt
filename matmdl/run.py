@@ -22,7 +22,6 @@ def main():
     """Instantiate data structures, start optimization loop."""
     remove_out_files()
     global exp_data, in_opt
-    # TODO declare out_progress global up here?
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.params)
     opt = instantiate_optimizer(in_opt, uset)

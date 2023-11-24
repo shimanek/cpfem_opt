@@ -42,6 +42,7 @@ class UserSettings:
 			'jobname': Option(types=[str]),
 			'recursion_depth': Option(types=[int]),
 			'max_strain': Option(types=[int, float]),
+			'min_strain': Option(types=[int, float], crit=False, default=0.0),
 			'i_powerlaw': Option(types=[int]),
 			'umat': Option(types=[str]),
 			'cpus': Option(types=[int]),
