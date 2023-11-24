@@ -9,4 +9,4 @@ docs/source/autoapi/
 **/*.pyc
 **/*.png
 *egg-info
-.notes
+.notes*
