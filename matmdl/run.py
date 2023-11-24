@@ -22,8 +22,6 @@ def main():
     """Instantiate data structures, start optimization loop."""
     remove_out_files()
     global exp_data, in_opt
-    # TODO declare opt_progress global up here?
-    # TODO stochastic opt_progress error if not instantiated by write_maxRMSE() call
     exp_data = ExpData(uset.orientations)
     in_opt = InOpt(uset.orientations, uset.params)
     opt = instantiate_optimizer(in_opt, uset)

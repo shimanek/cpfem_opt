@@ -5,7 +5,6 @@ from plain text inputs for comparison to iterative solution attempts.
 from matmdl.parser import uset
 import numpy as np
 
-# TODO: min/max options should be per orientation also
 
 class ExpData():
     """
@@ -122,15 +121,12 @@ class ExpData():
             fname: Filename for experimental stress-strain data
         """
         expSS = self._load(fname)
-        # max_strain = self._max_strain
+
         if not _max_strain == 0.0:
             expSS = expSS[expSS[:,0] <= _max_strain, :]
-            # max_point = 0
-            # while expSS[max_point,0] <= max_strain:
-            #     max_point += 1
-            # expSS = expSS[:max_point, :]
         if not _min_strain == 0.0:
             expSS = expSS[expSS[:,0] >= _min_strain, :]
+
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 
