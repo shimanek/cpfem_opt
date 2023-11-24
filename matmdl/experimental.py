@@ -27,6 +27,7 @@ class ExpData():
             # orientname = orientations[orient]['inp']
             jobname = uset.jobname + '_{0}.inp'.format(orient)
             self._max_strain = self._get_max_strain(expname)
+            self._min_strain = self._get_min_strain(expname)
             self.raw = self._get_SS(expname)
             self._write_strain_inp(jobname)
             self.data[orient] = {
@@ -62,20 +63,39 @@ class ExpData():
             max_strain = uset.max_strain if not uset.is_compression else (-1 * uset.max_strain)
         return max_strain
 
+    def _get_min_strain(self, fname: str):
+        """
+        Take either user min strain or minimum of experimental strain in file `fname`
+
+        Args:
+            fname: Filename for experimental stress-strain data
+        """
+        if float(uset.min_strain) == 0.0:
+            if uset.is_compression is True:
+                min_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+            else:
+                min_strain = min(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+        else:
+            min_strain = uset.min_strain if not uset.is_compression else (-1 * uset.min_strain)
+        return min_strain
+
     def _get_SS(self, fname: str):
         """
-        Limit experimental data to within max_strain. 
+        Limit experimental data to within min_strain to max_strain. 
         
         Args:
             fname: Filename for experimental stress-strain data
         """
         expSS = self._load(fname)
-        max_strain = self._max_strain
+        # max_strain = self._max_strain
         if not (float(uset.max_strain) == 0.0):
-            max_point = 0
-            while expSS[max_point,0] <= max_strain:
-                max_point += 1
-            expSS = expSS[:max_point, :]
+            expSS = expSS[expSS[:,0] <= self._max_strain, :]
+            # max_point = 0
+            # while expSS[max_point,0] <= max_strain:
+            #     max_point += 1
+            # expSS = expSS[:max_point, :]
+        if not (float(uset.min_strain) == 0.0):
+            expSS = expSS[expSS[:,0] >= self._min_strain, :]
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 

@@ -3,6 +3,16 @@ from matmdl.parser import uset
 import numpy as np
 
 
+class TestExp(unittest.TestCase):
+	def test_data_limits(self):
+		from matmdl.experimental import ExpData
+		exp = ExpData(uset.orientations)
+		data_out = np.loadtxt("exp_out.csv", delimiter=",")
+		parsed_data = exp.data['test']['raw']
+		equal_elements = data_out==parsed_data
+		self.assertTrue(equal_elements.all())
+
+
 class TestError(unittest.TestCase):
 	def diff_test_linear(self, b1, m1, b2, m2, err_stress=None, err_slope=None):
 		from matmdl.objectives.rmse import _stress_diff, _slope_diff
