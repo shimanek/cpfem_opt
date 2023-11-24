@@ -5,13 +5,17 @@ import os
 
 
 class TestExp(unittest.TestCase):
+	def _by_orientation_name(self, exp, orient_name):
+		data_out = np.loadtxt(f"exp_{orient_name}.csv", delimiter=",")
+		parsed_data = exp.data[orient_name]['raw']
+		equal_elements = np.equal(data_out,parsed_data)
+		self.assertTrue(equal_elements.all())
+
 	def test_data_limits(self):
 		from matmdl.experimental import ExpData
 		exp = ExpData(uset.orientations)
-		data_out = np.loadtxt("exp_out.csv", delimiter=",")
-		parsed_data = exp.data['test']['raw']
-		equal_elements = data_out==parsed_data
-		self.assertTrue(equal_elements.all())
+		self._by_orientation_name(exp, "test")
+		self._by_orientation_name(exp, "001")
 		os.remove("temp_expSS.csv")
 
 

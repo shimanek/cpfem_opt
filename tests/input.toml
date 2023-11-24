@@ -18,6 +18,8 @@ deg_bounds = 0
 name = '001'
 exp = 'exp_in.csv'
 inp = 'mat_orient_100.inp'
+min_strain = 0.005
+max_strain = 0.011
 [orientations.offset]
 dir_load = [0,0,1]
 dir_0deg = [0,1,1]

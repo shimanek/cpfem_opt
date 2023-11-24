@@ -30,7 +30,7 @@ RP-Bottom,  2, -4
    Pole0,3,3,0
    Pole1,3,3,0 
    RP-Bottom, 2, 2, 0
-   RP-Top, 2, 2, 0.012
+   RP-Top, 2, 2, 0.011
 *Output, field, Number interval=100, Time Marks=No
 *Node output
 RF, U
