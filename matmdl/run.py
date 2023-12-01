@@ -72,7 +72,10 @@ def loop(opt, loop_len):
                         os.remove(output_fname)
                     job_extract(orient)  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
+                        try:
+                            write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
+                        except NameError:
+                            print("Warning: early incomplete run, skipping to next paramter set")
                         return
 
             # error value:
