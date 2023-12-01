@@ -64,7 +64,7 @@ def loop(opt, loop_len):
                     try:
                         write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
                     except NameError:
-                        print("Warning: early incomplete run, skipping to next paramter set")
+                        print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
                     return
                 else:
                     output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
@@ -75,7 +75,7 @@ def loop(opt, loop_len):
                         try:
                             write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
                         except NameError:
-                            print("Warning: early incomplete run, skipping to next paramter set")
+                            print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
                         return
 
             # error value:
