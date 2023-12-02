@@ -63,7 +63,8 @@ class ExpData():
         if hasattr(uset, "min_strain"):
             mins.append(uset.min_strain)
         if hasattr(uset, "max_strain"):
-            maxes.append(uset.max_strain)
+            if float(uset.max_strain) != 0.0:
+                maxes.append(uset.max_strain)
 
         # data limits
         data = np.sort(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
@@ -77,6 +78,12 @@ class ExpData():
         else:
             min_use = max(mins)
             max_use = min(maxes)
+
+        if False:
+            print("dbg bounds: mins:", mins)
+            print("dbg bounds: maxes:", maxes)
+            print("dbg bounds: min:", min_use)
+            print("dbg bounds: max:", max_use)
 
         return min_use, max_use
 
