@@ -63,7 +63,8 @@ class ExpData():
         if hasattr(uset, "min_strain"):
             mins.append(uset.min_strain)
         if hasattr(uset, "max_strain"):
-            maxes.append(uset.max_strain)
+            if uset.max_strain != 0.0:
+                maxes.append(uset.max_strain)
 
         # data limits
         data = np.sort(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
