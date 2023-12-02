@@ -79,7 +79,7 @@ class ExpData():
             min_use = max(mins)
             max_use = min(maxes)
 
-        if True:
+        if False:
             print("dbg bounds: mins:", mins)
             print("dbg bounds: maxes:", maxes)
             print("dbg bounds: min:", min_use)
