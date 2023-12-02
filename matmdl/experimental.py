@@ -63,7 +63,7 @@ class ExpData():
         if hasattr(uset, "min_strain"):
             mins.append(uset.min_strain)
         if hasattr(uset, "max_strain"):
-            if uset.max_strain != 0.0:
+            if uset.max_strain != 0:
                 maxes.append(uset.max_strain)
 
         # data limits
@@ -78,6 +78,12 @@ class ExpData():
         else:
             min_use = max(mins)
             max_use = min(maxes)
+
+        if True:
+            print("dbg bounds: mins:", mins)
+            print("dbg bounds: maxes:", maxes)
+            print("dbg bounds: min:", min_use)
+            print("dbg bounds: max:", max_use)
 
         return min_use, max_use
 
