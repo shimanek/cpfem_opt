@@ -6,6 +6,7 @@ from matmdl.runner import combine_SS
 from matmdl.objectives.rmse import max_rmse
 from matmdl.parallel import Checkout
 from matmdl.optimizer import update_progress, write_opt_progress
+import numpy as np
 import os
 
 
