@@ -29,9 +29,9 @@ def check_parallel():
 
 def copy_files():
 	""" copy files from uset.main_path to runner dir"""
-
-	# get list of files to copy
 	#TODO: add experimental files for non-orientation case?
+	
+	# exact filenames
 	flist = ["input.toml", uset.umat, uset.param_file, uset.jobname+".inp"]
 	for orient in uset.orientations.keys():
 		flist.append(uset.orientations[orient]["exp"])
@@ -40,6 +40,13 @@ def copy_files():
 		except KeyError:
 			# orientation generated, no input file needed
 			pass
+	
+	# only start of filenames
+	fstarts = ["mesh", "mat"]
+	for f in os.listdir(uset.main_path):
+		for start in fstarts:
+			if f.startswith(start):
+				flist.append(f)
 
 	# copy files to current directory
 	for f in flist:
