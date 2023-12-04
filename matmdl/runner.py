@@ -56,8 +56,6 @@ def combine_SS(zeros: bool, orientation: str) -> None:
         dat = np.dstack((dat,sheet))
     else:
         dat = sheet
-    print("dbg:runner:filename:", filename)
-    print("dbg:runner:filename type:", type(filename))
     with Checkout(filename):
         np.save(filename, dat)
 
