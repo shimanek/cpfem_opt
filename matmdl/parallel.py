@@ -42,7 +42,7 @@ def update_parallel(opt):
 		output_state = _get_output_state()
 	else:
 		new_state = _get_output_state()
-		state_diffs = [val1 != val2 for val1, val2 in output_state, new_state]
+		state_diffs = [val1 != val2 for val1, val2 in (output_state, new_state)]
 		if any(state_diffs):
 			output_state = new_state
 			# also update optimizer...
