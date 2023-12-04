@@ -31,8 +31,10 @@ def copy_files():
 	""" copy files from uset.main_path to runner dir"""
 
 	# get list of files to copy
+	#TODO: add experimental files for non-orientation case?
 	flist = ["input.toml", uset.umat, uset.param_file, uset.jobname+".inp"]
 	for orient in uset.orientations.keys():
+		flist.append(uset.orientations[orient]["exp"])
 		try:
 			flist.append(uset.orientations[orient]["inp"])
 		except KeyError:
