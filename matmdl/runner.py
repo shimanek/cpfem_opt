@@ -34,32 +34,6 @@ def remove_out_files():
             os.remove(f)
 
 
-def combine_SS(zeros: bool, orientation: str) -> None:
-    """
-    Reads npy stress-strain output and appends current results.
-
-    Loads from ``temp_time_disp_force_{orientation}.csv`` and writes to 
-    ``out_time_disp_force_{orientation}.npy``. Should only be called after all
-    orientations have run, since ``zeros==True`` if any one fails.
-
-    Args:
-        zeros: True if the run failed and a sheet of zeros should be written
-            in place of real time-force-displacement data.
-        orientation: Orientation nickname to keep temporary output files separate.
-    """
-    filename = os.path.join(uset.main_path, 'out_time_disp_force_{0}.npy'.format(orientation))
-    sheet = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)
-    if zeros:
-        sheet = np.zeros((np.shape(sheet)))
-    if os.path.isfile(filename): 
-        dat = np.load(filename)
-        dat = np.dstack((dat,sheet))
-    else:
-        dat = sheet
-    with Checkout(filename):
-        np.save(filename, dat)
-
-
 def write_params(
         fname: str, 
         param_names: Union[list[str], str], 

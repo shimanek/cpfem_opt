@@ -11,13 +11,13 @@ import numpy as np
 from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt
 from matmdl.optimizer import instantiate_optimizer, get_next_param_set, write_opt_progress, update_progress, load_opt
-from matmdl.runner import get_first, remove_out_files, combine_SS, write_params, refine_run
+from matmdl.runner import get_first, remove_out_files, write_params, refine_run
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
 from matmdl.engines import job_run, job_extract, check_complete
 from matmdl.objectives import calc_error, max_rmse
-from matmdl.writer import write_error_to_file, write_maxRMSE
+from matmdl.writer import write_error_to_file, write_maxRMSE, combine_SS
 from matmdl.parser import uset
-from matmdl.parallel import check_parallel
+from matmdl.parallel import check_parallel, Checkout
 
 def main():
     """Instantiate data structures, start optimization loop."""
@@ -62,11 +62,9 @@ def loop(opt, loop_len):
                 job_run()
                 if not check_complete(): # try decreasing max increment size
                     refine_run()
-                if not check_complete(): # if it still fails, write max_rmse, go to next parameterset
-                    try:
-                        write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
-                    except NameError:
-                        print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
+                if not check_complete(): # if it still fails, tell optimizer a large error, continue
+                    opt.tell(next_params, max_rmse(i, opt_progress))
+                    print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
                     return
                 else:
                     output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
@@ -74,22 +72,21 @@ def loop(opt, loop_len):
                         os.remove(output_fname)
                     job_extract(orient)  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
-                        try:
-                            write_maxRMSE(i, next_params, opt, in_opt, opt_progress)
-                        except NameError:
-                            print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
-                        return
+	                    opt.tell(next_params, max_rmse(i, opt_progress))
+	                    print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
+	                    return
 
-            # error value:
-            rmse_list = []
-            for orient in uset.orientations.keys():
-                rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
-                combine_SS(zeros=False, orientation=orient)  # save stress-strain data
-            write_error_to_file(rmse_list, in_opt.orients)
-            rmse = np.mean(rmse_list)
-            opt.tell(next_params, rmse)
-            opt_progress = update_progress(i, next_params, rmse)
-            write_opt_progress(in_opt)
+            # write out:
+            with Checkout("out"):
+	            rmse_list = []
+	            for orient in uset.orientations.keys():
+	                rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
+	                combine_SS(zeros=False, orientation=orient)  # save stress-strain data
+	            write_error_to_file(rmse_list, in_opt.orients)
+	            rmse = np.mean(rmse_list)
+	            opt.tell(next_params, rmse)
+	            opt_progress = update_progress(i, next_params, rmse)
+	            write_opt_progress(in_opt)
     
     get_first(opt, in_opt)
     for i in range(loop_len):

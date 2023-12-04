@@ -2,12 +2,39 @@
 module for writing to files
 """
 from matmdl.parser import uset
-from matmdl.runner import combine_SS
 from matmdl.objectives.rmse import max_rmse
 from matmdl.parallel import Checkout
 from matmdl.optimizer import update_progress, write_opt_progress
 import numpy as np
 import os
+
+
+def combine_SS(zeros: bool, orientation: str) -> None:
+    """
+    Reads npy stress-strain output and appends current results.
+
+    Loads from ``temp_time_disp_force_{orientation}.csv`` and writes to 
+    ``out_time_disp_force_{orientation}.npy``. Should only be called after all
+    orientations have run, since ``zeros==True`` if any one fails.
+
+    For parallel, needs to be called within a parallel.Checkout guard.
+
+    Args:
+        zeros: True if the run failed and a sheet of zeros should be written
+            in place of real time-force-displacement data.
+        orientation: Orientation nickname to keep temporary output files separate.
+    """
+    filename = os.path.join(uset.main_path, 'out_time_disp_force_{0}.npy'.format(orientation))
+    sheet = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)
+    if zeros:
+        sheet = np.zeros((np.shape(sheet)))
+    if os.path.isfile(filename): 
+        dat = np.load(filename)
+        dat = np.dstack((dat,sheet))
+    else:
+        dat = sheet
+    np.save(filename, dat)
+    # TODO: need to append???
 
 
 def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object, opt_progress):
@@ -44,6 +71,5 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
         with open(error_fpath, 'a+') as f:
             f.write('\n' + ','.join([str(err) for err in error_list + [np.mean(error_list)]]))
     else:
-        with Checkout(error_fpath):
-            with open(error_fpath, 'w+') as f:
-                f.write('# errors for {} and mean error'.format(orient_list))
+        with open(error_fpath, 'w+') as f:
+            f.write('# errors for {} and mean error'.format(orient_list))
