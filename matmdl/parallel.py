@@ -16,16 +16,43 @@ def check_parallel():
 		copy_files()
 		# TODO: reload copied input.toml
 
+"""
+TODO: update output state with dates for each file modified:
+ e.g., os.path.getmtime(fpath)
+ if updated recently, reload optimizer
 
-#TODO: update output state with dates for each file modified:
-# e.g., os.path.getmtime(fpath)
-# if updated recently, reload optimizer
+NOTE: single thread version works now,
+- test with subfolders
+- add above reloading
+- test all together
+- note some timing/performance stats
 
-# note: single thread version works now,
-# - test with subfolders
-# - add above reloading
-# - test all together
-# - note some timing/performance stats
+ERRORS:
+- excess writing to npy files when out_progress hasn't been updated!
+
+"""
+
+def receive_progress():
+	""" state if dict of filename: linux seconds of last modification"""
+	global output_state
+	if output_state not in globals():
+		output_state = _get_output_state()
+	else:
+		output_state = _update_output_state()
+
+	# also update optimizer.... 
+	# for difflines in diff(internal prog, external prog):
+	# do opt.tell(difflines[1:-1], difflines[-1])
+
+
+def _get_output_state():
+	output_state = {}
+	outfiles = [f for f in os.path.listdir(uset.main_path) if f.startswith("out")]
+	for fname in outfiles:
+		fpath = os.path.join(uset.main_path, fname)
+		output_state[f] = os.path.getmtime(fpath)
+	return output_state
+
 
 def copy_files():
 	""" copy files from uset.main_path to runner dir"""
@@ -55,9 +82,12 @@ def copy_files():
 
 class Checkout:
 	"""checkout shared resource without write collisions"""
-	def __init__(self, fname):
+	def __init__(self, fname, local=False):
 		self.fname = fname
-		self.fpath = os.path.join(uset.main_path, fname)
+		if local:
+			self.fpath = os.path.join(os.getcwd(), fname)
+		else:
+			self.fpath = os.path.join(uset.main_path, fname)
 
 	def __enter__(self):
 		cutoff_seconds = 60

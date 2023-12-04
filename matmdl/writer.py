@@ -60,7 +60,6 @@ def combine_SS(zeros: bool, orientation: str) -> None:
     else:
         dat = sheet
     np.save(filename, dat)
-    # TODO: need to append???
 
 
 def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object, opt_progress):

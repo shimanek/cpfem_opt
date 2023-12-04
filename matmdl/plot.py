@@ -20,6 +20,7 @@ import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 
+#TODO: add Checkout(out, local=True) guard around outfile access
 
 def main():
     orients = uset.orientations.keys()
@@ -32,6 +33,7 @@ def main():
     for ct_orient, orient in enumerate(orients):
         data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
         num_iter = len(data[0,0,:])
+        print("DBG:PLOT:num_iter", num_iter)
         #-----------------------------------------------------------------------------------------------
         # plot all trials, in order:
         if __debug__: print('{}: all curves'.format(orient))
