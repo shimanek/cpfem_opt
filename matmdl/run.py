@@ -17,7 +17,7 @@ from matmdl.engines import job_run, job_extract, check_complete
 from matmdl.objectives import calc_error, max_rmse
 from matmdl.writer import write_error_to_file, write_maxRMSE, combine_SS, write_opt_progress
 from matmdl.parser import uset
-from matmdl.parallel import check_parallel, Checkout, receive_progress
+from matmdl.parallel import check_parallel, Checkout, update_parallel
 
 def main():
     """Instantiate data structures, start optimization loop."""
@@ -87,7 +87,7 @@ def loop(opt, loop_len):
 	            opt.tell(next_params, rmse)
 	            opt_progress = update_progress(i, next_params, rmse)
 	            write_opt_progress(in_opt)
-	            receive_progress()
+	            # update_parallel(opt)
     
     get_first(opt, in_opt)
     for i in range(loop_len):
