@@ -59,5 +59,5 @@ class Checkout:
 		if time.time() - start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}, exiting.")
 
-	def __exit__(self):
+	def __exit__(self, exc_type, exc_value, exc_tb):
 		os.remove(self.fpath + ".lck")
