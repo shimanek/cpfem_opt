@@ -10,12 +10,12 @@ import numpy as np
 
 from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt
-from matmdl.optimizer import instantiate_optimizer, get_next_param_set, write_opt_progress, update_progress, load_opt
+from matmdl.optimizer import instantiate_optimizer, get_next_param_set, update_progress, load_opt
 from matmdl.runner import get_first, remove_out_files, write_params, refine_run
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
 from matmdl.engines import job_run, job_extract, check_complete
 from matmdl.objectives import calc_error, max_rmse
-from matmdl.writer import write_error_to_file, write_maxRMSE, combine_SS
+from matmdl.writer import write_error_to_file, write_maxRMSE, combine_SS, write_opt_progress
 from matmdl.parser import uset
 from matmdl.parallel import check_parallel, Checkout
 

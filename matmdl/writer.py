@@ -9,6 +9,32 @@ import numpy as np
 import os
 
 
+def write_opt_progress(
+        in_opt: object,
+    ) -> None:
+    """Appends last iteration infor of global variable ``opt_progress`` to file."""
+    global opt_progress
+
+    opt_progress_header = ['iteration'] + in_opt.params + ['RMSE']
+    out_fpath = os.path.join(uset.main_path, 'out_progress.txt')
+
+    if len(np.shape(opt_progress)) > 1:
+        new_progress = opt_progress[-1,:]
+    else:
+        new_progress = opt_progress[:]
+
+    add_header = not os.path.isfile(out_fpath)
+    with open(out_fpath, "a+") as f:
+        if add_header:
+            header_padded = []
+            for col_name in opt_progress_header:
+                num_spaces = 8+6 - len(col_name)
+                # 8 decimals, 6 other digits
+                header_padded.append(col_name + num_spaces*" ")
+            f.write(', '.join(header_padded) + "\n")
+        f.write(',\t'.join([f"{a:.8e}" for a in new_progress]) + "\n")
+
+
 def combine_SS(zeros: bool, orientation: str) -> None:
     """
     Reads npy stress-strain output and appends current results.

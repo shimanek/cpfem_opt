@@ -52,7 +52,7 @@ def main():
 
         # plot best guess:
         errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
-            skiprows=1, delimiter='\t')[:,-1]
+            skiprows=1, delimiter=',')[:,-1]
         loc_min_error = np.argmin(errors)
         eng_strain_best = data[:,1,loc_min_error] / uset.length
         eng_stress_best = data[:,2,loc_min_error] / uset.area
@@ -68,7 +68,7 @@ def main():
         plt.close(fig)
         #-----------------------------------------------------------------------------------------------
         # print best paramters 
-        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')
+        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')
         # ^ full list: 'iteration', 'Tau0', 'H0', 'TauS', 'hs', 'gamma0', 'error'
         best_params = [np.round(f,decimals=3) for f in params[loc_min_error,:]]
         with open('out_best_params.txt', 'w') as f:

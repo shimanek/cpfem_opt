@@ -213,7 +213,7 @@ def load_opt(opt: object) -> object:
     global opt_progress
     filename = 'out_progress.txt'
     arrayname = 'out_time_disp_force.npy'
-    opt_progress = np.loadtxt(filename, skiprows=1)
+    opt_progress = np.loadtxt(filename, skiprows=1, delimiter=',')
     # renumber iterations (negative length to zero) to distinguish from new calculations:
     opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
     x_in = opt_progress[:,1:-1].tolist()
