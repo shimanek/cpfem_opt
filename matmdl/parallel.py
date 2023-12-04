@@ -21,6 +21,11 @@ def check_parallel():
 # e.g., os.path.getmtime(fpath)
 # if updated recently, reload optimizer
 
+# note: single thread version works now,
+# - test with subfolders
+# - add above reloading
+# - test all together
+# - note some timing/performance stats
 
 def copy_files():
 	""" copy files from uset.main_path to runner dir"""
