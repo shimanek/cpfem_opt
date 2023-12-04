@@ -11,6 +11,7 @@ import time
 
 def check_parallel():
 	"""parallel initialization if needed"""
+	print("dbg:par:", uset.main_path)
 	if uset.main_path is not os.getcwd():
 		print("Starting as a parallel instance")
 		copy_files()
