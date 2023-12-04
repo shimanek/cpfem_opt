@@ -35,7 +35,7 @@ def copy_files():
 
 	# copy files to current directory
 	for f in flist:
-		copyfile(os.path.join(uset.main_path, f), os.getcwd())
+		copy(os.path.join(uset.main_path, f), os.getcwd())
 
 
 class Checkout:
