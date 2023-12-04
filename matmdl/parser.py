@@ -49,7 +49,7 @@ class UserSettings:
 			'do_load_previous': Option(types=[bool, int]),
 			'is_compression': Option(types=[bool]),
 			'slope_weight': Option(types=[int,float], crit=False, default=0.4),
-			'main_path': Option(types=[str], crit=False, defualt="."),
+			'main_path': Option(types=[str], crit=False, default="."),
 		},
 		'plot': {
 			'grain_size_name': Option(crit=False, types=[str]),

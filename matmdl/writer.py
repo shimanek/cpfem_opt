@@ -1,7 +1,10 @@
 """
 module for writing to files
 """
+from matmdl.parser import uset
 from matmdl.runner import combine_SS
+from matmdl.objectives.rmse import max_rmse
+from matmdl.parallel import Checkout
 from matmdl.optimizer import update_progress, write_opt_progress
 
 
@@ -34,11 +37,11 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
             in ``orient_list``, with which this list shares an order.
         orient_list: List of strings holding orientation nicknames.
     """
-    error_fname = 'out_errors.txt'
-    if os.path.isfile(error_fname):
-        with open(error_fname, 'a+') as f:
+    error_fpath = os.path.join(uset.main_path, 'out_errors.txt')
+    if os.path.isfile(error_fpath):
+        with open(error_fpath, 'a+') as f:
             f.write('\n' + ','.join([str(err) for err in error_list + [np.mean(error_list)]]))
     else:
-        with open(error_fname, 'w+') as f:
-            f.write('# errors for {} and mean error'.format(orient_list))
-
+        with Checkout(error_fpath):
+            with open(error_fpath, 'w+') as f:
+                f.write('# errors for {} and mean error'.format(orient_list))

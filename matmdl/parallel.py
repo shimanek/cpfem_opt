@@ -38,24 +38,25 @@ def copy_files():
 		copyfile(os.path.join(uset.main_path, f), os.getcwd())
 
 
-@contextmanager
-def checkout(fname):
+class Checkout:
 	"""checkout shared resource without write collisions"""
-	cutoff_seconds = 60
+	def __init__(self, fname):
+		self.fname = fname
+		self.fpath = os.path.join(uset.main_path, fname)
 
-	start = time.time()
-	fpath = os.path.join(uset.main_path, fname)
+	def __enter__(self):
+		cutoff_seconds = 60
+		start = time.time()
 
-	while True and time.time() - start < cutoff_seconds:
-		lockfile_exists = os.path.isfile(fpath + ".lck")
-		if not lockfile_exists:
-			try:
-				open(fpath + ".lck", "w")
-				f = open(fpath, "w+")
-				yield f
-			finally:
-				f.close()
-				os.remove(fpath + ".lck")
+		while True and time.time() - start < cutoff_seconds:
+			lockfile_exists = os.path.isfile(self.fpath + ".lck")
+			if lockfile_exists:
+				time.sleep(2)
+			else:
+				open(self.fpath + ".lck", "w")
 				break
-		else:
-			time.sleep(2)
+		if time.time() - start > cutoff_seconds:
+			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}, exiting.")
+
+	def __exit__(self):
+		os.remove(self.fpath + ".lck")

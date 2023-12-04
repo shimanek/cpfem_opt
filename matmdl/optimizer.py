@@ -1,5 +1,6 @@
 from matmdl.runner import write_params
 from matmdl.utilities import as_float_tuples, round_sig
+from matmdl.parallel import Checkout
 from skopt import Optimizer
 from matmdl.parser import uset
 import numpy as np
@@ -155,7 +156,9 @@ def write_opt_progress(
     """Writes global variable ``opt_progress`` to file."""
     global opt_progress
     opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
-    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
+    out_fpath = os.path.join(uset.main_path, 'out_progress.txt')
+    with Checkout(out_fpath):
+        np.savetxt(out_fpath , opt_progress, delimiter='\t', header=opt_progress_header)
 
 
 def update_progress(i:int, next_params:tuple, error:float) -> None:

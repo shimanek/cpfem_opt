@@ -1,5 +1,6 @@
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
 from matmdl.parser import uset
+from matmdl.parallel import Checkout
 from typing import Union
 import numpy as np
 import subprocess
@@ -46,8 +47,8 @@ def combine_SS(zeros: bool, orientation: str) -> None:
             in place of real time-force-displacement data.
         orientation: Orientation nickname to keep temporary output files separate.
     """
-    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
-    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
+    filename = os.path.join(uset.main_path, 'out_time_disp_force_{0}.npy'.format(orientation))
+    sheet = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
     if os.path.isfile(filename): 
@@ -55,7 +56,8 @@ def combine_SS(zeros: bool, orientation: str) -> None:
         dat = np.dstack((dat,sheet))
     else:
         dat = sheet
-    np.save(filename, dat)
+    with Checkout(filename):
+        np.save(filename, dat)
 
 
 def write_params(
