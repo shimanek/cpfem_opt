@@ -11,7 +11,6 @@ import time
 
 def check_parallel():
 	"""parallel initialization if needed"""
-	print("dbg:par:", uset.main_path)
 	if uset.main_path not in [os.getcwd(), "."]:
 		print("Starting as a parallel instance")
 		copy_files()
@@ -20,6 +19,7 @@ def check_parallel():
 
 #TODO: update output state with dates for each file modified:
 # e.g., os.path.getmtime(fpath)
+# if updated recently, reload optimizer
 
 
 def copy_files():
