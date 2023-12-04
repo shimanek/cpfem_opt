@@ -4,6 +4,7 @@ from matmdl.parallel import Checkout
 from skopt import Optimizer
 from matmdl.parser import uset
 import numpy as np
+import os
 
 
 class InOpt:
