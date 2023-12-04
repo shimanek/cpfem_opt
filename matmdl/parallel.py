@@ -4,7 +4,7 @@ This is presumed to be the case when the setting `main_path` has a value.
 """
 from contextlib import contextmanager
 from matmdl.parser import uset
-from shutil import copy
+from shututil import copy
 import os
 import time
 
