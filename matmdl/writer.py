@@ -4,16 +4,16 @@ module for writing to files
 from matmdl.parser import uset
 from matmdl.objectives.rmse import max_rmse
 from matmdl.parallel import Checkout
-from matmdl.optimizer import update_progress, write_opt_progress
+from matmdl.optimizer import update_progress
 import numpy as np
 import os
 
 
 def write_opt_progress(
         in_opt: object,
+        opt_progress: object,
     ) -> None:
     """Appends last iteration infor of global variable ``opt_progress`` to file."""
-    global opt_progress
 
     opt_progress_header = ['iteration'] + in_opt.params + ['RMSE']
     out_fpath = os.path.join(uset.main_path, 'out_progress.txt')

@@ -86,7 +86,7 @@ def loop(opt, loop_len):
 	            rmse = np.mean(rmse_list)
 	            opt.tell(next_params, rmse)
 	            opt_progress = update_progress(i, next_params, rmse)
-	            write_opt_progress(in_opt)
+	            write_opt_progress(in_opt, opt_progress)
     
     get_first(opt, in_opt)
     for i in range(loop_len):
