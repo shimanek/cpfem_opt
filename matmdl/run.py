@@ -15,7 +15,7 @@ from matmdl.runner import get_first, remove_out_files, write_params, refine_run
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
 from matmdl.engines import job_run, job_extract, check_complete
 from matmdl.objectives import calc_error, max_rmse
-from matmdl.writer import write_error_to_file, write_maxRMSE, combine_SS, write_opt_progress
+from matmdl.writer import write_error_to_file, combine_SS, write_opt_progress
 from matmdl.parser import uset
 from matmdl.parallel import check_parallel, Checkout, update_parallel
 
@@ -86,7 +86,7 @@ def loop(opt, loop_len):
 	            rmse = np.mean(rmse_list)
 	            opt.tell(next_params, rmse)
 	            opt_progress = update_progress(i, next_params, rmse)
-	            write_opt_progress(in_opt)
+	            write_opt_progress(in_opt, opt_progress)
 	            # update_parallel(opt)
     
     get_first(opt, in_opt)
