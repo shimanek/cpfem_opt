@@ -168,7 +168,12 @@ def write_opt_progress(
     add_header = not os.path.isfile(out_fpath)
     with open(out_fpath, "a+") as f:
         if add_header:
-            f.write(',  \t'.join(opt_progress_header) + "\n")
+            header_padded = []
+            for col_name in opt_progress_header:
+                num_spaces = 8+6 - len(col_name)
+                # 8 decimals, 6 other digits
+                header_padded.append(col_name + num_spaces*" ")
+            f.write(', '.join(header_padded) + "\n")
         f.write(',\t'.join([f"{a:.8e}" for a in new_progress]) + "\n")
 
 
