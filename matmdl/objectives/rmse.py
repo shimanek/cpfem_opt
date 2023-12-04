@@ -5,7 +5,8 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
 from matmdl.parser import uset
-from matmdl.optimizer import update_progress, write_opt_progress
+from matmdl.optimizer import update_progress
+from matmdl.writer import write_opt_progress
 
 
 def calc_error(
