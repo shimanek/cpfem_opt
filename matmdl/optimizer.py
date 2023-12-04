@@ -154,12 +154,16 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
 def write_opt_progress(
         in_opt: object,
     ) -> None:
-    """Writes global variable ``opt_progress`` to file."""
+    """Appends last iteration infor of global variable ``opt_progress`` to file."""
     global opt_progress
     opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
     out_fpath = os.path.join(uset.main_path, 'out_progress.txt')
     with Checkout(out_fpath):
-        np.savetxt(out_fpath , opt_progress, delimiter='\t', header=opt_progress_header)
+        if os.path.isfile(out_fpath):  # append
+            with open(out_fpath, "a+") as f:
+                f.write('\t'.join([opt_progress[-1,:]]) + "\n")
+        else:  # create
+            np.savetxt(out_fpath , opt_progress, delimiter='\t', header=opt_progress_header)
 
 
 def update_progress(i:int, next_params:tuple, error:float) -> None:
