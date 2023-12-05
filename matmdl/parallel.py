@@ -2,7 +2,6 @@
 Module for dealing with the present optimization being one of many simultaneous instances.
 This is presumed to be the case when the setting `main_path` has a value.
 """
-from contextlib import contextmanager
 from matmdl.parser import uset
 from shutil import copy
 import os
@@ -56,7 +55,7 @@ def _get_output_state():
 	outfiles = [f for f in os.path.listdir(uset.main_path) if f.startswith("out")]
 	for fname in outfiles:
 		fpath = os.path.join(uset.main_path, fname)
-		output_state[f] = os.path.getmtime(fpath)
+		output_state[fname] = os.path.getmtime(fpath)
 	return output_state
 
 
