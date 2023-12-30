@@ -57,7 +57,9 @@ class ExpData():
         if "min_strain" in uset.orientations[orient].keys():
             mins.append(float(uset.orientations[orient]["min_strain"]))
         if "max_strain" in uset.orientations[orient].keys():
-            maxes.append(float(uset.orientations[orient]["max_strain"]))
+            orient_max_strain = float(uset.orientations[orient]["max_strain"])
+            if orient_max_strain != 0.0:
+                maxes.append(orient_max_strain)
 
         # global limits
         if hasattr(uset, "min_strain"):
