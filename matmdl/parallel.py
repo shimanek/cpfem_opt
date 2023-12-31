@@ -20,6 +20,8 @@ TODO: update output state with dates for each file modified:
  e.g., os.path.getmtime(fpath)
  if updated recently, reload optimizer
 
+ TODO: put directory name on lockfile? for debug purposes. eg: `out_sub_01.lck`
+
 NOTE: single thread version works now,
 - test with subfolders
 - add above reloading
@@ -88,14 +90,16 @@ def copy_files():
 class Checkout:
 	"""checkout shared resource without write collisions"""
 	def __init__(self, fname, local=False):
+		self.start = time.time()
 		self.fname = fname
 		if local:
 			self.fpath = os.path.join(os.getcwd(), fname)
 		else:
+			self.source = os.getcwd()
 			self.fpath = os.path.join(uset.main_path, fname)
 
 	def __enter__(self):
-		cutoff_seconds = 60
+		cutoff_seconds = 420
 		start = time.time()
 
 		while True and time.time() - start < cutoff_seconds:
@@ -106,7 +110,8 @@ class Checkout:
 				open(self.fpath + ".lck", "w")
 				break
 		if time.time() - start > cutoff_seconds:
-			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}, exiting.")
+			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		os.remove(self.fpath + ".lck")
+		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
