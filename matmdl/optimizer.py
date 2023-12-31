@@ -187,6 +187,9 @@ def load_opt(opt: object) -> object:
     global opt_progress
     filename = 'out_progress.txt'
     arrayname = 'out_time_disp_force.npy'
+    if uset.main_path not in [os.getcwd(), "."]:
+        filename = os.path.join(uset.main_path, filename)
+        arrayname = os.path.join(uset.main_path, arrayname)
     opt_progress = np.loadtxt(filename, skiprows=1, delimiter=',')
     # renumber iterations (negative length to zero) to distinguish from new calculations:
     opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
