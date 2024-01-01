@@ -139,7 +139,7 @@ def main():
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
     opt = instantiate_optimizer(in_opt, uset)
-    opt = load_opt(opt)
+    opt = load_opt(opt, search_local=True)
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')

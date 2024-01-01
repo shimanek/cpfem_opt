@@ -169,7 +169,7 @@ def update_progress(i:int, next_params:tuple, error:float) -> None:
     return opt_progress
 
 
-def load_opt(opt: object) -> object:
+def load_opt(opt: object, search_local:bool=False) -> object:
     """
     Load input files of previous optimizations to use as initial points in current optimization.
     
@@ -180,6 +180,8 @@ def load_opt(opt: object) -> object:
 
     Args:
         opt: Current instance of the optimizer object.
+        search_local: Look in the current directory for files 
+            (convenient for plotting from parallel instances).
 
     Returns:
         skopt.Optimizer: Updated instance of the optimizer object.
@@ -187,7 +189,7 @@ def load_opt(opt: object) -> object:
     global opt_progress
     filename = 'out_progress.txt'
     arrayname = 'out_time_disp_force.npy'
-    if uset.main_path not in [os.getcwd(), "."]:
+    if uset.main_path not in [os.getcwd(), "."] and not search_local:
         filename = os.path.join(uset.main_path, filename)
         arrayname = os.path.join(uset.main_path, arrayname)
     opt_progress = np.loadtxt(filename, skiprows=1, delimiter=',')
