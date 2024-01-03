@@ -52,7 +52,7 @@ def check_single():
             print(f"DBG: not complete with {orient}, exiting...")
             sys.exit(1)
         else:
-            output_fname = 'single_time_disp_force_{0}.csv'.format(orient)
+            output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
             if os.path.isfile(output_fname): 
                 os.remove(output_fname)
             job_extract(orient)  # extract data to temp_time_disp_force.csv
