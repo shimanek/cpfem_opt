@@ -1,9 +1,9 @@
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
-from matmdl.crystalPlasticity import get_orient_info
-from matmdl.optimizer import InOpt
+from matmdl.crystalPlasticity import get_orient_info, load_subroutine
 from matmdl.parser import uset
 from typing import Union
 import numpy as np
+import matmdl.optimizer
 import subprocess
 import shutil
 import sys
@@ -26,15 +26,15 @@ def check_single():
     print("DBG: starting single run!")
 
     # load options:
-    in_opt = InOpt(uset.orientations, uset.params)
+    in_opt = matmdl.optimizer.InOpt(uset.orientations, uset.params)
     next_params = [None]
 
     # ck that there are no ranges in input
-    for param_name, param_value in uset.params.keys:
+    for param_name, param_value in uset.params.items():
         if type(param_value) in [list, tuple]:
             raise TypeError(f"Expected prescribed parameters for single run; found parameter bounds for {param_name}")
     
-    #TODO: will this write single valued orientation information to a file?
+    load_subroutine()
     for orient in uset.orientations.keys():
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)
