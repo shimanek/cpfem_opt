@@ -1,5 +1,6 @@
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine
+from matmdl.experimental import ExpData
 from matmdl.parser import uset
 from typing import Union
 import numpy as np
@@ -28,6 +29,8 @@ def check_single():
     # load options:
     in_opt = matmdl.optimizer.InOpt(uset.orientations, uset.params)
     next_params = []
+    exp_data = ExpData(uset.orientations)  # noqa: F841
+    # above line to make main input files with correct strain magnitude
 
     # ck that there are no ranges in input
     for param_name, param_value in uset.params.items():
@@ -40,8 +43,10 @@ def check_single():
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)
             write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+            shutil.copy('mat_orient.inp', f"mat_orient_{orient}.inp")
         else:
-            shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+            shutil.copy(uset.orientations[orient]['inp'], f"mat_orient_{orient}.inp")
+        shutil.copy(f"mat_orient_{orient}.inp", 'mat_orient.inp')
         shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
 
         job_run()
