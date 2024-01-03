@@ -1,9 +1,12 @@
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
+from matmdl.crystalPlasticity import get_orient_info
+from matmdl.optimizer import InOpt
 from matmdl.parser import uset
-from matmdl.parallel import Checkout
 from typing import Union
 import numpy as np
 import subprocess
+import shutil
+import sys
 import os
 
 
@@ -15,6 +18,44 @@ def get_first(opt: object, in_opt: object) -> None:
     if not check_complete():
         refine_run()
     job_extract('initial')
+
+
+def check_single():
+    """rough copy of run/single_loop that does not use an optimizer object"""
+
+    print("DBG: starting single run!")
+
+    # load options:
+    in_opt = InOpt(uset.orientations, uset.params)
+    next_params = [None]
+
+    # ck that there are no ranges in input
+    for param_name, param_value in uset.params.keys:
+        if type(param_value) in [list, tuple]:
+            raise TypeError(f"Expected prescribed parameters for single run; found parameter bounds for {param_name}")
+    
+    #TODO: will this write single valued orientation information to a file?
+    for orient in uset.orientations.keys():
+        if in_opt.has_orient_opt[orient]:
+            orient_components = get_orient_info(next_params, orient, in_opt)
+            write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+        else:
+            shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+        shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+
+        job_run()
+        if not check_complete():
+            refine_run()
+        else:
+            output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
+            if os.path.isfile(output_fname): 
+                os.remove(output_fname)
+            job_extract(orient)  # extract data to temp_time_disp_force.csv
+            if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
+                print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
+                return
+    print("DBG: exiting single run!")
+    sys.exit(0)
 
 
 def remove_out_files():

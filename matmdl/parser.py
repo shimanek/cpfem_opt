@@ -34,6 +34,7 @@ class UserSettings:
 
 	input_reqs = {
 		'run': {
+			'do_single': Option(types=[bool], crit=False, default=False),
 			'loop_len': Option(types=[int], lower=2),
 			'n_initial_points': Option(types=[int], lower=2),
 			'large_error': Option(types=[int,float]),
