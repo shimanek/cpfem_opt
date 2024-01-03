@@ -36,6 +36,7 @@ def check_single():
     
     load_subroutine()
     for orient in uset.orientations.keys():
+        print(f"DBG: starting orient {orient}")
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)
             write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
@@ -45,14 +46,18 @@ def check_single():
 
         job_run()
         if not check_complete():
+            print(f"DBG: refining orient {orient}")
             refine_run()
+        if not check_complete():
+            print(f"DBG: not complete with {orient}, exiting...")
+            sys.exit(1)
         else:
-            output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
+            output_fname = 'single_time_disp_force_{0}.csv'.format(orient)
             if os.path.isfile(output_fname): 
                 os.remove(output_fname)
             job_extract(orient)  # extract data to temp_time_disp_force.csv
             if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
-                print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
+                print(f"Warning: incomplete run for {orient}, continuing...")
                 return
     print("DBG: exiting single run!")
     sys.exit(0)
