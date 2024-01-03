@@ -27,7 +27,7 @@ def check_single():
 
     # load options:
     in_opt = matmdl.optimizer.InOpt(uset.orientations, uset.params)
-    next_params = [None]
+    next_params = []
 
     # ck that there are no ranges in input
     for param_name, param_value in uset.params.items():
@@ -37,6 +37,7 @@ def check_single():
     load_subroutine()
     for orient in uset.orientations.keys():
         print(f"DBG: starting orient {orient}")
+        ERROR  # need to write orient file without next_params
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)
             write_params('mat_orient.inp', orient_components['names'], orient_components['values'])

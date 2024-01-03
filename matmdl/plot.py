@@ -21,6 +21,7 @@ matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 
 #TODO: add Checkout(out, local=True) guard around outfile access
+#TODO: refactor overlap between main() and plot_single()
 
 def main():
     orients = uset.orientations.keys()
@@ -153,6 +154,55 @@ def main():
 
     if __debug__: print('# stop plotting\n')
 
+
+def plot_single():
+    if __debug__: print('\n# start plotting single')
+    fig0, ax0 = plt.subplots()
+    labels0 = []
+    colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    orients = uset.orientations.keys()
+    for ct_orient, orient in enumerate(orients):
+        fig, ax = plt.subplots()
+        if __debug__: print(f'plotting {orient}')
+
+        # experimental:
+        exp_filename = uset.orientations[orient]['exp']
+        exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
+        ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
+            label='Experimental ' + uset.grain_size_name)
+        ax0.plot(exp_SS[:,0], exp_SS[:,1], 's',markerfacecolor=colors0[ct_orient], color='black', 
+            label='Experimental ' + uset.grain_size_name)
+        labels0.append(f"Exp. [{orient}]")
+
+        # simulation:
+        data = np.loadtxt(f"temp_time_disp_force_{orient}.csv", delimiter=",", skiprows=1)
+        eng_strain = data[:,1] / uset.length
+        eng_stress = data[:,2] / uset.area
+        ax.plot(eng_strain, eng_stress, '-o', alpha=1.0,color='blue', label='Best parameter set')
+        ax0.plot(eng_strain, eng_stress, '-', alpha=1.0, linewidth=2, color=colors0[ct_orient], label='Best parameter set')
+        labels0.append(f"Fit [{orient}]")
+
+        plot_settings(ax)
+        if uset.max_strain > 0:
+            ax.set_xlim(right=uset.max_strain)
+        fig.savefig(os.path.join(os.getcwd(), 
+            'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
+        plt.close(fig)
+
+    # finish fig0, the plot of all sims and experimental data
+    if len(orients) > 1:
+        if __debug__: print('all stress-strain')
+        plot_settings(ax0, legend=False)
+        ax0.legend(loc='best', labels=labels0, fancybox=False)
+        if uset.max_strain > 0:
+            ax0.set_xlim(right=uset.max_strain)
+        fig0.savefig(os.path.join(os.getcwd(), 'res_all.png'), bbox_inches='tight', dpi=400)
+    else:
+        plt.close(fig0)
+
+    if __debug__: print('# stop plotting single\n')
+
+
 def plot_settings(ax, legend=True):
     ax.set_xlabel('Engineering Strain, m/m')
     ax.set_ylabel('Engineering Stress, MPa')
@@ -256,4 +306,7 @@ def get_param_value(param_name):
 
 
 if __name__ == '__main__':
-    main()
+    if uset.do_single:
+        plot_single()
+    else:
+        main()
