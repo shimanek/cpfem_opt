@@ -10,5 +10,10 @@ dependencies = [
     "matplotlib",
 ]
 
+[project.optional-dependencies]
+doc = [
+    "mkdocstrings-python",
+]
+
 [tool.ruff]
 ignore = ["E501", "F722", "E701"]
