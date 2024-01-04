@@ -10,17 +10,18 @@ theme:
     - search.suggest
   custom_dir: overrides
   palette:
-  - scheme: default
-    toggle:
-      icon: material/toggle-switch
-      name: Switch to dark mode
   - scheme: slate
+    primary: black
+    accent: indigo
     toggle:
       icon: material/toggle-switch-off-outline
       name: Switch to light mode
-    scheme: slate
+  - scheme: default
     primary: black
     accent: indigo
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to dark mode
   font:
     text: Roboto
     code: Roboto Mono
