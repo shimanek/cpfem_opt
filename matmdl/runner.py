@@ -45,7 +45,10 @@ def check_single():
             write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
             shutil.copy('mat_orient.inp', f"mat_orient_{orient}.inp")
         else:
-            shutil.copy(uset.orientations[orient]['inp'], f"mat_orient_{orient}.inp")
+            try:
+                shutil.copy(uset.orientations[orient]['inp'], f"mat_orient_{orient}.inp")
+            except shutil.SameFileError:
+                pass
         shutil.copy(f"mat_orient_{orient}.inp", 'mat_orient.inp')
         shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
 
