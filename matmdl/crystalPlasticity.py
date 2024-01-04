@@ -46,7 +46,8 @@ def get_orient_info(
     col_cross = unit_vector(np.cross(col_load, col_0deg))
 
     basis_og = np.stack((col_load, col_0deg, col_cross), axis=1)
-    basis_new = np.matmul(basis_og, _mk_x_rot(np.deg2rad(angle_deg)))
+    rotation = _mk_x_rot(np.deg2rad(angle_deg))
+    basis_new = np.matmul(basis_og, rotation)
     dir_to = basis_new[:,1]
 
     if __debug__:  # write angle_deg rotation info
@@ -57,7 +58,7 @@ def get_orient_info(
             f.write('orientation: {}'.format(orient))
             f.write('\nbasis OG: \n{0}'.format(basis_og))
             f.write('\n')
-            f.write('\nrotation: \n{0}'.format(_mk_x_rot(angle_deg*np.pi/180.)))
+            f.write('\nrotation: \n{0}'.format(rotation))
             f.write('\n')
             f.write('\nbasis new: \n{0}'.format(basis_new))
             f.write('\n\n')
@@ -76,6 +77,7 @@ def get_orient_info(
             f.write('\ndir_ortho: {0}'.format(dir_ortho))
             f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
             f.write('\n\n')
+
     component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
     component_values = list(dir_ortho) + list(dir_tot)
 

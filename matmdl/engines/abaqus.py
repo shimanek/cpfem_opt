@@ -2,7 +2,7 @@
 This module contains helper functions for dealing with Abaqus but 
 has no Abaqus-specific imports.
 """
-import opt_input as uset
+from matmdl.parser import uset
 import subprocess
 import os
 
@@ -11,7 +11,7 @@ def job_run():
     """Run the Abaqus job!"""
     subprocess.run( 
         'abaqus job=' + uset.jobname \
-        + ' user=' + uset.umat[:-2] + '-std.o' \
+        + ' user=' + uset.umat[:uset.umat.find('.')] + '-std.o' \
         + ' cpus=' + str(uset.cpus) \
         + ' double int ask_delete=OFF', shell=True
     )

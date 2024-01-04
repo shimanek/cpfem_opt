@@ -1,6 +1,55 @@
 import unittest
 from matmdl.parser import uset
 import numpy as np
+import os
+
+
+class TestExp(unittest.TestCase):
+	def _by_orientation_name(self, exp, orient_name):
+		data_out = np.loadtxt(f"exp_{orient_name}.csv", delimiter=",")
+		parsed_data = exp.data[orient_name]['raw']
+		equal_elements = np.equal(data_out,parsed_data)
+		self.assertTrue(equal_elements.all())
+
+	def test_data_limits(self):
+		from matmdl.experimental import ExpData
+		exp = ExpData(uset.orientations)
+		self._by_orientation_name(exp, "test")
+		self._by_orientation_name(exp, "001")
+		os.remove("temp_expSS.csv")
+
+
+class TestError(unittest.TestCase):
+	def diff_test_linear(self, b1, m1, b2, m2, err_stress=None, err_slope=None):
+		from matmdl.objectives.rmse import _stress_diff, _slope_diff
+		x = np.linspace(0.01, 1.0, 100)
+		def curve1(x):
+			return b1 + m1*x
+		def curve2(x):
+			return b2 + m2*x
+		diff_stress = _stress_diff(x, curve1, curve2)
+		diff_slope = _slope_diff(x, curve1, curve2)
+		if err_stress is not None:
+			try:
+				self.assertTrue(np.abs(diff_stress - err_stress) < 1e-6)
+			except AssertionError as e:
+				print("\nError in linear diff test stress with:")
+				print("linear info:", b1, m1, b2, m2)
+				print(f"expected err_stress of {err_stress}, got {diff_stress}")
+				raise e
+			self.assertTrue(np.abs(diff_slope - err_slope) < 1e-6)
+		if err_slope is not None:
+			try:
+				self.assertTrue(np.abs(diff_slope - err_slope) < 1e-6)
+			except AssertionError as e:
+				print("\nError in linear diff test stress with:")
+				print("linear info:", b1, m1, b2, m2)
+				print(f"expected err_stress of {err_slope}, got {diff_slope}")
+				raise e
+
+	def test_diff(self):
+		self.diff_test_linear(b1=0, m1=5, b2=0, m2=10, err_stress=50, err_slope=50)
+		self.diff_test_linear(b1=0, m1=5, b2=2, m2=5, err_slope=0)	
 
 
 class TestInput(unittest.TestCase):

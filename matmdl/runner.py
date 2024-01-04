@@ -1,8 +1,13 @@
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
-import opt_input as uset
+from matmdl.crystalPlasticity import get_orient_info, load_subroutine
+from matmdl.experimental import ExpData
+from matmdl.parser import uset
 from typing import Union
 import numpy as np
+import matmdl.optimizer
 import subprocess
+import shutil
+import sys
 import os
 
 
@@ -14,6 +19,56 @@ def get_first(opt: object, in_opt: object) -> None:
     if not check_complete():
         refine_run()
     job_extract('initial')
+
+
+def check_single():
+    """rough copy of run/single_loop that does not use an optimizer object"""
+
+    print("DBG: starting single run!")
+
+    # load options:
+    in_opt = matmdl.optimizer.InOpt(uset.orientations, uset.params)
+    next_params = []
+    exp_data = ExpData(uset.orientations)  # noqa: F841
+    # above line to make main input files with correct strain magnitude
+
+    # ck that there are no ranges in input
+    for param_name, param_value in uset.params.items():
+        if type(param_value) in [list, tuple]:
+            raise TypeError(f"Expected prescribed parameters for single run; found parameter bounds for {param_name}")
+    
+    load_subroutine()
+    for orient in uset.orientations.keys():
+        print(f"DBG: starting orient {orient}")
+        if in_opt.has_orient_opt[orient]:
+            orient_components = get_orient_info(next_params, orient, in_opt)
+            write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+            shutil.copy('mat_orient.inp', f"mat_orient_{orient}.inp")
+        else:
+            try:
+                shutil.copy(uset.orientations[orient]['inp'], f"mat_orient_{orient}.inp")
+            except shutil.SameFileError:
+                pass
+        shutil.copy(f"mat_orient_{orient}.inp", 'mat_orient.inp')
+        shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+
+        job_run()
+        if not check_complete():
+            print(f"DBG: refining orient {orient}")
+            refine_run()
+        if not check_complete():
+            print(f"DBG: not complete with {orient}, exiting...")
+            sys.exit(1)
+        else:
+            output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
+            if os.path.isfile(output_fname): 
+                os.remove(output_fname)
+            job_extract(orient)  # extract data to temp_time_disp_force.csv
+            if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
+                print(f"Warning: incomplete run for {orient}, continuing...")
+                return
+    print("DBG: exiting single run!")
+    sys.exit(0)
 
 
 def remove_out_files():
@@ -31,31 +86,6 @@ def remove_out_files():
             os.rmdir(f)
         else:
             os.remove(f)
-
-
-def combine_SS(zeros: bool, orientation: str) -> None:
-    """
-    Reads npy stress-strain output and appends current results.
-
-    Loads from ``temp_time_disp_force_{orientation}.csv`` and writes to 
-    ``out_time_disp_force_{orientation}.npy``. Should only be called after all
-    orientations have run, since ``zeros==True`` if any one fails.
-
-    Args:
-        zeros: True if the run failed and a sheet of zeros should be written
-            in place of real time-force-displacement data.
-        orientation: Orientation nickname to keep temporary output files separate.
-    """
-    filename = 'out_time_disp_force_{0}.npy'.format(orientation)
-    sheet = np.loadtxt( 'temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1 )
-    if zeros:
-        sheet = np.zeros((np.shape(sheet)))
-    if os.path.isfile(filename): 
-        dat = np.load(filename)
-        dat = np.dstack((dat,sheet))
-    else:
-        dat = sheet
-    np.save(filename, dat)
 
 
 def write_params(

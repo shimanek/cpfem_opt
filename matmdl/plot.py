@@ -8,6 +8,8 @@ Plots several figures per optimization:
 5. Partial dependencies of the objective function
 
 Prints best parameters to file out_best_params.txt
+
+TODO: refactor overlap between main() and plot_single()
 """
 import os
 from skopt.plots import plot_evaluations, plot_objective
@@ -15,20 +17,26 @@ from skopt.plots import plot_evaluations, plot_objective
 import numpy as np
 from matmdl.optimizer import InOpt, load_opt, instantiate_optimizer
 from matmdl.parser import uset
+from matmdl.parallel import Checkout
 
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 
 
+@Checkout.decorate("out", local=True)
 def main():
     orients = uset.orientations.keys()
     if __debug__: print('\n# start plotting')
     global in_opt
     in_opt = InOpt(uset.orientations, uset.params)
-    for orient in orients:
+    fig0, ax0 = plt.subplots()
+    labels0 = []
+    colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    for ct_orient, orient in enumerate(orients):
         data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
         num_iter = len(data[0,0,:])
+        print("DBG:PLOT:num_iter", num_iter)
         #-----------------------------------------------------------------------------------------------
         # plot all trials, in order:
         if __debug__: print('{}: all curves'.format(orient))
@@ -43,32 +51,29 @@ def main():
         exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
+        ax0.plot(exp_SS[:,0], exp_SS[:,1], 's',markerfacecolor=colors0[ct_orient], color='black', 
+            label='Experimental ' + uset.grain_size_name)
+        labels0.append(f"Exp. [{orient}]")
 
         # plot best guess:
         errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
-            skiprows=1, delimiter='\t')[:,-1]
+            skiprows=1, delimiter=',')[:,-1]
         loc_min_error = np.argmin(errors)
         eng_strain_best = data[:,1,loc_min_error] / uset.length
         eng_stress_best = data[:,2,loc_min_error] / uset.area
         ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label='Best parameter set')
+        ax0.plot(eng_strain_best, eng_stress_best, '-', alpha=1.0, linewidth=2, color=colors0[ct_orient], label='Best parameter set')
+        labels0.append(f"Fit [{orient}]")
 
-        # plot tuning:
-        def plot_settings(legend=True):
-            ax.set_xlabel('Engineering Strain, m/m')
-            ax.set_ylabel('Engineering Stress, MPa')
-            ax.set_xlim(left=0)
-            ax.set_ylim(bottom=0)
-            if legend: ax.legend(loc='best')
-            plt.tick_params(which='both', direction='in', top=True, right=True)
-            ax.set_title(uset.title)
-
-        plot_settings()
-        plt.savefig(os.path.join(os.getcwd(), 'res_opt_' + orient + '.png'), 
+        plot_settings(ax)
+        if uset.max_strain > 0:
+            ax.set_xlim(right=uset.max_strain)
+        fig.savefig(os.path.join(os.getcwd(), 'res_opt_' + orient + '.png'), 
             bbox_inches='tight', dpi=400)
-        plt.close()
+        plt.close(fig)
         #-----------------------------------------------------------------------------------------------
         # print best paramters 
-        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter='\t')
+        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')
         # ^ full list: 'iteration', 'Tau0', 'H0', 'TauS', 'hs', 'gamma0', 'error'
         best_params = [np.round(f,decimals=3) for f in params[loc_min_error,:]]
         with open('out_best_params.txt', 'w') as f:
@@ -99,10 +104,24 @@ def main():
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
         ax.plot(eng_strain_best, eng_stress_best, '-o', alpha=1.0,color='blue', label=legend_info)
-        plot_settings()
-        plt.savefig(os.path.join(os.getcwd(), 
+        plot_settings(ax)
+        if uset.max_strain > 0:
+            ax.set_xlim(right=uset.max_strain)
+        fig.savefig(os.path.join(os.getcwd(), 
             'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
-        plt.close()
+        plt.close(fig)
+
+    # finish fig0, the plot of all sims and experimental data
+    if len(orients) > 1:
+        if __debug__: print('all stress-strain')
+        plot_settings(ax0, legend=False)
+        ax0.legend(loc='best', labels=labels0, fancybox=False)
+        if uset.max_strain > 0:
+            ax0.set_xlim(right=uset.max_strain)
+        fig0.savefig(os.path.join(os.getcwd(), 'res_all.png'), bbox_inches='tight', dpi=400)
+    else:
+        plt.close(fig0)
+
     #-----------------------------------------------------------------------------------------------
     # plot convergence
     if __debug__: print('convergence information')
@@ -115,7 +134,7 @@ def main():
         else:
             running_min[i] = running_min[i-1]
     ax.plot(list(range(num_iter)), running_min, '-o', color='blue')
-    plot_settings(legend=False)
+    plot_settings(ax, legend=False)
     ax.set_xlabel('Iteration number')
     ax.set_ylabel('Lowest RMSE')
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
@@ -123,20 +142,77 @@ def main():
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
     opt = instantiate_optimizer(in_opt, uset)
-    opt = load_opt(opt)
+    opt = load_opt(opt, search_local=True)
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
-    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=True)
+    plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
     # plot partial dependence
     if __debug__: print('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
-    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=True)
+    plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
 
     if __debug__: print('# stop plotting\n')
 
+@Checkout.decorate("out", local=True)
+def plot_single():
+    if __debug__: print('\n# start plotting single')
+    fig0, ax0 = plt.subplots()
+    labels0 = []
+    colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    orients = uset.orientations.keys()
+    for ct_orient, orient in enumerate(orients):
+        fig, ax = plt.subplots()
+        if __debug__: print(f'plotting {orient}')
+
+        # experimental:
+        exp_filename = uset.orientations[orient]['exp']
+        exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=',')
+        ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
+            label='Experimental ' + uset.grain_size_name)
+        ax0.plot(exp_SS[:,0], exp_SS[:,1], 's',markerfacecolor=colors0[ct_orient], color='black', 
+            label='Experimental ' + uset.grain_size_name)
+        labels0.append(f"Exp. [{orient}]")
+
+        # simulation:
+        data = np.loadtxt(f"temp_time_disp_force_{orient}.csv", delimiter=",", skiprows=1)
+        eng_strain = data[:,1] / uset.length
+        eng_stress = data[:,2] / uset.area
+        ax.plot(eng_strain, eng_stress, '-o', alpha=1.0,color='blue', label='Best parameter set')
+        ax0.plot(eng_strain, eng_stress, '-', alpha=1.0, linewidth=2, color=colors0[ct_orient], label='Best parameter set')
+        labels0.append(f"Fit [{orient}]")
+
+        plot_settings(ax)
+        if uset.max_strain > 0:
+            ax.set_xlim(right=uset.max_strain)
+        fig.savefig(os.path.join(os.getcwd(), 
+            'res_single_' + orient + '.png'), bbox_inches='tight', dpi=400)
+        plt.close(fig)
+
+    # finish fig0, the plot of all sims and experimental data
+    if len(orients) > 1:
+        if __debug__: print('all stress-strain')
+        plot_settings(ax0, legend=False)
+        ax0.legend(loc='best', labels=labels0, fancybox=False, bbox_to_anchor=(1.02, 1))
+        if uset.max_strain > 0:
+            ax0.set_xlim(right=uset.max_strain)
+        fig0.savefig(os.path.join(os.getcwd(), 'res_all.png'), bbox_inches='tight', dpi=400)
+    else:
+        plt.close(fig0)
+
+    if __debug__: print('# stop plotting single\n')
+
+
+def plot_settings(ax, legend=True):
+    ax.set_xlabel('Engineering Strain, m/m')
+    ax.set_ylabel('Engineering Stress, MPa')
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    if legend: ax.legend(loc='best', fancybox=False)
+    plt.tick_params(which='both', direction='in', top=True, right=True)
+    ax.set_title(uset.title)
 
 def apply_param_labels(ax_array, diag_label):
     shape = np.shape(ax_array)
@@ -193,8 +269,14 @@ def name_to_sym(name, cap_sense=False):
         'gamma02':r'$\gamma_0^{(2)}$',
         'g0': r'$\gamma_0$',
         'f0':r'$f_0$',
+        'f1':r'$f_1$',
+        'f2':r'$f_2$',
+        'f3':r'$f_3$',
+        'f4':r'$f_4$',
+        'f5':r'$f_5$',
         'f01':r'$f_0^{(1)}$',
         'f02':r'$f_0^{(2)}$',
+        'q0':r"$q_0$",
         'qA1':r'$q_{A1}$',
         'qB1':r'$q_{B1}$',
         'qA2':r'$q_{A2}$',
@@ -226,4 +308,7 @@ def get_param_value(param_name):
 
 
 if __name__ == '__main__':
-    main()
+    if uset.do_single:
+        plot_single()
+    else:
+        main()

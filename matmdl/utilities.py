@@ -26,7 +26,8 @@ def as_float_tuples(list_of_tuples: list[tuple[Union[int,float]]]) -> list[tuple
     """
     new_list = []
     prec = 10  # decimal places in scientific notation
-    sigfig = lambda val: float(('%.' + str(prec) + 'e') % val)
+    def sigfig(val):
+        return float(('%.' + str(prec) + 'e') % val)
     for old_item in list_of_tuples:
         if isinstance(old_item, tuple):
             new_item = tuple(map(sigfig, old_item))

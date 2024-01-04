@@ -26,12 +26,14 @@ class ExpData():
             expname = orientations[orient]['exp']
             # orientname = orientations[orient]['inp']
             jobname = uset.jobname + '_{0}.inp'.format(orient)
-            self._max_strain = self._get_max_strain(expname)
-            self.raw = self._get_SS(expname)
-            self._write_strain_inp(jobname)
+            min_strain, max_strain = self._get_bounds(expname, orient)
+            raw = self._get_SS(expname, min_strain, max_strain)
+            sgn = -1 if uset.is_compression else 1
+            self._write_strain_inp(jobname, sgn*max_strain)
             self.data[orient] = {
-                'max_strain':self._max_strain,
-                'raw':self.raw
+                'max_strain': max_strain,
+                'min_strain': min_strain,
+                'raw': raw,
             }
 
     def _load(self, fname: str):
@@ -46,7 +48,49 @@ class ExpData():
         original_SS = original_SS[original_SS[:,0].argsort()][::order]
         return original_SS
 
-    def _get_max_strain(self, fname: str):
+    def _get_bounds(self, fname: str, orient: str):
+        """get limiting bounds"""
+        mins = []
+        maxes = []
+
+        # orientation limits:
+        if "min_strain" in uset.orientations[orient].keys():
+            mins.append(float(uset.orientations[orient]["min_strain"]))
+        if "max_strain" in uset.orientations[orient].keys():
+            orient_max_strain = float(uset.orientations[orient]["max_strain"])
+            if orient_max_strain != 0.0:
+                maxes.append(orient_max_strain)
+
+        # global limits
+        if hasattr(uset, "min_strain"):
+            mins.append(uset.min_strain)
+        if hasattr(uset, "max_strain"):
+            if float(uset.max_strain) != 0.0:
+                maxes.append(uset.max_strain)
+
+        # data limits
+        data = np.sort(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+        mins.append(data[0])
+        maxes.append(data[-1])
+
+        # get limiting bounds to use
+        if uset.is_compression:  # negative numbers
+            min_use = min(mins)
+            max_use = max(maxes)
+        else:
+            min_use = max(mins)
+            max_use = min(maxes)
+
+        if False:
+            print("dbg bounds: mins:", mins)
+            print("dbg bounds: maxes:", maxes)
+            print("dbg bounds: min:", min_use)
+            print("dbg bounds: max:", max_use)
+
+        return min_use, max_use
+
+
+    def _get_max_strain(self, fname: str, orient: str):
         """
         Take either user max strain or file max strain.
         
@@ -62,37 +106,54 @@ class ExpData():
             max_strain = uset.max_strain if not uset.is_compression else (-1 * uset.max_strain)
         return max_strain
 
-    def _get_SS(self, fname: str):
+    def _get_min_strain(self, fname: str):
         """
-        Limit experimental data to within max_strain. 
+        Take either user min strain or minimum of experimental strain in file `fname`
+
+        Args:
+            fname: Filename for experimental stress-strain data
+        """
+        if float(uset.min_strain) == 0.0:
+            if uset.is_compression is True:
+                min_strain = max(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+            else:
+                min_strain = min(np.loadtxt(fname, skiprows=1, delimiter=',' )[:,0])
+        else:
+            min_strain = uset.min_strain if not uset.is_compression else (-1 * uset.min_strain)
+        return min_strain
+
+    def _get_SS(self, fname: str, _min_strain: float, _max_strain: float):
+        """
+        Limit experimental data to within min_strain to max_strain. 
         
         Args:
             fname: Filename for experimental stress-strain data
         """
         expSS = self._load(fname)
-        max_strain = self._max_strain
-        if not (float(uset.max_strain) == 0.0):
-            max_point = 0
-            while expSS[max_point,0] <= max_strain:
-                max_point += 1
-            expSS = expSS[:max_point, :]
+
+        if not _max_strain == 0.0:
+            expSS = expSS[expSS[:,0] <= _max_strain, :]
+        if not _min_strain == 0.0:
+            expSS = expSS[expSS[:,0] >= _min_strain, :]
+
         np.savetxt('temp_expSS.csv', expSS, delimiter=',')
         return expSS
 
-    def _write_strain_inp(self, jobname: str):
+    def _write_strain_inp(self, jobname: str, strain: float):
         """
         Modify boundary conditions in main Abaqus input file to match max strain.
         
         Args:
             jobname: Filename for main Abaqus job -- unique to 
                 orientation if applicable.
+            strain: signed float used to specify axial displacement
 
         Note:
             Relies on finding ``RP-TOP`` under ``*Boundary`` keyword in main
             input file.
         """
         # input file:
-        max_bound = round(self._max_strain * uset.length, 4) #round to 4 digits
+        max_bound = round(strain * uset.length, 4) #round to 4 digits
 
         with open('{0}.inp'.format(uset.jobname), 'r') as f:
             lines = f.readlines()

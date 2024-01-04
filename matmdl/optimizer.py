@@ -1,8 +1,10 @@
 from matmdl.runner import write_params
 from matmdl.utilities import as_float_tuples, round_sig
+from matmdl.parallel import Checkout
 from skopt import Optimizer
 from matmdl.parser import uset
 import numpy as np
+import os
 
 
 class InOpt:
@@ -62,10 +64,10 @@ class InOpt:
         self.orient_params, self.orient_bounds \
             = ([] for i in range(6))
         for param, bound in params.items():
-            if type(bound) in (list, tuple):
+            if type(bound) in (list, tuple):  # pass ranges to optimizer
                 self.material_params.append(param)
-                self.material_bounds.append(bound)
-            elif type(bound) in (float, int):
+                self.material_bounds.append([float(b) for b in bound])
+            elif type(bound) in (float, int):  # write single values to file
                 write_params(uset.param_file, param, float(bound))
             else:
                 raise TypeError('Incorrect bound type in input file.')
@@ -83,14 +85,18 @@ class InOpt:
                 # deg rotation *about* loading orientation:
                 if isinstance(orientations[orient]['offset']['deg_bounds'], (tuple, list)):
                     self.orient_params.append(orient+'_deg')
-                    self.orient_bounds.append(orientations[orient]['offset']['deg_bounds'])
+                    self.orient_bounds.append(
+                        [float(f) for f in orientations[orient]['offset']['deg_bounds']]
+                    )
                 else:
                     self.fixed_vars[(orient+'_deg')] = orientations[orient]['offset']['deg_bounds']
 
                 # mag rotation *away from* loading:
                 if isinstance(orientations[orient]['offset']['mag_bounds'], (tuple, list)):
                     self.orient_params.append(orient+'_mag')
-                    self.orient_bounds.append(orientations[orient]['offset']['mag_bounds'])
+                    self.orient_bounds.append(
+                        [float(f) for f in orientations[orient]['offset']['mag_bounds']]
+                    )
                 else:
                     self.fixed_vars[(orient+'_mag')] = orientations[orient]['offset']['mag_bounds']
 
@@ -145,15 +151,6 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
     return new_params
 
 
-def write_opt_progress(
-        in_opt: object,
-    ) -> None:
-    """Writes global variable ``opt_progress`` to file."""
-    global opt_progress
-    opt_progress_header = ','.join( ['iteration'] + in_opt.params + ['RMSE'])
-    np.savetxt('out_progress.txt', opt_progress, delimiter='\t', header=opt_progress_header)
-
-
 def update_progress(i:int, next_params:tuple, error:float) -> None:
     """
     Writes parameters and error value to global variable ``opt_progress``.
@@ -172,7 +169,7 @@ def update_progress(i:int, next_params:tuple, error:float) -> None:
     return opt_progress
 
 
-def load_opt(opt: object) -> object:
+def load_opt(opt: object, search_local:bool=False) -> object:
     """
     Load input files of previous optimizations to use as initial points in current optimization.
     
@@ -183,6 +180,8 @@ def load_opt(opt: object) -> object:
 
     Args:
         opt: Current instance of the optimizer object.
+        search_local: Look in the current directory for files 
+            (convenient for plotting from parallel instances).
 
     Returns:
         skopt.Optimizer: Updated instance of the optimizer object.
@@ -190,7 +189,10 @@ def load_opt(opt: object) -> object:
     global opt_progress
     filename = 'out_progress.txt'
     arrayname = 'out_time_disp_force.npy'
-    opt_progress = np.loadtxt(filename, skiprows=1)
+    if uset.main_path not in [os.getcwd(), "."] and not search_local:
+        filename = os.path.join(uset.main_path, filename)
+        arrayname = os.path.join(uset.main_path, arrayname)
+    opt_progress = np.loadtxt(filename, skiprows=1, delimiter=',')
     # renumber iterations (negative length to zero) to distinguish from new calculations:
     opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
     x_in = opt_progress[:,1:-1].tolist()
