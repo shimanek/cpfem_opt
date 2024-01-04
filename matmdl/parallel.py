@@ -105,6 +105,7 @@ class Checkout:
 		while True and time.time() - start < cutoff_seconds:
 			lockfile_exists = os.path.isfile(self.fpath + ".lck")
 			if lockfile_exists:
+				print(f"Waiting on Checkout for {time.time()-self.start} seconds.")
 				time.sleep(2)
 			else:
 				open(self.fpath + ".lck", "w")
@@ -115,3 +116,12 @@ class Checkout:
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
+
+	def decorate(fname, local=True):
+		"""use if whole function needs resource checked out"""
+		def _decorate(fn):
+			def wrapper(fname, local=local):
+				with Checkout(fname, local=local):
+					return fn
+			return wrapper(fname, local=local)
+		return _decorate

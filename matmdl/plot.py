@@ -8,6 +8,8 @@ Plots several figures per optimization:
 5. Partial dependencies of the objective function
 
 Prints best parameters to file out_best_params.txt
+
+TODO: refactor overlap between main() and plot_single()
 """
 import os
 from skopt.plots import plot_evaluations, plot_objective
@@ -15,14 +17,14 @@ from skopt.plots import plot_evaluations, plot_objective
 import numpy as np
 from matmdl.optimizer import InOpt, load_opt, instantiate_optimizer
 from matmdl.parser import uset
+from matmdl.parallel import Checkout
 
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 
-#TODO: add Checkout(out, local=True) guard around outfile access
-#TODO: refactor overlap between main() and plot_single()
 
+@Checkout.decorate("out", local=True)
 def main():
     orients = uset.orientations.keys()
     if __debug__: print('\n# start plotting')
@@ -154,7 +156,7 @@ def main():
 
     if __debug__: print('# stop plotting\n')
 
-
+@Checkout.decorate("out", local=True)
 def plot_single():
     if __debug__: print('\n# start plotting single')
     fig0, ax0 = plt.subplots()
