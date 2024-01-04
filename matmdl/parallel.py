@@ -118,7 +118,11 @@ class Checkout:
 		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
 
 	def decorate(fname, local=True):
-		"""use if whole function needs resource checked out"""
+		"""
+		Decorator to use if whole function needs resource checked out.
+
+		TODO: this results in two calls to __exit__() but seems to be functional
+		"""
 		def _decorate(fn):
 			def wrapper(fname, local=local):
 				with Checkout(fname, local=local):
