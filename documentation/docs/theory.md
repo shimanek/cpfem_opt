@@ -1,13 +1,9 @@
-=============
-Theory Primer
-=============
+# Theory Primer
 
 Optimization and CPFEM/hardening theory primer.
 
 
-+++++
-CPFEM
-+++++
+## CPFEM
 
 Crystal plasticity finite element (CPFE) methods take a fundamental understanding of microscopic deformation mechanisms, especially slip of dislocations within slip planes, and connect these to macroscopic stress states and deformations. 
 Often, these models are parameterized based on the stress-strain response of the bulk material of interest, either monocrystal or polycrystal. 
@@ -17,42 +13,34 @@ Since experimental tests inherently include some slight yet unknown deviation fr
 In this optimization framework, such slight deviations can be accounted for by incorporating values describing the tilt away from nominal loading direction as additional parameters to be optimized.
 
 
-Mesh Types
-==========
+### Mesh Types
+
 
 While crystal plasticity methods are most useful in their application to realistic microstructures, iterative parameterization methods require that models run efficiently.
 Therefore, the goal for the geometrical models generated here are to be representative of more complex models while being much faster to run. 
 There are currently two methods of model generation: those for monocrystal and polycrystal applications.
 The former consists of a single C3D8 element with complex boundary conditions that allows for lattice rotation on the top and bottom face – this rotation is crucial to capture the behavior seen in single crystal tensile tests. 
-For example, see :numref:`fig-mX-compare` for a comparison.
+For example, see below for a comparison.
 
-.. figure:: _static/compareNewSingleXtalModel/figures/fig_ModelCompare_128_fullGeo.png
-   :name: fig-mX-compare
+![](assets/compareNewSingleXtalModel/figures/fig_ModelCompare_128_fullGeo.png)
 
-   Engineering stress-strain behavior of single crystal models.
 
-Realistic polycrystal models can be generated using software such as `DREAM3D`_, with some modifications needed to run the resulting Abaqus input files using the crystal plasticity subroutine. 
+Realistic polycrystal models can be generated using software such as  [Dream3D](http://dream3d.bluequartz.net), with some modifications needed to run the resulting Abaqus input files using the crystal plasticity subroutine. 
 However, such models often take a prohibitively long time to run, and, for equiaxed microstructures, can be replaced with cubic grains without much loss in accuracy. 
 Therefore, the polycrystal models generated here are orthorhombic and contain orthorhombic grains.
 The size of grains and overall model are arbitrary so long as the length of the grains along each direction can evenly divide the length of the model in that direction. 
 
-.. _DREAM3D: http://dream3d.bluequartz.net
 
-
-+++++++++++++++++++++
-Bayesian Optimization
-+++++++++++++++++++++
+## Bayesian Optimization
 
 Due to the nature of complex crystal plasticity models, analytical parameterization is usually impossible.
 Furthermore, the evaluation of CPFE models to compare to a lab-scale deformation test is expensive and provides no gradient information. 
 However, Bayseian optimization is a useful and well-developed framework for optimizing such black-box functions.
-In particular, the library given in `sci kit optimize`_ is here implemented in order to find the best-fitting crystal plasticity material parameters to reproduce experimental stress-strain curves.
-
-.. _sci kit optimize: https://scikit-optimize.github.io/stable/
+In particular, the library given in [sci-kit optimize](https://scikit-optimize.github.io/stable/) is here implemented in order to find the best-fitting crystal plasticity material parameters to reproduce experimental stress-strain curves.
 
 
-Gaussian Process Regression
-===========================
+
+### Gaussian Process Regression
 
 A Gaussian process underlyines the estimates of the loss function between the experimental stress-strain curve in terms of the CPFE hardening parameters and acts as a surrogate model for the CPFE evaluation. 
 At each evaluated set of parameters, the surrogate model gains an exact solution while updating its estimates over the rest of parameter space. 

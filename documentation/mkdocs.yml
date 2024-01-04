@@ -1,0 +1,63 @@
+site_name: matmdl docs
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - navigation.sections  # expands nav sections
+    - navigation.instant
+    - search.suggest
+  custom_dir: overrides
+  palette:
+  - scheme: default
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to light mode
+    scheme: slate
+    primary: black
+    accent: indigo
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  # - toc:
+  #     permalink: true
+plugins:
+- offline
+- search
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        paths: [..]
+        options:
+          show_submodules: true
+
+nav:
+  - Home: index.md
+  - Installation: install.md
+  - Getting Started:
+    - Input: input.md
+    - Output: output.md
+  - Theory:
+    - Intro: theory.md
+    - Advanced: theory2.md
+  - API: 
+    - run: api_run.md
+    - plot: api_plot.md
+    - other: api_landing.md
