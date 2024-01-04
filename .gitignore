@@ -1,11 +1,7 @@
 .DS_Store
 .run*
-docs/build/*
 src/__pychache__/
-docs/source/generated/*
-docs/source/autoapi/*
-docs/generated/*
-docs/source/autoapi/
+documentation/site
 **/*.pyc
 **/*.png
 *egg-info
