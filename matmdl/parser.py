@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from pprint import pprint
 import datetime
 import tomllib
+import os
 
 input_fname = "input.toml"
 
@@ -33,6 +34,7 @@ class UserSettings:
 
 	input_reqs = {
 		'run': {
+			'do_single': Option(types=[bool], crit=False, default=False),
 			'loop_len': Option(types=[int], lower=2),
 			'n_initial_points': Option(types=[int], lower=2),
 			'large_error': Option(types=[int,float]),
@@ -49,6 +51,7 @@ class UserSettings:
 			'do_load_previous': Option(types=[bool, int]),
 			'is_compression': Option(types=[bool]),
 			'slope_weight': Option(types=[int,float], crit=False, default=0.4),
+			'main_path': Option(types=[str], crit=False, default=os.getcwd()),
 		},
 		'plot': {
 			'grain_size_name': Option(crit=False, types=[str]),
