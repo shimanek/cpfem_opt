@@ -23,7 +23,7 @@ def get_first(opt: object, in_opt: object) -> None:
 
 def check_single():
     """rough copy of run/single_loop that does not use an optimizer object"""
-    if not opt.do_single:
+    if not uset.do_single:
         return
     print("DBG: starting single run!")
 
