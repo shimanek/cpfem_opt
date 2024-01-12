@@ -147,6 +147,7 @@ class Checkout:
 				time.sleep(2)
 			else:
 				open(self.fpath + ".lck", "w")
+				# TODO try writing os.getcwd() to file
 				break
 		if time.time() - start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
