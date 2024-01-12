@@ -80,7 +80,7 @@ def update_parallel(opt):
 	update_params_pass = []
 	update_errors_pass = []
 	for i in range(len(update_params)):
-		update_params_pass.append(list(update_params[i,:]))
+		update_params_pass.append(list(update_params[i,1:]))  # first value is time
 		update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
 
 	opt.tell(update_params_pass, update_errors_pass)

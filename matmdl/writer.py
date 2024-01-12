@@ -89,9 +89,9 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
         orient_list: List of strings holding orientation nicknames.
     """
     error_fpath = os.path.join(uset.main_path, 'out_errors.txt')
-    if os.path.isfile(error_fpath):
-        with open(error_fpath, 'a+') as f:
-            f.write('\n' + ','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]))
-    else:
+    if not os.path.isfile(error_fpath):
         with open(error_fpath, 'w+') as f:
-            f.write('# errors for {} and mean error'.format(orient_list))
+            f.write(f'# errors for {orient_list} and mean error\n')
+
+    with open(error_fpath, 'a+') as f:
+        f.write(','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]) + '\n')
