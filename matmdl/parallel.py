@@ -1,8 +1,11 @@
 """
 Module for dealing with the present optimization being one of many simultaneous instances.
 This is presumed to be the case when the setting `main_path` has a value.
+Everything here should be called within a Checkout guard.
 """
 from matmdl.parser import uset
+from matmdl.state import state
+import numpy as np
 from shutil import copy
 import os
 import time
@@ -33,23 +36,50 @@ ERRORS:
 
 """
 
+def _get_num_newlines():
+	"""Check for updates; needs to be within Checkout guard."""
+	num_newlines = 0
+	fname = os.path.join(uset.main_path, "out_progress.txt")
+	times = np.loadtxt(fname, delimiter=",", skiprows=1, usecols=1, dtype=np.int64)
+	for time in times:
+		if time > state.last_updated:
+			num_newlines += 1
+	return num_newlines
+
+
+def _get_totlines():
+	"""Excluding header!"""
+	totlines = -1
+	with open(os.path.join(uset.main_path, "out_progress.txt"), "r") as f:
+		for line in f:
+			totlines += 1
+	return totlines
+
+
 def update_parallel(opt):
 	""" state if dict of filename: linux seconds of last modification"""
 	if uset.main_path in [os.getcwd(), "."]:
 		return
 
-	global output_state
-	if output_state not in globals():
-		output_state = _get_output_state()
-	else:
-		new_state = _get_output_state()
-		state_diffs = [val1 != val2 for val1, val2 in (output_state, new_state)]
-		if any(state_diffs):
-			output_state = new_state
-			# also update optimizer...
-			# TODO: first column should be unique ID (time?) to facilitate diffs
-			# for difflines in diff(internal prog, external prog):
-			# do opt.tell(difflines[1:-1], difflines[-1])
+	num_newlines = _get_num_newlines()
+	if num_newlines < 1:
+		return
+
+	# update state:
+	num_lines = _get_totlines()
+	start_line = num_lines - num_newlines
+	update_params = np.loadtxt(s.path.join(uset.main_path, "out_progress.txt"), delimiter=' ', skiprows=start_line)
+	update_errors = np.loadtxt(s.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
+	assert len(update_params) == len(update_errors), "Error: mismatch in output database size!"
+
+	update_params_pass = []
+	update_errors_pass = []
+	for i in range(len(update_params)):
+		update_params_pass.append(list(update_params[i,:]))
+		update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
+
+	opt.tell(update_params_pass, update_errors_pass)
+	state.update()
 
 
 def _get_output_state():
