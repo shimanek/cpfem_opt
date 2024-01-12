@@ -59,27 +59,6 @@ def combine_SS(zeros: bool, orientation: str) -> None:
     np.save(filename, dat)
 
 
-# below deprecated?
-# def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object, opt_progress):
-#     """
-#     Write parameters and maximum error to global variable ``opt_progress``.
-
-#     Also tells the optimizer that this parameter set was bad. Error value
-#     determined by :func:`max_rmse`.
-
-#     Args:
-#         i : Optimization iteration loop number.
-#         next_params: Parameter values evaluated during iteration ``i``.
-#         opt: Current instance of skopt.Optimizer object.
-#     """
-#     rmse = max_rmse(i, opt_progress)
-#     opt.tell( next_params, rmse )
-#     for orientation in uset.orientations.keys():
-#         combine_SS(zeros=True, orientation=orientation)
-#     opt_progress = update_progress(i, next_params, rmse)
-#     write_opt_progress(in_opt)
-
-
 def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None:
     """
     Write error values separated by orientation, if applicable.
