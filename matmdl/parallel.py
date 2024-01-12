@@ -41,9 +41,14 @@ def _get_num_newlines():
 	num_newlines = 0
 	fname = os.path.join(uset.main_path, "out_progress.txt")
 	times = np.loadtxt(fname, delimiter=",", skiprows=1, usecols=1, dtype=np.int64)
+
+	if np.shape(times) == ():
+		return 0
+
 	for time in times:
 		if time > state.last_updated:
 			num_newlines += 1
+
 	return num_newlines
 
 
@@ -68,7 +73,7 @@ def update_parallel(opt):
 	# update state:
 	num_lines = _get_totlines()
 	start_line = num_lines - num_newlines
-	update_params = np.loadtxt(s.path.join(uset.main_path, "out_progress.txt"), delimiter=' ', skiprows=start_line)
+	update_params = np.loadtxt(s.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)
 	update_errors = np.loadtxt(s.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
 	assert len(update_params) == len(update_errors), "Error: mismatch in output database size!"
 

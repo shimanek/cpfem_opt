@@ -20,15 +20,15 @@ def write_params_to_file(
     add_header = not os.path.isfile(out_fpath)
     with open(out_fpath, "a+") as f:
         if add_header:
-            header_padded = [opt_progress_header[0] + 13*" "]
+            header_padded = [opt_progress_header[0] + 12*" "]
             #TODO: ck spacing of time column, thought it was 19-7=12 with 1 extra space for 13 in above line
             for col_name in opt_progress_header[1:]:
                 num_spaces = 8+6 - len(col_name)
                 # 8 decimals, 6 other digits
                 header_padded.append(col_name + num_spaces*" ")
             f.write(', '.join(header_padded) + "\n")
-        line_string = ',\s'.join([f"{a:.8e}" for a in param_values]) + "\n"
-        line_string = str(state.last_updated) + " " + line_string
+        line_string = ', '.join([f"{a:.8e}" for a in param_values]) + "\n"
+        line_string = str(state.last_updated) + ", " + line_string
         f.write(line_string)
 
 
