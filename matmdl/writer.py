@@ -14,14 +14,13 @@ def write_params_to_file(
     ) -> None:
     """Appends last iteration params to file."""
 
-    opt_progress_header = ['time_ns'] + param_names + ['error_value']
+    opt_progress_header = ['time_ns'] + param_names
     out_fpath = os.path.join(uset.main_path, 'out_progress.txt')
 
     add_header = not os.path.isfile(out_fpath)
     with open(out_fpath, "a+") as f:
         if add_header:
             header_padded = [opt_progress_header[0] + 12*" "]
-            #TODO: ck spacing of time column, thought it was 19-7=12 with 1 extra space for 13 in above line
             for col_name in opt_progress_header[1:]:
                 num_spaces = 8+6 - len(col_name)
                 # 8 decimals, 6 other digits
@@ -92,7 +91,7 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
     error_fpath = os.path.join(uset.main_path, 'out_errors.txt')
     if os.path.isfile(error_fpath):
         with open(error_fpath, 'a+') as f:
-            f.write('\n' + ','.join([str(err) for err in error_list + [np.mean(error_list)]]))
+            f.write('\n' + ','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]))
     else:
         with open(error_fpath, 'w+') as f:
             f.write('# errors for {} and mean error'.format(orient_list))
