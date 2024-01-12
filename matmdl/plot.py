@@ -56,7 +56,7 @@ def main():
         labels0.append(f"Exp. [{orient}]")
 
         # plot best guess:
-        errors = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), 
+        errors = np.loadtxt(os.path.join(os.getcwd(), 'out_errors.txt'), 
             skiprows=1, delimiter=',')[:,-1]
         loc_min_error = np.argmin(errors)
         eng_strain_best = data[:,1,loc_min_error] / uset.length
@@ -74,14 +74,14 @@ def main():
         #-----------------------------------------------------------------------------------------------
         # print best paramters 
         params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')
-        # ^ full list: 'iteration', 'Tau0', 'H0', 'TauS', 'hs', 'gamma0', 'error'
-        best_params = [np.round(f,decimals=3) for f in params[loc_min_error,:]]
+        # ^ full list: time, then one param per column
+        best_params = params[loc_min_error,:]
         with open('out_best_params.txt', 'w') as f:
             f.write('\nTotal iterations: ' + str(num_iter))
-            f.write('\nBest iteration:   ' + str(int(best_params[0])))
-            f.write('\nLowest error:     ' + str(best_params[-1]) + '\n')
+            f.write('\nBest iteration:   ' + str(int(loc_min_error)))
+            f.write('\nLowest error:     ' + str(errors[loc_min_error]) + '\n')
             f.write('\nParameter names:\n' + ', '.join(in_opt.params) + '\n')
-            f.write('Best parameters:\n' + ', '.join([str(f) for f in best_params[1:-1]]) + '\n\n')
+            f.write('Best parameters:\n' + ', '.join([str(f) for f in best_params]) + '\n\n')
             if len(uset.param_additional_legend) > 0:
                 f.write('Fixed parameters:\n' + ', '.join(uset.param_additional_legend) + '\n')
                 f.write('Fixed parameter values:\n' + ', '.join(

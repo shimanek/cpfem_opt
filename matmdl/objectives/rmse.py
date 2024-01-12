@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
 from matmdl.parser import uset
-from matmdl.optimizer import update_progress
+# from matmdl.optimizer import update_progress
 
 
 def calc_error(
@@ -122,39 +122,3 @@ def _slope_diff(x, curve1, curve2):
 
     error = np.sqrt(np.sum(slope_diffs**2) / (len(x) - 1))
     return error
-
-
-def max_rmse(loop_number: int, opt_progress):
-    """
-    Give a "large" error value.
-
-    Return an estimate of a large enough error value to dissuade the optimizer 
-    from repeating areas in parameter space where Abaqus+UMAT can't complete calculations.
-    Often this ends up defaulting to `uset.large_error`, but a closer match to realistic
-    errors is desireable so that the optimizer sees a smoother and more reaslisti function.
-
-    Note:
-        Grace period of 15 iterations is hardcoded here, as is the factor of 1.5 times the 
-        interquartile range of previous error values.
-    """
-    grace = 15
-    if loop_number < grace:  # use user specified error
-        return uset.large_error
-    elif loop_number >= grace:  # use previous errors
-        # first remove instances of user-specified error
-        large_error_locs = np.where(opt_progress[:grace,-1] == uset.large_error)
-        if len(large_error_locs) == 0:
-            errors = opt_progress[:,-1]
-        else:
-            errors = np.concatenate(
-                (
-                    np.delete(opt_progress[:grace,-1], large_error_locs),
-                    opt_progress[grace:,-1],
-                ),
-                axis=0
-            )
-        if len(errors) < np.round(grace/2):  # not enough error data
-            return uset.large_error
-        else:
-            iq1, iq3 = np.quantile(errors, [0.25,0.75])
-            return np.ceil(np.mean(errors) + (iq3-iq1)*1.5)
