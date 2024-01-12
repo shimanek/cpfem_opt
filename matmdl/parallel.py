@@ -78,7 +78,8 @@ def update_parallel(opt):
 	start_line = num_lines - num_newlines + 1
 	update_params = np.loadtxt(os.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)
 	update_errors = np.loadtxt(os.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
-	assert len(update_params) == len(update_errors), "Error: mismatch in output database size!"
+	assert np.shape(update_params)[0] == np.shape(update_errors)[0], \
+		f"Error: mismatch in output database size! Found {np.shape(update_params)[0]} params and {np.shape(update_errors)[0]} errors"
 
 	update_params_pass = []
 	update_errors_pass = []
