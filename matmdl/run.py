@@ -88,9 +88,10 @@ def loop(opt, loop_len):
 
                 mean_error = np.mean(errors)  #TODO can be handled within error
                 opt.tell(next_params, mean_error)
+
+                update_parallel(opt)
                 write_error_to_file(errors, in_opt.orients)
                 write_params_to_file(next_params, in_opt.params)
-                update_parallel(opt)
 
 
     get_first(opt, in_opt)

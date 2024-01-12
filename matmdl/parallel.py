@@ -40,7 +40,10 @@ def _get_num_newlines():
 	"""Check for updates; needs to be within Checkout guard."""
 	num_newlines = 0
 	fname = os.path.join(uset.main_path, "out_progress.txt")
-	times = np.loadtxt(fname, delimiter=",", skiprows=1, usecols=0, dtype=np.int64)
+	try:
+		times = np.loadtxt(fname, delimiter=",", skiprows=1, usecols=0, dtype=np.int64)
+	except FileNotFoundError:
+		return 0
 
 	if np.shape(times) == ():
 		return 0
@@ -84,7 +87,7 @@ def update_parallel(opt):
 		update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
 
 	opt.tell(update_params_pass, update_errors_pass)
-	state.update()
+	state.update_read()
 
 
 def _get_output_state():

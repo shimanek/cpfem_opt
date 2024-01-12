@@ -9,8 +9,11 @@ class State:
         self.iterations = 0
         self.last_updated = time.time_ns()
 
-    def update(self):
+    def update_write(self):
         self.iterations += 1
+        self.last_updated = time.time_ns()
+
+    def update_read(self):
         self.last_updated = time.time_ns()
 
 state = State()

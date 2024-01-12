@@ -27,6 +27,7 @@ def write_params_to_file(
                 header_padded.append(col_name + num_spaces*" ")
             f.write(', '.join(header_padded) + "\n")
         line_string = ', '.join([f"{a:.8e}" for a in param_values]) + "\n"
+        state.update_write()
         line_string = str(state.last_updated) + ", " + line_string
         f.write(line_string)
 
