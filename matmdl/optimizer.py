@@ -187,22 +187,22 @@ def load_opt(opt: object, search_local:bool=False) -> object:
     Returns:
         skopt.Optimizer: Updated instance of the optimizer object.
     """
-    global opt_progress
-    filename = 'out_progress.txt'
-    arrayname = 'out_time_disp_force.npy'
+    fname_params = "out_progress.txt"
+    fname_errors = "out_errors.txt"
+
     if uset.main_path not in [os.getcwd(), "."] and not search_local:
-        filename = os.path.join(uset.main_path, filename)
-        arrayname = os.path.join(uset.main_path, arrayname)
-    opt_progress = np.loadtxt(filename, skiprows=1, delimiter=',')
-    # renumber iterations (negative length to zero) to distinguish from new calculations:
-    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
-    x_in = opt_progress[:,1:-1].tolist()
-    y_in = opt_progress[:,-1].tolist()
+        fname_params = os.path.join(uset.main_path, fname_params)
+        fname_errors = os.path.join(uset.main_path, fname_errors)
+
+    params = np.loadtxt(fname_params, skiprows=1, delimiter=',')
+    errors = np.loadtxt(fname_errors, skiprows=1, delimiter=',')
+    x_in = params[:,1:].tolist()
+    y_in = errors[:,-1].tolist()
 
     if __debug__:
         with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+            f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
 
     opt.tell(x_in, y_in)
     return opt
