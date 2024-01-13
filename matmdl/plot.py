@@ -140,6 +140,9 @@ def main():
     fig.savefig('res_convergence.png', dpi=400, bbox_inches='tight')
     plt.close()
     #-----------------------------------------------------------------------------------------------
+    all_errors = np.loadtxt(os.path.join(os.getcwd(), 'out_errors.txt'), skiprows=1, delimiter=',')
+    plot_error_front(errors=all_errors, samples=list(uset.orientations.keys()))
+    #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
     opt = instantiate_optimizer(in_opt, uset)
     opt = load_opt(opt, search_local=True)
@@ -203,6 +206,30 @@ def plot_single():
         plt.close(fig0)
 
     if __debug__: print('# stop plotting single\n')
+
+
+def plot_error_front(errors, samples):
+    """plot Pareto frontiers of error from each pair of samples"""
+    num_samples = np.shape(errors)[1] - 1
+    if num_samples < 2:
+        print("skipping multi-error plot")
+        return
+    else:
+        print("error fronts")
+
+    fig, ax = plt.subplots(nrows=num_samples, ncols=num_samples, squeeze=False)
+    for i in range(0, num_samples-1):
+        for j in range(i+1, num_samples):
+            s = ax[i,j].scatter(errors[:,i], errors[:,j], c=errors[:,-1], cmap='viridis')
+            # import pdb; pdb.set_trace()
+            ax[i,j].set_xlabel(f"{samples[i]} Error")
+            ax[i,j].set_ylabel(f"{samples[j]} Error")
+
+    # plt.colorbar(label="Mean Error")
+    cb = fig.colorbar(s)  # takes last plotted, but they all share scale of errors[:,-1]
+    cb.set_label("Mean Error")
+    fig.savefig(os.path.join(os.getcwd(), 'res_errors.png'), bbox_inches='tight', dpi=200)
+    plt.close(fig)
 
 
 def plot_settings(ax, legend=True):
