@@ -36,7 +36,6 @@ def main():
     for ct_orient, orient in enumerate(orients):
         data = np.load(os.path.join(os.getcwd(), f'out_time_disp_force_{orient}.npy'))
         num_iter = len(data[0,0,:])
-        print("DBG:PLOT:num_iter", num_iter)
         #-----------------------------------------------------------------------------------------------
         # plot all trials, in order:
         if __debug__: print('{}: all curves'.format(orient))
@@ -209,7 +208,13 @@ def plot_single():
 
 
 def plot_error_front(errors, samples):
-    """plot Pareto frontiers of error from each pair of samples"""
+    """plot Pareto frontiers of error from each pair of samples
+
+    TODO:
+        - make lower triangular
+        - set colorbar to side?
+        - add space between plots
+    """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
         print("skipping multi-error plot")
@@ -217,18 +222,53 @@ def plot_error_front(errors, samples):
     else:
         print("error fronts")
 
-    fig, ax = plt.subplots(nrows=num_samples, ncols=num_samples, squeeze=False)
-    for i in range(0, num_samples-1):
-        for j in range(i+1, num_samples):
-            s = ax[i,j].scatter(errors[:,i], errors[:,j], c=errors[:,-1], cmap='viridis')
-            # import pdb; pdb.set_trace()
-            ax[i,j].set_xlabel(f"{samples[i]} Error")
-            ax[i,j].set_ylabel(f"{samples[j]} Error")
+    size = 2  # size in inches of each suplot here
+    fig, ax = plt.subplots(
+        nrows=num_samples-1, 
+        ncols=num_samples-1, 
+        squeeze=False, 
+        figsize=(size*(num_samples-1), size*(num_samples-1)),
+        layout='constrained',
+    )
 
-    # plt.colorbar(label="Mean Error")
-    cb = fig.colorbar(s)  # takes last plotted, but they all share scale of errors[:,-1]
-    cb.set_label("Mean Error")
-    fig.savefig(os.path.join(os.getcwd(), 'res_errors.png'), bbox_inches='tight', dpi=200)
+    ind_min_error = np.argmin(errors[:,-1])
+    for i in range(0, num_samples-1):  # i horizontal going right
+        for j in range(0, num_samples-1):  # j vertical going down
+            # TODO: counting/layout messed up. get ax here, use throughout
+            _ax = ax[j,i]
+            if i > j:
+                _ax.axis('off')
+            else:
+                s = _ax.scatter(errors[:,i], errors[:,j+1], c=errors[:,-1], cmap='viridis')
+                _ax.set_xlabel(f"{samples[i]} Error")
+                _ax.set_ylabel(f"{samples[j]} Error")
+
+                if i > 0:
+                    _ax.set_yticklabels([])
+                    _ax.set_ylabel("")
+                if j < num_samples - 2:
+                    _ax.set_xticklabels([])
+                    _ax.set_xlabel("")
+
+                # global min:
+                _ax.plot(errors[ind_min_error,i], errors[ind_min_error,j+1], "*", color="red", markersize=12)
+
+
+    print("DBG:errors: min, max: ", min(errors[:,-1]), max(errors[:,-1]),)
+    fig.colorbar(
+        matplotlib.cm.ScalarMappable(
+            norm=matplotlib.colors.Normalize(
+                vmin=min(errors[:,-1]),
+                vmax=max(errors[:,-1]), 
+            ),
+            cmap='viridis'
+        ), 
+        ax=ax[0,1], 
+        label="Mean Error",
+        pad=-1,
+        aspect=15
+    )
+    fig.savefig(os.path.join(os.getcwd(), 'res_errors.png'), bbox_inches='tight', dpi=400)
     plt.close(fig)
 
 
