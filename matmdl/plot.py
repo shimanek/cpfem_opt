@@ -211,9 +211,7 @@ def plot_error_front(errors, samples):
     """plot Pareto frontiers of error from each pair of samples
 
     TODO:
-        - make lower triangular
-        - set colorbar to side?
-        - add space between plots
+        - focus on minimal front?
     """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
