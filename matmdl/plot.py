@@ -212,6 +212,7 @@ def plot_error_front(errors, samples):
 
     TODO:
         - focus on minimal front?
+        - check for convexity of each pairwise cases? e.g. area between hull and front
     """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
