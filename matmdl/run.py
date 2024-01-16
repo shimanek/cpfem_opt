@@ -81,6 +81,8 @@ def loop(opt, loop_len):
 
             # write out:
             with Checkout("out"):
+                update_parallel(opt)
+
                 errors = []
                 for orient in uset.orientations.keys():
                     errors.append(calc_error(exp_data.data[orient]['raw'], orient))
@@ -89,9 +91,9 @@ def loop(opt, loop_len):
                 mean_error = np.mean(errors)  #TODO can be handled within error
                 opt.tell(next_params, mean_error)
 
-                update_parallel(opt)
                 write_error_to_file(errors, in_opt.orients)
                 write_params_to_file(next_params, in_opt.params)
+
 
 
     get_first(opt, in_opt)
