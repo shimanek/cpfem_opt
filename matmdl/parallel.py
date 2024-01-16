@@ -78,6 +78,10 @@ def update_parallel(opt):
 	start_line = num_lines - num_newlines + 1
 	update_params = np.loadtxt(os.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)
 	update_errors = np.loadtxt(os.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
+
+	# strict output database assertion:
+	# assert_db_lengths_match()
+	# quick assertion for params and errors only:
 	assert np.shape(update_params)[0] == np.shape(update_errors)[0], \
 		f"Error: mismatch in output database size! Found {np.shape(update_params)[0]} params and {np.shape(update_errors)[0]} errors"
 
@@ -89,6 +93,23 @@ def update_parallel(opt):
 
 	opt.tell(update_params_pass, update_errors_pass)
 	state.update_read()
+
+
+def assert_db_lengths_match():
+	"""loads and checks lengths of all output files; used for debugging"""
+	lengths = []
+	for npyfile in [f for f in os.listdir(uset.main_path) if f.endswith("npy")]:
+		dat = np.load(os.path.join(uset.main_path, npyfile))
+		lengths.append(np.shape(dat)[2])
+	for outfile in [f for f in os.listdir(uset.main_path) if f.startswith("out_") and f.endswith(".txt")]:
+		dat = np.loadtxt(os.path.join(uset.main_path, outfile), delimiter=',', skiprows=1)
+		lengths.append(np.shape(dat)[0])
+
+	if len(set(lengths)) > 1:
+		error_time = time.time_ns()
+		with open(os.path.join(uset.main_path, "out_progress.txt"), "a+") as f:
+			f.write(f"{error_time}, ERROR from {os.getcwd()}")
+		raise RuntimeError(f"mismatch in DB lengths at time: {error_time}")
 
 
 def _get_output_state():
