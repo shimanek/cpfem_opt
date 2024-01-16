@@ -23,7 +23,8 @@ def get_first(opt: object, in_opt: object) -> None:
 
 def check_single():
     """rough copy of run/single_loop that does not use an optimizer object"""
-
+    if not uset.do_single:
+        return
     print("DBG: starting single run!")
 
     # load options:
@@ -42,7 +43,7 @@ def check_single():
         print(f"DBG: starting orient {orient}")
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)
-            write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+            write_input_params('mat_orient.inp', orient_components['names'], orient_components['values'])
             shutil.copy('mat_orient.inp', f"mat_orient_{orient}.inp")
         else:
             try:
@@ -88,7 +89,7 @@ def remove_out_files():
             os.remove(f)
 
 
-def write_params(
+def write_input_params(
         fname: str, 
         param_names: Union[list[str], str], 
         param_values: Union[list[float], float],

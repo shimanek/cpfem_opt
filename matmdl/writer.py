@@ -2,37 +2,34 @@
 module for writing to files
 """
 from matmdl.parser import uset
-from matmdl.objectives.rmse import max_rmse
 from matmdl.parallel import Checkout
-from matmdl.optimizer import update_progress
+from matmdl.state import state
 import numpy as np
 import os
 
 
-def write_opt_progress(
-        in_opt: object,
-        opt_progress: object,
+def write_params_to_file(
+        param_values: list[float],
+        param_names : list[str]
     ) -> None:
-    """Appends last iteration infor of global variable ``opt_progress`` to file."""
+    """Appends last iteration params to file."""
 
-    opt_progress_header = ['iteration'] + in_opt.params + ['RMSE']
+    opt_progress_header = ['time_ns'] + param_names
     out_fpath = os.path.join(uset.main_path, 'out_progress.txt')
-
-    if len(np.shape(opt_progress)) > 1:
-        new_progress = opt_progress[-1,:]
-    else:
-        new_progress = opt_progress[:]
 
     add_header = not os.path.isfile(out_fpath)
     with open(out_fpath, "a+") as f:
         if add_header:
-            header_padded = []
-            for col_name in opt_progress_header:
+            header_padded = [opt_progress_header[0] + 12*" "]
+            for col_name in opt_progress_header[1:]:
                 num_spaces = 8+6 - len(col_name)
                 # 8 decimals, 6 other digits
                 header_padded.append(col_name + num_spaces*" ")
             f.write(', '.join(header_padded) + "\n")
-        f.write(',\t'.join([f"{a:.8e}" for a in new_progress]) + "\n")
+        line_string = ', '.join([f"{a:.8e}" for a in param_values]) + "\n"
+        state.update_write()
+        line_string = str(state.last_updated) + ", " + line_string
+        f.write(line_string)
 
 
 def combine_SS(zeros: bool, orientation: str) -> None:
@@ -62,26 +59,6 @@ def combine_SS(zeros: bool, orientation: str) -> None:
     np.save(filename, dat)
 
 
-def write_maxRMSE(i: int, next_params: tuple, opt: object, in_opt: object, opt_progress):
-    """
-    Write parameters and maximum error to global variable ``opt_progress``.
-
-    Also tells the optimizer that this parameter set was bad. Error value
-    determined by :func:`max_rmse`.
-
-    Args:
-        i : Optimization iteration loop number.
-        next_params: Parameter values evaluated during iteration ``i``.
-        opt: Current instance of skopt.Optimizer object.
-    """
-    rmse = max_rmse(i, opt_progress)
-    opt.tell( next_params, rmse )
-    for orientation in uset.orientations.keys():
-        combine_SS(zeros=True, orientation=orientation)
-    opt_progress = update_progress(i, next_params, rmse)
-    write_opt_progress(in_opt)
-
-
 def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None:
     """
     Write error values separated by orientation, if applicable.
@@ -92,9 +69,9 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
         orient_list: List of strings holding orientation nicknames.
     """
     error_fpath = os.path.join(uset.main_path, 'out_errors.txt')
-    if os.path.isfile(error_fpath):
-        with open(error_fpath, 'a+') as f:
-            f.write('\n' + ','.join([str(err) for err in error_list + [np.mean(error_list)]]))
-    else:
+    if not os.path.isfile(error_fpath):
         with open(error_fpath, 'w+') as f:
-            f.write('# errors for {} and mean error'.format(orient_list))
+            f.write(f'# errors for {orient_list} and mean error\n')
+
+    with open(error_fpath, 'a+') as f:
+        f.write(','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]) + '\n')

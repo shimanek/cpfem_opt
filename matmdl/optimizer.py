@@ -1,8 +1,9 @@
-from matmdl.runner import write_params
+from matmdl.runner import write_input_params
 from matmdl.utilities import as_float_tuples, round_sig
 from matmdl.parallel import Checkout
 from skopt import Optimizer
 from matmdl.parser import uset
+from matmdl.state import state
 import numpy as np
 import os
 
@@ -68,10 +69,10 @@ class InOpt:
                 self.material_params.append(param)
                 self.material_bounds.append([float(b) for b in bound])
             elif type(bound) in (float, int):  # write single values to file
-                write_params(uset.param_file, param, float(bound))
+                write_input_params(uset.param_file, param, float(bound))
             else:
                 raise TypeError('Incorrect bound type in input file.')
-        
+
         # add orientation offset info:
         self.offsets = []
         self.has_orient_opt = {}
@@ -151,22 +152,22 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
     return new_params
 
 
-def update_progress(i:int, next_params:tuple, error:float) -> None:
-    """
-    Writes parameters and error value to global variable ``opt_progress``.
+# def update_progress(i:int, next_params:tuple, error:float) -> None:
+#     """
+#     Writes parameters and error values to State.
 
-    Args:
-        i: Optimization iteration loop number.
-        next_params: Parameter values evaluated during iteration ``i``.
-        error: Error value of these parameters, which is defined in 
-            :func:`calc_error`.
-    """
-    global opt_progress
-    if (i == 0) and (uset.do_load_previous is False): 
-        opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
-    else: 
-        opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))
-    return opt_progress
+#     Args:
+#         i: Optimization iteration loop number.
+#         next_params: Parameter values evaluated during iteration ``i``.
+#         error: Error value of these parameters, which is defined in 
+#             :func:`calc_error`.
+#     """
+#     global opt_progress
+#     if (i == 0) and (uset.do_load_previous is False): 
+#         opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
+#     else: 
+#         opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))
+#     return opt_progress
 
 
 def load_opt(opt: object, search_local:bool=False) -> object:
@@ -186,22 +187,22 @@ def load_opt(opt: object, search_local:bool=False) -> object:
     Returns:
         skopt.Optimizer: Updated instance of the optimizer object.
     """
-    global opt_progress
-    filename = 'out_progress.txt'
-    arrayname = 'out_time_disp_force.npy'
+    fname_params = "out_progress.txt"
+    fname_errors = "out_errors.txt"
+
     if uset.main_path not in [os.getcwd(), "."] and not search_local:
-        filename = os.path.join(uset.main_path, filename)
-        arrayname = os.path.join(uset.main_path, arrayname)
-    opt_progress = np.loadtxt(filename, skiprows=1, delimiter=',')
-    # renumber iterations (negative length to zero) to distinguish from new calculations:
-    opt_progress[:,0] = np.array([i for i in range(-1*len(opt_progress[:,0]),0)])
-    x_in = opt_progress[:,1:-1].tolist()
-    y_in = opt_progress[:,-1].tolist()
+        fname_params = os.path.join(uset.main_path, fname_params)
+        fname_errors = os.path.join(uset.main_path, fname_errors)
+
+    params = np.loadtxt(fname_params, skiprows=1, delimiter=',')
+    errors = np.loadtxt(fname_errors, skiprows=1, delimiter=',')
+    x_in = params[:,1:].tolist()
+    y_in = errors[:,-1].tolist()
 
     if __debug__:
         with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}'.format(x,y) for x,y in zip(x_in, y_in)])
+            f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
 
     opt.tell(x_in, y_in)
     return opt
