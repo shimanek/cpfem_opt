@@ -226,19 +226,18 @@ def plot_error_front(errors, samples):
         nrows=num_samples-1, 
         ncols=num_samples-1, 
         squeeze=False, 
-        figsize=(size*(num_samples-1), size*(num_samples-1)),
-        layout='constrained',
+        figsize= (1.6*size,size) if num_samples == 2 else (size*(num_samples-1), size*(num_samples-1)),
+        layout= 'constrained',
     )
 
     ind_min_error = np.argmin(errors[:,-1])
     for i in range(0, num_samples-1):  # i horizontal going right
         for j in range(0, num_samples-1):  # j vertical going down
-            # TODO: counting/layout messed up. get ax here, use throughout
             _ax = ax[j,i]
             if i > j:
                 _ax.axis('off')
             else:
-                s = _ax.scatter(errors[:,i], errors[:,j+1], c=errors[:,-1], cmap='viridis')
+                _ax.scatter(errors[:,i], errors[:,j+1], c=errors[:,-1], cmap='viridis')
                 _ax.set_xlabel(f"{samples[i]} Error")
                 _ax.set_ylabel(f"{samples[j]} Error")
 
@@ -253,7 +252,7 @@ def plot_error_front(errors, samples):
                 _ax.plot(errors[ind_min_error,i], errors[ind_min_error,j+1], "*", color="red", markersize=12)
 
 
-    print("DBG:errors: min, max: ", min(errors[:,-1]), max(errors[:,-1]),)
+    # print("DBG:errors: min, max: ", min(errors[:,-1]), max(errors[:,-1]),)
     fig.colorbar(
         matplotlib.cm.ScalarMappable(
             norm=matplotlib.colors.Normalize(
@@ -262,9 +261,9 @@ def plot_error_front(errors, samples):
             ),
             cmap='viridis'
         ), 
-        ax=ax[0,1], 
+        ax=ax[0,0] if num_samples==2 else ax[0,1], 
         label="Mean Error",
-        pad=-1,
+        pad=0.05 if num_samples==2 else -1,
         aspect=15
     )
     fig.savefig(os.path.join(os.getcwd(), 'res_errors.png'), bbox_inches='tight', dpi=400)
