@@ -76,7 +76,7 @@ def update_parallel(opt):
 	# update state:
 	num_lines = _get_totlines()
 	start_line = num_lines - num_newlines + 1
-	update_params = np.loadtxt(os.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)
+	update_params = np.loadtxt(os.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)[:,1:]
 	update_errors = np.loadtxt(os.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
 
 	# strict output database assertion:
@@ -87,7 +87,7 @@ def update_parallel(opt):
 
 	update_params_pass = []
 	update_errors_pass = []
-	for i in range(len(update_params)):
+	for i in range(np.shape(update_params)[0]):
 		update_params_pass.append(list(update_params[i,1:]))  # first value is time
 		update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
 
