@@ -72,7 +72,7 @@ def main():
         plt.close(fig)
         #-----------------------------------------------------------------------------------------------
         # print best paramters 
-        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')
+        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')[1:]
         # ^ full list: time, then one param per column
         best_params = params[loc_min_error,:]
         with open('out_best_params.txt', 'w') as f:
