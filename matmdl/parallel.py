@@ -82,8 +82,10 @@ def update_parallel(opt):
 	# strict output database assertion:
 	# assert_db_lengths_match()
 	# quick assertion for params and errors only:
-	assert np.shape(update_params)[0] == np.shape(update_errors)[0], \
-		f"Error: mismatch in output database size! Found {np.shape(update_params)[0]} params and {np.shape(update_errors)[0]} errors"
+	len_params = np.shape(update_params)[0] if len(np.shape(update_params)[0]) == 2 else len(update_params)
+	len_errors = np.shape(update_errors)[0] if len(np.shape(update_errors)[0]) == 2 else len(update_errors)
+	assert len_params == len_errors, \
+		f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
 
 	update_params_pass = []
 	update_errors_pass = []
