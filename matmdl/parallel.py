@@ -81,10 +81,11 @@ def update_parallel(opt):
 
 	# strict output database assertion:
 	# assert_db_lengths_match()
+
 	# quick assertion for params and errors only:
 	len_params = np.shape(update_params)[0] if len(np.shape(update_params)) == 2 else 1
 	len_errors = np.shape(update_errors)[0] if len(np.shape(update_errors)) == 2 else 1
-	# TODO: this still fails when DB has only one entry
+	# ^ (if shape is 1D then there is only one entry)
 	assert len_params == len_errors, \
 		f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
 
