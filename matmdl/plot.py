@@ -72,7 +72,7 @@ def main():
         plt.close(fig)
         #-----------------------------------------------------------------------------------------------
         # print best paramters 
-        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')
+        params = np.loadtxt(os.path.join(os.getcwd(), 'out_progress.txt'), skiprows=1, delimiter=',')[:,1:]
         # ^ full list: time, then one param per column
         best_params = params[loc_min_error,:]
         with open('out_best_params.txt', 'w') as f:
@@ -89,13 +89,12 @@ def main():
         # plot best paramters
         legend_info = []
         for i, param in enumerate(in_opt.params):
-            # 1st entry in best_params is iteration number, so use i+1
-            legend_info.append(f'{name_to_sym(param)}={best_params[i+1]:.1f}')
+            legend_info.append(f'{name_to_sym(param)}={best_params[i]:.1f}')
         # also add additional parameters to legend:
         for param_name in uset.param_additional_legend:
             legend_info.append(name_to_sym(param_name) + '=' + str(get_param_value(param_name)))
         # add error value
-        legend_info.append('Error: ' + str(best_params[-1]))
+        legend_info.append('Error: ' + str(errors[loc_min_error]))
         legend_info = '\n'.join(legend_info)
         
         if __debug__: print('{}: best fit'.format(orient))
