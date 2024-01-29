@@ -177,13 +177,14 @@ class Checkout:
 				print(f"Waiting on Checkout for {time.time()-self.start} seconds.")
 				time.sleep(2)
 			else:
-				open(self.fpath + ".lck", "w")
-				# TODO try writing os.getcwd() to file
+				self.f = open(self.fpath + ".lck", "w")
+				self.f.write(f"{os.getcwd()}")
 				break
 		if time.time() - start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
+		self.f.close()
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
 
