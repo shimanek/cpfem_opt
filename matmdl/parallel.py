@@ -188,15 +188,11 @@ class Checkout:
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
 
-	def decorate(fname, local=True):
+	def __call__(self, fn):
 		"""
 		Decorator to use if whole function needs resource checked out.
-
-		TODO: this results in two calls to __exit__() but seems to be functional
 		"""
-		def _decorate(fn):
-			def wrapper(fname, local=local):
-				with Checkout(fname, local=local):
-					return fn
-			return wrapper(fname, local=local)
-		return _decorate
+		def decorator():
+			with self:
+				return fn()
+		return decorator

@@ -24,7 +24,7 @@ matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 
 
-@Checkout.decorate("out", local=True)
+@Checkout("out", local=True)
 def main():
     orients = uset.orientations.keys()
     if __debug__: print('\n# start plotting')
@@ -157,7 +157,7 @@ def main():
 
     if __debug__: print('# stop plotting\n')
 
-@Checkout.decorate("out", local=True)
+@Checkout("out", local=True)
 def plot_single():
     if __debug__: print('\n# start plotting single')
     fig0, ax0 = plt.subplots()
