@@ -6,6 +6,7 @@ Compare the full geometry model to the 100-element chain model for the PAN model
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import subprocess
 from matplotlib.ticker import AutoMinorLocator
 
 
@@ -13,6 +14,7 @@ from matplotlib.ticker import AutoMinorLocator
 ## i/o folders
 data_dir = os.path.join(os.getcwd(), 'data')
 figure_dir = os.path.join(os.getcwd(), 'figures')
+subprocess.run(f"mkdir -p {figure_dir}", shell=True)
 
 def main():
     """import each dataset and save plot"""
