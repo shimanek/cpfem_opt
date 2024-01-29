@@ -83,17 +83,22 @@ def update_parallel(opt):
 	# assert_db_lengths_match()
 
 	# quick assertion for params and errors only:
-	len_params = np.shape(update_params)[0] if len(np.shape(update_params)) == 2 else 1
-	len_errors = np.shape(update_errors)[0] if len(np.shape(update_errors)) == 2 else 1
+	has_multiple = len(np.shape(update_params))==2
+	len_params = np.shape(update_params)[0] if has_multiple else 1
+	len_errors = np.shape(update_errors)[0] if has_multiple else 1
 	# ^ (if shape is 1D then there is only one entry)
 	assert len_params == len_errors, \
 		f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
 
 	update_params_pass = []
 	update_errors_pass = []
-	for i in range(np.shape(update_params)[0]):
-		update_params_pass.append(list(update_params[i,1:]))  # first value is time
-		update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
+	if has_multiple:
+		for i in range(np.shape(update_params)[0]):
+			update_params_pass.append(list(update_params[i,1:]))  # first value is time
+			update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
+	else:
+		update_params_pass.append(list(update_params[1:]))
+		update_errors_pass.append(float(update_errors[i,-1]))
 
 	opt.tell(update_params_pass, update_errors_pass)
 	state.update_read()
