@@ -98,7 +98,7 @@ def update_parallel(opt):
 			update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
 	else:
 		update_params_pass.append(list(update_params[1:]))
-		update_errors_pass.append(float(update_errors[i,-1]))
+		update_errors_pass.append(float(update_errors[-1]))
 
 	opt.tell(update_params_pass, update_errors_pass)
 	state.update_read()
