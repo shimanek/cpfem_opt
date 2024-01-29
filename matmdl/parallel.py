@@ -14,7 +14,7 @@ import time
 def check_parallel():
 	"""parallel initialization if needed"""
 	if uset.main_path not in [os.getcwd(), "."]:
-		print("Starting as a parallel instance")
+		print("Starting as a parallel instance", flush=True)
 		copy_files()
 		# TODO: reload copied input.toml
 
@@ -67,11 +67,11 @@ def _get_totlines():
 def update_parallel(opt):
 	""" state if dict of filename: linux seconds of last modification"""
 	if uset.main_path in [os.getcwd(), "."]:
-		return
+		return ([], [])
 
 	num_newlines = _get_num_newlines()
 	if num_newlines < 1:
-		return
+		return ([], [])
 
 	# update state:
 	num_lines = _get_totlines()
@@ -100,8 +100,8 @@ def update_parallel(opt):
 		update_params_pass.append(list(update_params[1:]))
 		update_errors_pass.append(float(update_errors[-1]))
 
-	opt.tell(update_params_pass, update_errors_pass)
 	state.update_read()
+	return update_params_pass, update_errors_pass
 
 
 def assert_db_lengths_match():
@@ -169,33 +169,35 @@ class Checkout:
 
 	def __enter__(self):
 		cutoff_seconds = 420
-		start = time.time()
 
-		while True and time.time() - start < cutoff_seconds:
+		while True and time.time() - self.start < cutoff_seconds:
 			lockfile_exists = os.path.isfile(self.fpath + ".lck")
 			if lockfile_exists:
-				print(f"Waiting on Checkout for {time.time()-self.start} seconds.")
+				try:
+					with open(self.fpath + ".lck", "r") as f:
+						source = f.read()
+					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}", flush=True)
+				except FileNotFoundError:
+					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds", flush=True)
 				time.sleep(2)
 			else:
-				open(self.fpath + ".lck", "w")
-				# TODO try writing os.getcwd() to file
+				with open(self.fpath + ".lck", "w+") as f:
+					f.write(f"{os.getcwd()}")
+				self.time_unlocked = time.time()
+				print(f"Unlocked after {time.time()-self.start:.3f} seconds", flush=True)
 				break
-		if time.time() - start > cutoff_seconds:
+		if time.time() - self.start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		os.remove(self.fpath + ".lck")
-		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
+		print(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.", flush=True)
 
-	def decorate(fname, local=True):
+	def __call__(self, fn):
 		"""
 		Decorator to use if whole function needs resource checked out.
-
-		TODO: this results in two calls to __exit__() but seems to be functional
 		"""
-		def _decorate(fn):
-			def wrapper(fname, local=local):
-				with Checkout(fname, local=local):
-					return fn
-			return wrapper(fname, local=local)
-		return _decorate
+		def decorator():
+			with self:
+				return fn()
+		return decorator
