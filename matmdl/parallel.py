@@ -173,9 +173,12 @@ class Checkout:
 		while True and time.time() - self.start < cutoff_seconds:
 			lockfile_exists = os.path.isfile(self.fpath + ".lck")
 			if lockfile_exists:
-				with open(self.fpath + ".lck", "r") as f:
-					source = f.read()
-				print(f"Waiting on Checkout for {time.time()-self.start} seconds from {source}", flush=True)
+				try:
+					with open(self.fpath + ".lck", "r") as f:
+						source = f.read()
+					print(f"Waiting on Checkout for {time.time()-self.start} seconds from {source}", flush=True)
+				except FileNotFoundError:
+					print(f"Waiting on Checkout for {time.time()-self.start} seconds", flush=True)
 				time.sleep(2)
 			else:
 				with open(self.fpath + ".lck", "w+") as f:
