@@ -174,17 +174,18 @@ class Checkout:
 		while True and time.time() - start < cutoff_seconds:
 			lockfile_exists = os.path.isfile(self.fpath + ".lck")
 			if lockfile_exists:
-				print(f"Waiting on Checkout for {time.time()-self.start} seconds.")
+				with open(self.fpath + ".lck", "r") as f:
+					source = f.read()
+				print(f"Waiting on Checkout for {time.time()-self.start} seconds from {source}")
 				time.sleep(2)
 			else:
-				self.f = open(self.fpath + ".lck", "w")
-				self.f.write(f"{os.getcwd()}")
+				with open(self.fpath + ".lck", "w+") as f:
+					f.write(f"{os.getcwd()}")
 				break
 		if time.time() - start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
-		self.f.close()
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.start} seconds.")
 
