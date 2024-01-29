@@ -80,20 +80,30 @@ def loop(opt, loop_len):
                         return
 
             # write out:
+            update_params, update_errors = [], []
             with Checkout("out"):
-                update_parallel(opt)
+                # check parallel instances:
+                update_params_par, update_errors_par = update_parallel(opt)
+                if len(update_errors_par) > 0:
+                    update_params = update_params + update_params_par
+                    update_errors = update_errors + update_errors_par
 
+                # this instance:
                 errors = []
                 for orient in uset.orientations.keys():
                     errors.append(calc_error(exp_data.data[orient]['raw'], orient))
                     combine_SS(zeros=False, orientation=orient)  # save stress-strain data
 
                 mean_error = np.mean(errors)  #TODO can be handled within error
-                opt.tell(next_params, mean_error)
+                update_params = update_params + [next_params]
+                update_errors = update_errors + [mean_error]
 
+                # write this instance to file:
                 write_error_to_file(errors, in_opt.orients)
                 write_params_to_file(next_params, in_opt.params)
 
+            # update optimizer outside of Checkout context to lower time using output files:
+            opt.tell(update_params, update_errors)
 
 
     get_first(opt, in_opt)

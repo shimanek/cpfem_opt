@@ -67,11 +67,11 @@ def _get_totlines():
 def update_parallel(opt):
 	""" state if dict of filename: linux seconds of last modification"""
 	if uset.main_path in [os.getcwd(), "."]:
-		return
+		return ([], [])
 
 	num_newlines = _get_num_newlines()
 	if num_newlines < 1:
-		return
+		return ([], [])
 
 	# update state:
 	num_lines = _get_totlines()
@@ -100,8 +100,8 @@ def update_parallel(opt):
 		update_params_pass.append(list(update_params[1:]))
 		update_errors_pass.append(float(update_errors[-1]))
 
-	opt.tell(update_params_pass, update_errors_pass)
 	state.update_read()
+	return update_params_pass, update_errors_pass
 
 
 def assert_db_lengths_match():
