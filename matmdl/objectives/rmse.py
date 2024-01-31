@@ -107,6 +107,20 @@ def _stress_diff(x, curve1, curve2):
 def ddx_pointwise(curve, x):
     """Give point-to-point slope values of curve over x"""
     return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
+
+
+def ddx_rolling(curve, x, window):
+    """Give rolling window slope of curve"""
+    n = int(window)
+    num_windows = len(x) - window
+    slopes = np.empty(num_windows)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', np.RankWarning)
+        for i in range(num_windows):
+            slopes[i] = np.polyfit(x[i:i+n], curve(x[i:i+n]), 1)[0]
+    return slopes
+
+
 def _slope_diff(x, curve1, curve2):
     """ 
     estimate of slope error between curves
@@ -119,8 +133,8 @@ def _slope_diff(x, curve1, curve2):
     Returns:
         error: summed percent differences in slopes
     """
-    dcurve1 = ddx_pointwise(curve1, x)
-    dcurve2 = ddx_pointwise(curve2, x)
+    dcurve1 = ddx_rolling(curve1, x, 2)
+    dcurve2 = ddx_rolling(curve2, x, 2)
     slope_diffs = (dcurve1 - dcurve2) / (dcurve2) * 100
 
     error = np.sqrt(np.sum(slope_diffs**2) / (len(x) - 1))
