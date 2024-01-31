@@ -195,7 +195,7 @@ class Checkout:
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		with open(self.fpath + ".lck", "r") as f:
 			source = f.read()
-		print(f"DBG: rm lock from: {source}", flush=True)
+		# print(f"DBG: rm lock from: {source}", flush=True)
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.", flush=True)
 
