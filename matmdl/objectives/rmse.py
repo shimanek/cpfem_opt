@@ -3,6 +3,7 @@ import numpy as np
 from copy import deepcopy
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+import warnings
 
 from matmdl.parser import uset
 # from matmdl.optimizer import update_progress
