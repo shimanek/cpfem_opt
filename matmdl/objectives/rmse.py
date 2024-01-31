@@ -104,6 +104,9 @@ def _stress_diff(x, curve1, curve2):
     return error
 
 
+def ddx_pointwise(curve, x):
+    """Give point-to-point slope values of curve over x"""
+    return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
 def _slope_diff(x, curve1, curve2):
     """ 
     estimate of slope error between curves
@@ -112,12 +115,12 @@ def _slope_diff(x, curve1, curve2):
         x: array of values at which to evaluate slope differences
         curve1: f(x) for test curve
         curve2: f(x) for reference curve
-    """
-    def ddx(curve, x):
-        return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
 
-    dcurve1 = ddx(curve1, x)
-    dcurve2 = ddx(curve2, x)
+    Returns:
+        error: summed percent differences in slopes
+    """
+    dcurve1 = ddx_pointwise(curve1, x)
+    dcurve2 = ddx_pointwise(curve2, x)
     slope_diffs = (dcurve1 - dcurve2) / (dcurve2) * 100
 
     error = np.sqrt(np.sum(slope_diffs**2) / (len(x) - 1))
