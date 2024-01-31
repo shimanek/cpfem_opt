@@ -7,6 +7,7 @@ from matmdl.parser import uset
 from matmdl.state import state
 import numpy as np
 from shutil import copy
+import random
 import os
 import time
 
@@ -181,9 +182,21 @@ class Checkout:
 					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds", flush=True)
 				time.sleep(2)
 			else:
-				with open(self.fpath + ".lck", "w+") as f:
+				with open(self.fpath + ".lck", "a+") as f:
 					f.write(f"{os.getcwd()}")
 				self.time_unlocked = time.time()
+				# check for collisions
+				time.sleep(0.010)  # allow potential collision cases to catch up
+				try:
+					with open(self.fpath + ".lck", "r") as f:
+						lines = f.readlines()
+				except FileNotFoundError:
+					lines = []
+				if len(lines) != 1:
+					os.remove(self.fpath + ".lck")
+					time.sleep(2.0*random.random()) # wait for a sec before restarting
+					self.__enter__()  # try again
+
 				print(f"Unlocked after {time.time()-self.start:.3f} seconds", flush=True)
 				break
 		if time.time() - self.start > cutoff_seconds:
