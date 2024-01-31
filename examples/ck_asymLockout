@@ -1,0 +1,9 @@
+#!/bin/bash
+
+lines=$(wc -l out_progress.txt | cut -f 1 -d " ")
+real_lines=$(( ${lines}-1 ))
+echo ${real_lines}
+cat out_errors.txt | grep -v error | awk -F "," '{print $NF}' | sort -g | head -n1
+
+grep DBG sub*/*.txt | cut -c 5-6,40,104-105 | awk '$1!=$2 {print $0}'
+grep "DBG: collision detected!" sub*/*txt

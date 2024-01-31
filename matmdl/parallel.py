@@ -7,6 +7,7 @@ from matmdl.parser import uset
 from matmdl.state import state
 import numpy as np
 from shutil import copy
+import random
 import os
 import time
 
@@ -18,23 +19,6 @@ def check_parallel():
 		copy_files()
 		# TODO: reload copied input.toml
 
-"""
-TODO: update output state with dates for each file modified:
- e.g., os.path.getmtime(fpath)
- if updated recently, reload optimizer
-
- TODO: put directory name on lockfile? for debug purposes. eg: `out_sub_01.lck`
-
-NOTE: single thread version works now,
-- test with subfolders
-- add above reloading
-- test all together
-- note some timing/performance stats
-
-ERRORS:
-- excess writing to npy files when out_progress hasn't been updated!
-
-"""
 
 def _get_num_newlines():
 	"""Check for updates; needs to be within Checkout guard."""
@@ -181,15 +165,37 @@ class Checkout:
 					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds", flush=True)
 				time.sleep(2)
 			else:
-				with open(self.fpath + ".lck", "w+") as f:
-					f.write(f"{os.getcwd()}")
+				with open(self.fpath + ".lck", "a+") as f:
+					f.write(f"{os.getcwd()}\n")
 				self.time_unlocked = time.time()
+				# check for collisions
+				time.sleep(0.010)  # allow potential collision cases to catch up
+				try:
+					with open(self.fpath + ".lck", "r") as f:
+						lines = f.readlines()
+				except FileNotFoundError:
+					lines = []
+				if len(lines) != 1:
+					print("Warning: collision detected between processes:", flush=True)
+					for line in lines:
+						print("line", flush=True)
+					print("Reattempting to checkout resource", flush=True)
+					try:
+						os.remove(self.fpath + ".lck")
+					except FileNotFoundError:
+						pass  # only one process will successfully remove file
+					time.sleep(4.0*random.random())  # wait for a sec before restarting
+					self.__enter__()  # try again
+
 				print(f"Unlocked after {time.time()-self.start:.3f} seconds", flush=True)
 				break
 		if time.time() - self.start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
+		with open(self.fpath + ".lck", "r") as f:
+			source = f.read()
+		print(f"DBG: rm lock from: {source}", flush=True)
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.", flush=True)
 
