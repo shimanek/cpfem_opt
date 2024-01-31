@@ -136,7 +136,7 @@ def _slope_diff(x, curve1, curve2):
     """
     dcurve1 = ddx_rolling(curve1, x, 2)
     dcurve2 = ddx_rolling(curve2, x, 2)
-    slope_diffs = (dcurve1 - dcurve2) / (dcurve2) * 100
+    slope_diffs = dcurve1 - dcurve2
 
     error = np.sqrt(np.sum(slope_diffs**2) / (len(x) - 1))
     return error
