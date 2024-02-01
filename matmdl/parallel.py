@@ -193,9 +193,10 @@ class Checkout:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
-		with open(self.fpath + ".lck", "r") as f:
-			source = f.read()
-		print(f"DBG: rm lock from: {source}", flush=True)
+		if False:  # debugging
+			with open(self.fpath + ".lck", "r") as f:
+				source = f.read()
+			print(f"Exit: rm lock from: {source}", flush=True)
 		os.remove(self.fpath + ".lck")
 		print(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.", flush=True)
 
