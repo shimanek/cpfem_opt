@@ -3,6 +3,7 @@ import numpy as np
 from copy import deepcopy
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+import warnings
 
 from matmdl.parser import uset
 # from matmdl.optimizer import update_progress
@@ -104,6 +105,23 @@ def _stress_diff(x, curve1, curve2):
     return error
 
 
+def ddx_pointwise(curve, x):
+    """Give point-to-point slope values of curve over x"""
+    return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
+
+
+def ddx_rolling(curve, x, window):
+    """Give rolling window slope of curve"""
+    n = int(window)
+    num_windows = len(x) - window
+    slopes = np.empty(num_windows)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', np.RankWarning)
+        for i in range(num_windows):
+            slopes[i] = np.polyfit(x[i:i+n], curve(x[i:i+n]), 1)[0]
+    return slopes
+
+
 def _slope_diff(x, curve1, curve2):
     """ 
     estimate of slope error between curves
@@ -112,13 +130,14 @@ def _slope_diff(x, curve1, curve2):
         x: array of values at which to evaluate slope differences
         curve1: f(x) for test curve
         curve2: f(x) for reference curve
+
+    Returns:
+        error: summed percent differences in slopes
     """
-    def ddx(curve, x):
-        return (curve(x[1:]) - curve(x[:-1])) / (x[1:] - x[:-1])
+    window_width = 3
+    dcurve1 = ddx_rolling(curve1, x, window_width)
+    dcurve2 = ddx_rolling(curve2, x, window_width)
+    slope_diffs = dcurve1 - dcurve2
 
-    dcurve1 = ddx(curve1, x)
-    dcurve2 = ddx(curve2, x)
-    slope_diffs = (dcurve1 - dcurve2) / (dcurve2) * 100
-
-    error = np.sqrt(np.sum(slope_diffs**2) / (len(x) - 1))
+    error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / np.abs(np.mean(slope_diffs)) * 100
     return error
