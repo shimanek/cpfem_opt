@@ -139,6 +139,4 @@ def _slope_diff(x, curve1, curve2):
     slope_diffs = dcurve1 - dcurve2
 
     error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / np.abs(np.mean(slope_diffs)) * 100
-    if error < 0:
-        print("DBG:error:", error, flush=True)
     return error
