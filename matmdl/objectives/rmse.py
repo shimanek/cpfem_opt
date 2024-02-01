@@ -113,6 +113,7 @@ def ddx_pointwise(curve, x):
 def ddx_rolling(curve, x, window):
     """Give rolling window slope of curve"""
     n = int(window)
+    assert n > 1, "Rolling average requires window width of 2 or more points"
     num_windows = len(x) - window
     slopes = np.empty(num_windows)
     with warnings.catch_warnings():
@@ -138,6 +139,5 @@ def _slope_diff(x, curve1, curve2):
     dcurve1 = ddx_rolling(curve1, x, window_width)
     dcurve2 = ddx_rolling(curve2, x, window_width)
     slope_diffs = dcurve1 - dcurve2
-
-    error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / np.abs(np.mean(slope_diffs)) * 100
+    error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) #/ np.abs(np.mean(slope_diffs)) * 100
     return error
