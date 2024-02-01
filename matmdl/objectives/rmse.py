@@ -134,8 +134,9 @@ def _slope_diff(x, curve1, curve2):
     Returns:
         error: summed percent differences in slopes
     """
-    dcurve1 = ddx_rolling(curve1, x, 2)
-    dcurve2 = ddx_rolling(curve2, x, 2)
+    window_width = 3
+    dcurve1 = ddx_rolling(curve1, x, window_width)
+    dcurve2 = ddx_rolling(curve2, x, window_width)
     slope_diffs = dcurve1 - dcurve2
 
     error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / np.abs(np.mean(slope_diffs)) * 100
