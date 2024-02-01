@@ -140,6 +140,7 @@ def main():
     #-----------------------------------------------------------------------------------------------
     all_errors = np.loadtxt(os.path.join(os.getcwd(), 'out_errors.txt'), skiprows=1, delimiter=',')
     plot_error_front(errors=all_errors, samples=list(uset.orientations.keys()))
+    plot_error_front_fit(errors=all_errors, samples=list(uset.orientations.keys()))
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
     opt = instantiate_optimizer(in_opt, uset)
@@ -204,6 +205,76 @@ def plot_single():
         plt.close(fig0)
 
     if __debug__: print('# stop plotting single\n')
+
+
+def get_rotation_ccw(degrees):
+    """Takes data, rotates ccw"""
+    radians = degrees/180.0*np.pi
+    rot = np.array(
+        [[np.cos(radians), np.sin(radians)],
+        [-np.sin(radians), np.cos(radians)]]
+    )
+    return rot
+
+
+def plot_error_front_fit(errors, samples):
+    num_samples = np.shape(errors)[1] - 1
+    if num_samples < 2:
+        # print("skipping multi-error plot")
+        return
+    else:
+        print("error front fits")
+
+    size = 2  # size in inches of each suplot here
+    fig, ax = plt.subplots(
+        nrows=num_samples-1, 
+        ncols=num_samples-1, 
+        squeeze=False, 
+        figsize= (1.6*size,size) if num_samples == 2 else (size*(num_samples-1), size*(num_samples-1)),
+        layout= 'constrained',
+    )
+
+    ind_min_error = np.argmin(errors[:,-1])
+    rotation = get_rotation_ccw(degrees=45)
+    for i in range(0, num_samples-1):  # i horizontal going right
+        for j in range(0, num_samples-1):  # j vertical going down
+            _ax = ax[j,i]
+            if i > j:
+                _ax.axis('off')
+            else:
+                xerror = errors[:,i]
+                yerror = errors[:,j+1]
+                error_coords = np.stack((xerror,yerror), axis=1)
+                # error_coords = np.asarray([np.array([xerr, yerr]) for xerr, yerr in zip(xerror, yerror)])
+                rotated_errors = error_coords @ rotation
+                # rotated_errors = np.asarray([error_coord.T @ rotation for error_coord in error_coords])
+                #TODO: take fraction closest to origin (with backstop count minimum) of above errors
+
+                _ax.plot(rotated_errors[:,0], rotated_errors[:,1], 'o', color="black", markerfacecolor="none")
+                _ax.set_xlabel("Equal Tradeoff Axis")
+                _ax.set_ylabel("Increasing Pairwise Error")
+
+                #TODO: plot 45 degree grey lines as previous axes
+                prev_x = np.linspace(0, _ax.get_xbound()[1], 200)
+                prev_y = np.linspace(0, _ax.get_ybound()[1], 200)
+
+                xpositive = np.linspace(0,max(rotated_errors[:,0]), 200)
+                xnegative = np.linspace(0,min(rotated_errors[:,0]), 200)
+                _ax.plot(xpositive, (lambda x: x)(xpositive), color="grey")
+                _ax.plot(xnegative, (lambda x: -x)(xnegative), color="grey")
+
+                if i > 0:
+                    _ax.set_yticklabels([])
+                    _ax.set_ylabel("")
+                if j < num_samples - 2:
+                    _ax.set_xticklabels([])
+                    _ax.set_xlabel("")
+
+                # global min:
+                # _ax.plot(errors[ind_min_error,i], errors[ind_min_error,j+1], "*", color="red", markersize=12)
+
+    fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=400)
+    plt.close(fig)
 
 
 def plot_error_front(errors, samples):
