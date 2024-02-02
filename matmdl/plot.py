@@ -143,8 +143,8 @@ def main():
     plt.close()
     #-----------------------------------------------------------------------------------------------
     all_errors = np.loadtxt(os.path.join(os.getcwd(), 'out_errors.txt'), skiprows=1, delimiter=',')
-    plot_error_front(errors=all_errors, samples=list(uset.orientations.keys()))
-    plot_error_front_fit(errors=all_errors, samples=list(uset.orientations.keys()))
+    plot_error_front(errors=all_errors, samples=in_opt.orients)
+    plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
     opt = instantiate_optimizer(in_opt, uset)
@@ -264,7 +264,7 @@ def plot_error_front_fit(errors, samples):
                 _ax.plot(xotherdata, yotherdata, "o", color="black", markerfacecolor="none")
                 _ax.plot(xfitdata, yfitdata, 'o', color="blue", markerfacecolor="none")
                 _ax.set_xlabel(f"{samples[i]}")  # equal contour axis
-                _ax.set_ylabel(f"{samples[j]}")  # total error axis
+                _ax.set_ylabel(f"{samples[j+1]}")  # total error axis
 
                 # plot previous axes
                 #TODO buggy for odd shaped data, see new_all dir
@@ -334,7 +334,7 @@ def plot_error_front(errors, samples):
             else:
                 _ax.scatter(errors[:,i], errors[:,j+1], c=errors[:,-1], cmap='viridis')
                 _ax.set_xlabel(f"{samples[i]} Error")
-                _ax.set_ylabel(f"{samples[j]} Error")
+                _ax.set_ylabel(f"{samples[j+1]} Error")
 
                 if i > 0:
                     _ax.set_yticklabels([])
