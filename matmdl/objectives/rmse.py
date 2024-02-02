@@ -126,7 +126,8 @@ def _slope_diff(x, curve1, curve2):
     Returns:
         error: summed percent differences in slopes
     """
-    window_width = 3
+    window_width = 15
+    # x has 1k points, exp usually has 200 and window of 3 works ok, so use 15
     dcurve1 = ddx_rolling(curve1, x, window_width)
     dcurve2 = ddx_rolling(curve2, x, window_width)
     slope_diffs = dcurve1 - dcurve2
