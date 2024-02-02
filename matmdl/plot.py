@@ -249,20 +249,34 @@ def plot_error_front_fit(errors, samples):
                 yerror = errors[:,j+1]
                 error_coords = np.stack((xerror,yerror), axis=1)
                 #TODO: take fraction closest to origin (with backstop count minimum) of above errors
+
+                # go to polar coords, loop thru theta 0->pi/2 looking for closest r in sector
+                # maybe add fuzz of 5% around those border points?
+                polars = np.asarray([(np.sqrt(x**2 + y**2), np.arctan(y/x)) for x, y in zip(xerror, yerror)])
+                sector_limits = np.linspace(0, np.pi/2., 30)
+                boundary_r = []
+                boundary_t = []
+                for angle_region in [(lower, upper) for lower, upper in zip(sector_limits[:-1], sector_limits[1:])]:
+                    # import pdb; pdb.set_trace()
+                    sector_points = [pt for pt in polars if angle_region[0] < pt[1] < angle_region[1]]
+                    try:
+                        tmp_min = sector_points[0]
+                    except IndexError:
+                        continue
+                    for pt in sector_points:
+                        if pt[0] < tmp_min[0]:
+                            tmp_min = pt
+                    boundary_r.append(tmp_min[0])
+                    boundary_t.append(tmp_min[1])
+                # put boundary elements back to error coords
+                boundary = np.asarray([(r*np.cos(t), r*np.sin(t)) for r, t in zip(boundary_r, boundary_t)])
+                print(f"DBG: number in boundary {np.shape(boundary)[0]}")
+
                 rotated_errors = error_coords @ rotation
+                rotated_boundary = boundary @ rotation
 
-                # only use closest fraction of distances for fitting
-                #TODO maybe use closest fixed number? or other algorithm to get edge of grouping
-                distances = np.sqrt(rotated_errors[:,0]**2 + rotated_errors[:,1]**2)
-                cutoff = np.quantile(distances, 0.25)
-                xfitdata = rotated_errors[:,0][distances<cutoff]
-                yfitdata = rotated_errors[:,1][distances<cutoff]
-                xotherdata = rotated_errors[:,0][distances>=cutoff]
-                yotherdata = rotated_errors[:,1][distances>=cutoff]
-
-                # _ax.plot(rotated_errors[:,0], rotated_errors[:,1], 'o', color="black", markerfacecolor="none")
-                _ax.plot(xotherdata, yotherdata, "o", color="black", markerfacecolor="none")
-                _ax.plot(xfitdata, yfitdata, 'o', color="blue", markerfacecolor="none")
+                _ax.plot(rotated_errors[:,0], rotated_errors[:,1], 'o', color="black", markerfacecolor="none")
+                _ax.plot(rotated_boundary[:,0], rotated_boundary[:,1], 'o', color="blue", markerfacecolor="none")
                 _ax.set_xlabel(f"{samples[i]}")  # equal contour axis
                 _ax.set_ylabel(f"{samples[j+1]}")  # total error axis
 
@@ -277,13 +291,13 @@ def plot_error_front_fit(errors, samples):
                 _ax.plot(xnegative, (lambda x: -x)(xnegative), color="grey")
 
                 # fit with parabola
-                xfitrange = np.linspace(min(xfitdata), max(xfitdata), 200)
+                xfitrange = np.linspace(min(rotated_errors[:,0]), max(rotated_errors[:,0]), 200)
                 def f(x,b,h,k):
                     return b*(x-h)**2 + k
                 popt, _ = curve_fit(
                     f, 
-                    xfitdata, 
-                    yfitdata, 
+                    rotated_boundary[:,0], 
+                    rotated_boundary[:,1], 
                     p0=(0,10,100), 
                     bounds=((-10,-100,-500), (10,100,500)),
                 )
@@ -347,7 +361,6 @@ def plot_error_front(errors, samples):
                 _ax.plot(errors[ind_min_error,i], errors[ind_min_error,j+1], "*", color="red", markersize=12)
 
 
-    # print("DBG:errors: min, max: ", min(errors[:,-1]), max(errors[:,-1]),)
     fig.colorbar(
         matplotlib.cm.ScalarMappable(
             norm=matplotlib.colors.Normalize(
