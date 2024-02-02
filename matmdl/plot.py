@@ -24,6 +24,9 @@ matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
 from scipy.optimize import curve_fit
 
+# use local path for plots
+with uset.unlock():
+    uset.main_path = os.getcwd()
 
 @Checkout("out", local=True)
 def main():
