@@ -22,6 +22,7 @@ from matmdl.parallel import Checkout
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
+from scipy.optimize import curve_fit
 
 
 @Checkout("out", local=True)
@@ -230,10 +231,9 @@ def plot_error_front_fit(errors, samples):
         nrows=num_samples-1, 
         ncols=num_samples-1, 
         squeeze=False, 
-        figsize= (1.6*size,size) if num_samples == 2 else (size*(num_samples-1), size*(num_samples-1)),
+        figsize=(size*(num_samples-1), size*(num_samples-1)),
         layout= 'constrained',
     )
-
     ind_min_error = np.argmin(errors[:,-1])
     rotation = get_rotation_ccw(degrees=45)
     for i in range(0, num_samples-1):  # i horizontal going right
@@ -245,23 +245,48 @@ def plot_error_front_fit(errors, samples):
                 xerror = errors[:,i]
                 yerror = errors[:,j+1]
                 error_coords = np.stack((xerror,yerror), axis=1)
-                # error_coords = np.asarray([np.array([xerr, yerr]) for xerr, yerr in zip(xerror, yerror)])
-                rotated_errors = error_coords @ rotation
-                # rotated_errors = np.asarray([error_coord.T @ rotation for error_coord in error_coords])
                 #TODO: take fraction closest to origin (with backstop count minimum) of above errors
+                rotated_errors = error_coords @ rotation
 
-                _ax.plot(rotated_errors[:,0], rotated_errors[:,1], 'o', color="black", markerfacecolor="none")
-                _ax.set_xlabel("Equal Tradeoff Axis")
-                _ax.set_ylabel("Increasing Pairwise Error")
+                # only use closest fraction of distances for fitting
+                #TODO maybe use closest fixed number? or other algorithm to get edge of grouping
+                distances = np.sqrt(rotated_errors[:,0]**2 + rotated_errors[:,1]**2)
+                cutoff = np.quantile(distances, 0.25)
+                xfitdata = rotated_errors[:,0][distances<cutoff]
+                yfitdata = rotated_errors[:,1][distances<cutoff]
+                xotherdata = rotated_errors[:,0][distances>=cutoff]
+                yotherdata = rotated_errors[:,1][distances>=cutoff]
 
-                #TODO: plot 45 degree grey lines as previous axes
-                prev_x = np.linspace(0, _ax.get_xbound()[1], 200)
-                prev_y = np.linspace(0, _ax.get_ybound()[1], 200)
+                # _ax.plot(rotated_errors[:,0], rotated_errors[:,1], 'o', color="black", markerfacecolor="none")
+                _ax.plot(xotherdata, yotherdata, "o", color="black", markerfacecolor="none")
+                _ax.plot(xfitdata, yfitdata, 'o', color="blue", markerfacecolor="none")
+                _ax.set_xlabel(f"{samples[i]}")  # equal contour axis
+                _ax.set_ylabel(f"{samples[j]}")  # total error axis
 
+                # plot previous axes
+                #TODO buggy for odd shaped data, see new_all dir
+                _ax.set_aspect("equal")
+                xbound = max(np.abs(rotated_errors[:,0]))
+                _ax.set_xlim((-1*xbound, xbound))
                 xpositive = np.linspace(0,max(rotated_errors[:,0]), 200)
                 xnegative = np.linspace(0,min(rotated_errors[:,0]), 200)
                 _ax.plot(xpositive, (lambda x: x)(xpositive), color="grey")
                 _ax.plot(xnegative, (lambda x: -x)(xnegative), color="grey")
+
+                # fit with parabola
+                xfitrange = np.linspace(min(xfitdata), max(xfitdata), 200)
+                def f(x,b,h,k):
+                    return b*(x-h)**2 + k
+                popt, _ = curve_fit(
+                    f, 
+                    xfitdata, 
+                    yfitdata, 
+                    p0=(0,10,100), 
+                    bounds=((-10,-100,-500), (10,100,500)),
+                )
+                print(f"curvature {samples[i]}-{samples[j]}: {popt[0]}")
+                opt_curve = f(xfitrange, *popt)
+                _ax.plot(xfitrange, opt_curve, ":", color="red", label="fit")
 
                 if i > 0:
                     _ax.set_yticklabels([])
@@ -269,9 +294,6 @@ def plot_error_front_fit(errors, samples):
                 if j < num_samples - 2:
                     _ax.set_xticklabels([])
                     _ax.set_xlabel("")
-
-                # global min:
-                # _ax.plot(errors[ind_min_error,i], errors[ind_min_error,j+1], "*", color="red", markersize=12)
 
     fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=400)
     plt.close(fig)
