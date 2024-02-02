@@ -61,31 +61,22 @@ def calc_error(
     # interpolate points in both curves
     num_error_eval_pts = 1000
     x_error_eval_pts = np.linspace(begin_strain, cutoff_strain, num = num_error_eval_pts)
-    smoothedSS = interp1d(simSS[:,0], simSS[:,1])
+    interpSim = interp1d(simSS[:,0], simSS[:,1])
     if not uset.i_powerlaw:
-        smoothedExp = interp1d(expSS[:,0], expSS[:,1])
-        # fineSS = smoothedExp(x_error_eval_pts)
-        def fineSS(x):
-            return smoothedExp(x)
+        interpExp = interp1d(expSS[:,0], expSS[:,1])
     else:
         popt = fit_powerlaw(expSS[:,0], expSS[:,1])
-        # fineSS = powerlaw(x_error_eval_pts, *popt)
-        def fineSS(x):
+        def interpExp(x):
             return powerlaw(x, *popt)
 
     # strictly limit to interpolation
     while x_error_eval_pts[-1] >= expSS[-1,0]:
-        # fineSS = np.delete(fineSS, -1)
         x_error_eval_pts = np.delete(x_error_eval_pts, -1)
 
     # error function
-    stress_error = _stress_diff(x_error_eval_pts, smoothedSS, fineSS)
-    slope_error = _slope_diff(x_error_eval_pts, smoothedSS, fineSS)
-    if hasattr(uset, "slope_weight"):
-        w = uset.slope_weight
-    else:
-        w = 0.4
-        print(f"warning, using default slope weight of {w}")
+    stress_error = _stress_diff(x_error_eval_pts, interpSim, interpExp)
+    slope_error = _slope_diff(x_error_eval_pts, interpSim, interpExp)
+    w = uset.slope_weight
     error = (1-w)*stress_error + w*slope_error
     return error
 
