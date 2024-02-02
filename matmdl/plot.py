@@ -322,10 +322,12 @@ def plot_error_front_fit(errors, samples):
                 if j < num_samples - 2:
                     _ax.set_xlabel("")
 
-    print("Cumulative pairwise error curvatures:")
-    for sample in samples:
-        print(f"    {sample}: {curvatures[sample]}", flush=True)
-    fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=400)
+    with open('out_best_params.txt', 'a+') as f:
+        f.write("Cumulative pairwise error curvatures:\n")
+        for sample in samples:
+            f.write(f"    {sample}: {curvatures[sample]}\n")
+        f.write(f"Mean pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n")
+    fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=600)
     plt.close(fig)
 
 
