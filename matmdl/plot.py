@@ -229,16 +229,18 @@ def plot_error_front_fit(errors, samples):
     else:
         print("error front fits")
 
-    size = 2  # size in inches of each suplot here
+    xsize = 3.2
+    ysize = 2
     fig, ax = plt.subplots(
         nrows=num_samples-1, 
         ncols=num_samples-1, 
         squeeze=False, 
-        figsize=(size*(num_samples-1), size*(num_samples-1)),
+        figsize=(xsize*(num_samples-1), ysize*(num_samples-1)),
         layout= 'constrained',
     )
     ind_min_error = np.argmin(errors[:,-1])
     rotation = get_rotation_ccw(degrees=45)
+    curvatures = {sample:0.0 for sample in samples}
     for i in range(0, num_samples-1):  # i horizontal going right
         for j in range(0, num_samples-1):  # j vertical going down
             _ax = ax[j,i]
@@ -251,13 +253,12 @@ def plot_error_front_fit(errors, samples):
                 #TODO: take fraction closest to origin (with backstop count minimum) of above errors
 
                 # go to polar coords, loop thru theta 0->pi/2 looking for closest r in sector
-                # maybe add fuzz of 5% around those border points?
                 polars = np.asarray([(np.sqrt(x**2 + y**2), np.arctan(y/x)) for x, y in zip(xerror, yerror)])
+                num_sectors = 500  # important to tweak!
                 sector_limits = np.linspace(0, np.pi/2., 30)
                 boundary_r = []
                 boundary_t = []
                 for angle_region in [(lower, upper) for lower, upper in zip(sector_limits[:-1], sector_limits[1:])]:
-                    # import pdb; pdb.set_trace()
                     sector_points = [pt for pt in polars if angle_region[0] < pt[1] < angle_region[1]]
                     try:
                         tmp_min = sector_points[0]
@@ -270,40 +271,54 @@ def plot_error_front_fit(errors, samples):
                     boundary_t.append(tmp_min[1])
                 # put boundary elements back to error coords
                 boundary = np.asarray([(r*np.cos(t), r*np.sin(t)) for r, t in zip(boundary_r, boundary_t)])
-                print(f"DBG: number in boundary {np.shape(boundary)[0]}")
+                # print(f"DBG: number in boundary {np.shape(boundary)[0]}")
 
+                # rotate data:
                 rotated_errors = error_coords @ rotation
                 rotated_boundary = boundary @ rotation
 
+                # remove furthest portion of boundary data if there's enough data:
+                if np.shape(rotated_boundary)[0] > 10:
+                    distances = np.sqrt(rotated_boundary[:,0]**2 + rotated_boundary[:,1]**2)
+                    cutoff = np.quantile(distances, 0.90)  # keeps 90%
+                    xfitdata = rotated_boundary[:,0][distances<cutoff]
+                    yfitdata = rotated_boundary[:,1][distances<cutoff]
+                else:
+                    xfitdata = rotated_boundary[:,0]
+                    yfitdata = rotated_boundary[:,1]
+
                 _ax.plot(rotated_errors[:,0], rotated_errors[:,1], 'o', color="black", markerfacecolor="none")
-                _ax.plot(rotated_boundary[:,0], rotated_boundary[:,1], 'o', color="blue", markerfacecolor="none")
+                _ax.plot(xfitdata, yfitdata, 'o', color="blue", markerfacecolor="none")
                 _ax.set_xlabel(f"{samples[i]}")  # equal contour axis
                 _ax.set_ylabel(f"{samples[j+1]}")  # total error axis
 
                 # plot previous axes
                 #TODO buggy for odd shaped data, see new_all dir
+                _ax.set_ybound(lower=0)
                 _ax.set_aspect("equal")
-                xbound = max(np.abs(rotated_errors[:,0]))
+                xbound = max(max(np.abs(rotated_errors[:,0])), _ax.get_ybound()[1])
                 _ax.set_xlim((-1*xbound, xbound))
-                xpositive = np.linspace(0,max(rotated_errors[:,0]), 200)
-                xnegative = np.linspace(0,min(rotated_errors[:,0]), 200)
+                xpositive = np.linspace(0,xbound, 200)
+                xnegative = np.linspace(0,-xbound, 200)
                 _ax.plot(xpositive, (lambda x: x)(xpositive), color="grey")
                 _ax.plot(xnegative, (lambda x: -x)(xnegative), color="grey")
 
                 # fit with parabola
-                xfitrange = np.linspace(min(rotated_errors[:,0]), max(rotated_errors[:,0]), 200)
+                xfitrange = np.linspace(min(xfitdata), max(xfitdata), 200)
                 def f(x,b,h,k):
                     return b*(x-h)**2 + k
                 popt, _ = curve_fit(
                     f, 
-                    rotated_boundary[:,0], 
-                    rotated_boundary[:,1], 
+                    xfitdata, 
+                    yfitdata, 
                     p0=(0,10,100), 
                     bounds=((-10,-100,-500), (10,100,500)),
                 )
-                print(f"curvature {samples[i]}-{samples[j]}: {popt[0]}")
+                # print(f"curvature {samples[i]}-{samples[j]}: {popt[0]}")
                 opt_curve = f(xfitrange, *popt)
                 _ax.plot(xfitrange, opt_curve, ":", color="red", label="fit")
+                curvatures[samples[i]] = curvatures[samples[i]] + popt[0]
+                curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
 
                 if i > 0:
                     _ax.set_yticklabels([])
@@ -312,6 +327,9 @@ def plot_error_front_fit(errors, samples):
                     _ax.set_xticklabels([])
                     _ax.set_xlabel("")
 
+    print("Cumulative pairwise error curvatures:")
+    for sample in samples:
+        print(f"    {sample}: {curvatures[sample]}", flush=True)
     fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=400)
     plt.close(fig)
 
