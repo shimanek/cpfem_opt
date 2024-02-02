@@ -293,15 +293,12 @@ def plot_error_front_fit(errors, samples):
                 _ax.set_ylabel(f"{samples[j+1]}")  # total error axis
 
                 # plot previous axes
-                #TODO buggy for odd shaped data, see new_all dir
                 _ax.set_ybound(lower=0)
-                _ax.set_aspect("equal")
-                xbound = max(max(np.abs(rotated_errors[:,0])), _ax.get_ybound()[1])
-                _ax.set_xlim((-1*xbound, xbound))
-                xpositive = np.linspace(0,xbound, 200)
-                xnegative = np.linspace(0,-xbound, 200)
-                _ax.plot(xpositive, (lambda x: x)(xpositive), color="grey")
-                _ax.plot(xnegative, (lambda x: -x)(xnegative), color="grey")
+                xbound = max(np.abs(rotated_errors[:,0]))
+                _ax.set_xlim(min(rotated_errors[:,0]), max(rotated_errors[:,0]))
+                x_lo, x_hi = _ax.get_xbound()
+                x_lines = np.linspace(x_lo, x_hi, 200)
+                _ax.plot(x_lines, (lambda x: np.abs(x))(x_lines), color="grey")
 
                 # fit with parabola
                 xfitrange = np.linspace(min(xfitdata), max(xfitdata), 200)
@@ -321,10 +318,8 @@ def plot_error_front_fit(errors, samples):
                 curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
 
                 if i > 0:
-                    _ax.set_yticklabels([])
                     _ax.set_ylabel("")
                 if j < num_samples - 2:
-                    _ax.set_xticklabels([])
                     _ax.set_xlabel("")
 
     print("Cumulative pairwise error curvatures:")
