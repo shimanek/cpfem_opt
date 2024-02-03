@@ -254,8 +254,9 @@ def plot_error_front_fit(errors, samples):
 
                 # go to polar coords, loop thru theta 0->pi/2 looking for closest r in sector
                 polars = np.asarray([(np.sqrt(x**2 + y**2), np.arctan(y/x)) for x, y in zip(xerror, yerror)])
-                num_sectors = 500  # important to tweak!
-                sector_limits = np.linspace(0, np.pi/2., 30)
+                num_sectors = 40  # important to tweak!
+                #TODO maybe wider sectors but use closest few points. Need more points to define boundary reliably.
+                sector_limits = np.linspace(0, np.pi/2., num_sectors)
                 boundary_r = []
                 boundary_t = []
                 for angle_region in [(lower, upper) for lower, upper in zip(sector_limits[:-1], sector_limits[1:])]:
@@ -294,7 +295,6 @@ def plot_error_front_fit(errors, samples):
 
                 # plot previous axes
                 _ax.set_ybound(lower=0)
-                xbound = max(np.abs(rotated_errors[:,0]))
                 _ax.set_xlim(min(rotated_errors[:,0]), max(rotated_errors[:,0]))
                 x_lo, x_hi = _ax.get_xbound()
                 x_lines = np.linspace(x_lo, x_hi, 200)
