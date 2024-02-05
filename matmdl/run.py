@@ -63,7 +63,7 @@ def loop(opt, loop_len):
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                 shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
 
-                with state.time_run():
+                with state.TimeRun():
                     job_run()
                 if not check_complete(): # try decreasing max increment size
                     refine_run()
@@ -105,7 +105,7 @@ def loop(opt, loop_len):
                 write_params_to_file(next_params, in_opt.params)
 
             # update optimizer outside of Checkout context to lower time using output files:
-            with state("training"):
+            with state.TimeTell():
                 opt.tell(update_params, update_errors)
 
 
