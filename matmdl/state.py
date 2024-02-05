@@ -18,19 +18,21 @@ class State:
     def update_read(self):
         self.last_updated = time.time_ns()
 
-    class TimeRun:
-        def __enter__(self):
-            self.tic = time.time()
+    def TimeRun(self):
+        class TimeRun:
+            def __enter__(self):
+                self.tic = time.time()
+            def __exit__(self, exc_type, exc_value, exc_tb):
+                self.run_time = time.time() - self.tic
+        return TimeRun
 
-        def __exit__(self, exc_type, exc_value, exc_tb):
-            self.run_time = time.time() - self.tic
-
-    class TimeTell:
-        def __enter__(self):
-            self.tic = time.time()
-
-        def __exit__(self, exc_type, exc_value, exc_tb):
-            self.tell_time = time.time() - self.tic
+    def TimeTell(self):
+        class TimeTell:
+            def __enter__(self):
+                self.tic = time.time()
+            def __exit__(self, exc_type, exc_value, exc_tb):
+                self.tell_time = time.time() - self.tic
+        return TimeTell
 
 
 state = State()
