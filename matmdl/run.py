@@ -18,6 +18,7 @@ from matmdl.objectives import calc_error
 from matmdl.writer import write_error_to_file, combine_SS, write_params_to_file
 from matmdl.parser import uset
 from matmdl.parallel import check_parallel, Checkout, update_parallel
+from matmdl.state import state
 
 
 def main():
@@ -62,7 +63,8 @@ def loop(opt, loop_len):
                     shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
                 shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
 
-                job_run()
+                with state.time_run():
+                    job_run()
                 if not check_complete(): # try decreasing max increment size
                     refine_run()
                 if not check_complete(): # if it still fails, tell optimizer a large error, continue
@@ -103,7 +105,8 @@ def loop(opt, loop_len):
                 write_params_to_file(next_params, in_opt.params)
 
             # update optimizer outside of Checkout context to lower time using output files:
-            opt.tell(update_params, update_errors)
+            with state("training"):
+                opt.tell(update_params, update_errors)
 
 
     get_first(opt, in_opt)
