@@ -120,7 +120,7 @@ def copy_files():
 	
 	# exact filenames
 	flist = ["input.toml", uset.umat, uset.param_file, uset.jobname+".inp"]
-	for orient in uset.orientations.keys():
+	for orient in uset.orientations.keys():  # no need for ordering here
 		flist.append(uset.orientations[orient]["exp"])
 		try:
 			flist.append(uset.orientations[orient]["inp"])

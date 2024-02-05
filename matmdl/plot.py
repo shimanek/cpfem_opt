@@ -22,6 +22,7 @@ from matmdl.parallel import Checkout
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
+from scipy.optimize import curve_fit
 
 # use local path for plots
 with uset.unlock():
@@ -29,10 +30,10 @@ with uset.unlock():
 
 @Checkout("out", local=True)
 def main():
-    orients = uset.orientations.keys()
     if __debug__: print('\n# start plotting')
     global in_opt
     in_opt = InOpt(uset.orientations, uset.params)
+    orients = in_opt.orients
     fig0, ax0 = plt.subplots()
     labels0 = []
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -142,9 +143,11 @@ def main():
     plt.close()
     #-----------------------------------------------------------------------------------------------
     all_errors = np.loadtxt(os.path.join(os.getcwd(), 'out_errors.txt'), skiprows=1, delimiter=',')
-    plot_error_front(errors=all_errors, samples=list(uset.orientations.keys()))
+    plot_error_front(errors=all_errors, samples=in_opt.orients)
+    plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
+    print("retraining surrogate model")
     opt = instantiate_optimizer(in_opt, uset)
     opt = load_opt(opt, search_local=True)
     # plot parameter distribution
@@ -164,9 +167,10 @@ def main():
 def plot_single():
     if __debug__: print('\n# start plotting single')
     fig0, ax0 = plt.subplots()
+    in_opt = InOpt(uset.orientations, uset.params)
+    orients = in_opt.orients
     labels0 = []
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    orients = uset.orientations.keys()
     for ct_orient, orient in enumerate(orients):
         fig, ax = plt.subplots()
         if __debug__: print(f'plotting {orient}')
@@ -209,6 +213,111 @@ def plot_single():
     if __debug__: print('# stop plotting single\n')
 
 
+def get_rotation_ccw(degrees):
+    """Takes data, rotates ccw"""
+    radians = degrees/180.0*np.pi
+    rot = np.array(
+        [[np.cos(radians), np.sin(radians)],
+        [-np.sin(radians), np.cos(radians)]]
+    )
+    return rot
+
+
+def plot_error_front_fit(errors, samples):
+    num_samples = np.shape(errors)[1] - 1
+    if num_samples < 2:
+        # print("skipping multi-error plot")
+        return
+    else:
+        print("error front fits")
+
+    xsize = 2.5
+    ysize = 2
+    fig, ax = plt.subplots(
+        nrows=num_samples-1, 
+        ncols=num_samples-1, 
+        squeeze=False, 
+        figsize=(xsize*(num_samples-1), ysize*(num_samples-1)),
+        layout= 'constrained',
+    )
+    rotation = get_rotation_ccw(degrees=45)
+    curvatures = {sample:0.0 for sample in samples}
+    for i in range(0, num_samples-1):  # i horizontal going right
+        for j in range(0, num_samples-1):  # j vertical going down
+            _ax = ax[j,i]
+            if i > j:
+                _ax.axis('off')
+            else:
+                plt_errors = np.stack((errors[:,i], errors[:,j+1]), axis=1)
+
+                is_boundary = np.full((np.shape(plt_errors)[0]), False, dtype=bool)
+                for k, error in enumerate(plt_errors):
+                    is_boundary[k] = np.invert(
+                        np.any(
+                            np.all(
+                                np.stack(
+                                    (plt_errors[:, 0] < error[0], plt_errors[:, 1] < error[1]), axis=1
+                                ),
+                                axis=1,
+                            ),
+                            axis=0,
+                        )
+                    )
+                boundary_errors = plt_errors[is_boundary,:]
+
+                _ax.plot(boundary_errors[:,0], boundary_errors[:,1], 'o', color="blue", markerfacecolor="none", zorder=2.)
+                # max_boundary_error = max(max(boundary_errors[:,0]), max(boundary_errors[:,1]))
+                max_overall_error = max(max(plt_errors[:,0]), max(plt_errors[:,1]))
+                _ax.set_xlim(left=0, right=max_overall_error)
+                _ax.set_ylim(bottom=0, top=max_overall_error)
+                _ax.plot(plt_errors[:,0], plt_errors[:,1], 'o', color="black", markerfacecolor="none", zorder=1.)
+                _ax.set_xlabel(f"{samples[i]}")
+                _ax.set_ylabel(f"{samples[j+1]}")
+
+                # add equal error line
+                line = np.linspace(0, max_overall_error, 100)
+                _ax.plot(line, line, ":", color="grey", zorder=2.5)
+
+                # fit with parabola in rotated frame
+                fit_data = boundary_errors @ rotation
+                # max point of each error becomes (x,y) pair in rotated frame
+                minmax_rot = np.asarray([
+                    boundary_errors[np.argmax(boundary_errors[:,1])],
+                    boundary_errors[np.argmax(boundary_errors[:,0])]
+                ]) @ rotation
+
+                # only want x bounds in new frame for curve fitting
+                x_rot = np.linspace(minmax_rot[0,0], minmax_rot[1,0], 200)
+
+                def f(x,b,h,k):
+                    return b*(x - h)**2 + k
+                popt, _ = curve_fit(
+                    f, 
+                    fit_data[:,0], 
+                    fit_data[:,1], 
+                    p0=(0,10,100), 
+                    bounds=((-10,-100,-500), (10,100,500)),
+                )
+                y_rot = f(x_rot, *popt)
+                curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
+                _ax.plot(curve_reg[:,0], curve_reg[:,1], "--", color="red", label="fit", zorder=3.)
+                curvatures[samples[i]] = curvatures[samples[i]] + popt[0]
+                curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
+
+                if i > 0:
+                    _ax.set_ylabel("")
+                if j < num_samples - 2:
+                    _ax.set_xlabel("")
+
+    with open('out_best_params.txt', 'a+') as f:
+        f.write("Cumulative pairwise error curvatures:\n")
+        for sample in samples:
+            f.write(f"    {sample}: {curvatures[sample]}\n")
+        f.write(f"Mean pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n")
+    fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=600)
+    plt.close(fig)
+
+
 def plot_error_front(errors, samples):
     """plot Pareto frontiers of error from each pair of samples
 
@@ -241,7 +350,7 @@ def plot_error_front(errors, samples):
             else:
                 _ax.scatter(errors[:,i], errors[:,j+1], c=errors[:,-1], cmap='viridis')
                 _ax.set_xlabel(f"{samples[i]} Error")
-                _ax.set_ylabel(f"{samples[j]} Error")
+                _ax.set_ylabel(f"{samples[j+1]} Error")
 
                 if i > 0:
                     _ax.set_yticklabels([])
@@ -254,7 +363,6 @@ def plot_error_front(errors, samples):
                 _ax.plot(errors[ind_min_error,i], errors[ind_min_error,j+1], "*", color="red", markersize=12)
 
 
-    # print("DBG:errors: min, max: ", min(errors[:,-1]), max(errors[:,-1]),)
     fig.colorbar(
         matplotlib.cm.ScalarMappable(
             norm=matplotlib.colors.Normalize(

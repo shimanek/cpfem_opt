@@ -39,7 +39,7 @@ def check_single():
             raise TypeError(f"Expected prescribed parameters for single run; found parameter bounds for {param_name}")
     
     load_subroutine()
-    for orient in uset.orientations.keys():
+    for orient in in_opt.orients:
         print(f"DBG: starting orient {orient}")
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)

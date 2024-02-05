@@ -53,7 +53,7 @@ def loop(opt, loop_len):
             next_params = get_next_param_set(opt, in_opt)
             write_input_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
         else:
-            for orient in uset.orientations.keys():
+            for orient in in_opt.orients:
                 # TODO: below block group and replace
                 if in_opt.has_orient_opt[orient]:
                     orient_components = get_orient_info(next_params, orient, in_opt)
@@ -90,7 +90,7 @@ def loop(opt, loop_len):
 
                 # this instance:
                 errors = []
-                for orient in uset.orientations.keys():
+                for orient in in_opt.orients:
                     errors.append(calc_error(exp_data.data[orient]['raw'], orient))
                     combine_SS(zeros=False, orientation=orient)  # save stress-strain data
 
