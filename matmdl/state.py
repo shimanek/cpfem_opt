@@ -20,18 +20,18 @@ class State:
 
     def TimeRun(self):
         class TimeRun:
-            def __enter__(self):
-                self.tic = time.time()
-            def __exit__(self, exc_type, exc_value, exc_tb):
-                self.run_time = time.time() - self.tic
+            def __enter__(innerself):
+                innerself.tic = time.time()
+            def __exit__(innerself, exc_type, exc_value, exc_tb):
+                self.run_time = time.time() - innerself.tic
         return TimeRun
 
     def TimeTell(self):
         class TimeTell:
-            def __enter__(self):
-                self.tic = time.time()
-            def __exit__(self, exc_type, exc_value, exc_tb):
-                self.tell_time = time.time() - self.tic
+            def __enter__(innerself):
+                innerself.tic = time.time()
+            def __exit__(innerself, exc_type, exc_value, exc_tb):
+                self.tell_time = time.time() - innerself.tic
         return TimeTell
 
 
