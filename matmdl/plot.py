@@ -30,10 +30,10 @@ with uset.unlock():
 
 @Checkout("out", local=True)
 def main():
-    orients = uset.orientations.keys()
     if __debug__: print('\n# start plotting')
     global in_opt
     in_opt = InOpt(uset.orientations, uset.params)
+    orients = in_opt.orients
     fig0, ax0 = plt.subplots()
     labels0 = []
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -167,9 +167,10 @@ def main():
 def plot_single():
     if __debug__: print('\n# start plotting single')
     fig0, ax0 = plt.subplots()
+    in_opt = InOpt(uset.orientations, uset.params)
+    orients = in_opt.orients
     labels0 = []
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    orients = uset.orientations.keys()
     for ct_orient, orient in enumerate(orients):
         fig, ax = plt.subplots()
         if __debug__: print(f'plotting {orient}')
