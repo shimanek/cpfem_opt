@@ -10,6 +10,8 @@ from shutil import copy
 import random
 import os
 import time
+import signal
+import sys
 
 
 def check_parallel():
@@ -192,6 +194,10 @@ class Checkout:
 		if time.time() - self.start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
 
+		signal.signal(signal.SIGTERM, self._handle_sig)
+		signal.signal(signal.SIGABRT, self._handle_sig)
+		signal.signal(signal.SIGINT, self._handle_sig)
+
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		if False:  # debugging
 			with open(self.fpath + ".lck", "r") as f:
@@ -208,3 +214,6 @@ class Checkout:
 			with self:
 				return fn()
 		return decorator
+
+	def _handle_sig(self, signum, frame):
+		sys.exit(0)
