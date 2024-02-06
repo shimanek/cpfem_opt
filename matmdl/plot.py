@@ -455,7 +455,8 @@ def name_to_sym(name, cap_sense=False):
         'qA1':r'$q_{A1}$',
         'qB1':r'$q_{B1}$',
         'qA2':r'$q_{A2}$',
-        'qB2':r'$q_{B2}$'
+        'qB2':r'$q_{B2}$',
+        'g0exp':r'log($\gamma_0$)',
         }
     if cap_sense is True:
         have_key = name in name_to_sym_dict.keys()
