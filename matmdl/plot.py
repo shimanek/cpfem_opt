@@ -278,6 +278,11 @@ def plot_error_front_fit(errors, samples):
                 line = np.linspace(0, max_overall_error, 100)
                 _ax.plot(line, line, ":", color="grey", zorder=2.5)
 
+                # check if sufficient points in front
+                if np.shape(boundary_errors)[0] < 3:
+                    print(f"Warning: insufficient front found for samples {samples[i]} and {samples[j+1]}")
+                    continue
+
                 # fit with parabola in rotated frame
                 fit_data = boundary_errors @ rotation
                 # max point of each error becomes (x,y) pair in rotated frame
