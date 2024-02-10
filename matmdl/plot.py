@@ -276,7 +276,6 @@ def plot_error_front_fit(errors, samples):
 
                 # add equal error line
                 line = np.linspace(min_overall_error, max_overall_error, 100)
-                print("DBG2", min_overall_error, max_overall_error)
                 _ax.plot(line, line, ":", color="grey", zorder=2.5)
 
                 # check if sufficient points in front
