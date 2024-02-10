@@ -266,16 +266,17 @@ def plot_error_front_fit(errors, samples):
                 boundary_errors = plt_errors[is_boundary,:]
 
                 _ax.plot(boundary_errors[:,0], boundary_errors[:,1], 'o', color="blue", markerfacecolor="none", zorder=2.)
-                # max_boundary_error = max(max(boundary_errors[:,0]), max(boundary_errors[:,1]))
                 max_overall_error = max(max(plt_errors[:,0]), max(plt_errors[:,1]))
-                _ax.set_xlim(left=0, right=max_overall_error)
-                _ax.set_ylim(bottom=0, top=max_overall_error)
+                min_overall_error = min(min(plt_errors[:,0]), min(plt_errors[:,1]))
+                _ax.set_xlim(left=min_overall_error, right=max_overall_error)
+                _ax.set_ylim(bottom=min_overall_error, top=max_overall_error)
                 _ax.plot(plt_errors[:,0], plt_errors[:,1], 'o', color="black", markerfacecolor="none", zorder=1.)
                 _ax.set_xlabel(f"{samples[i]}")
                 _ax.set_ylabel(f"{samples[j+1]}")
 
                 # add equal error line
-                line = np.linspace(0, max_overall_error, 100)
+                line = np.linspace(min_overall_error, max_overall_error, 100)
+                print("DBG2", min_overall_error, max_overall_error)
                 _ax.plot(line, line, ":", color="grey", zorder=2.5)
 
                 # check if sufficient points in front
@@ -309,7 +310,7 @@ def plot_error_front_fit(errors, samples):
                     _ax.plot(curve_reg[:,0], curve_reg[:,1], "--", color="red", label="fit", zorder=3.)
                     curvatures[samples[i]] = curvatures[samples[i]] + popt[0]
                     curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
-                except RuntimeError as e:
+                except RuntimeError:
                     print(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}")
 
                 if i > 0:
