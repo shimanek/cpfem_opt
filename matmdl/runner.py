@@ -106,9 +106,7 @@ def write_input_params(
         param_values: List of parameter values (or single value) to be written.
             Shares order with ``param_names``.
     """
-    if ((type(param_names) not in (list, tuple)) or (len(param_names) == 1)) and (
-        (type(param_values) not in (list, tuple)) or (len(param_values) == 1)
-    ):
+    if type(param_names) not in (list, tuple) and type(param_values) not in (list, tuple):
         param_names = [param_names]
         param_values = [param_values]
     elif len(param_names) != len(param_values):

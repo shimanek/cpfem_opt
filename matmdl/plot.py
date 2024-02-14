@@ -266,17 +266,22 @@ def plot_error_front_fit(errors, samples):
                 boundary_errors = plt_errors[is_boundary,:]
 
                 _ax.plot(boundary_errors[:,0], boundary_errors[:,1], 'o', color="blue", markerfacecolor="none", zorder=2.)
-                # max_boundary_error = max(max(boundary_errors[:,0]), max(boundary_errors[:,1]))
                 max_overall_error = max(max(plt_errors[:,0]), max(plt_errors[:,1]))
-                _ax.set_xlim(left=0, right=max_overall_error)
-                _ax.set_ylim(bottom=0, top=max_overall_error)
+                min_overall_error = min(min(plt_errors[:,0]), min(plt_errors[:,1]))
+                _ax.set_xlim(left=min_overall_error, right=max_overall_error)
+                _ax.set_ylim(bottom=min_overall_error, top=max_overall_error)
                 _ax.plot(plt_errors[:,0], plt_errors[:,1], 'o', color="black", markerfacecolor="none", zorder=1.)
                 _ax.set_xlabel(f"{samples[i]}")
                 _ax.set_ylabel(f"{samples[j+1]}")
 
                 # add equal error line
-                line = np.linspace(0, max_overall_error, 100)
+                line = np.linspace(min_overall_error, max_overall_error, 100)
                 _ax.plot(line, line, ":", color="grey", zorder=2.5)
+
+                # check if sufficient points in front
+                if np.shape(boundary_errors)[0] < 3:
+                    print(f"Warning: insufficient front found for samples {samples[i]} and {samples[j+1]}")
+                    continue
 
                 # fit with parabola in rotated frame
                 fit_data = boundary_errors @ rotation
@@ -291,18 +296,21 @@ def plot_error_front_fit(errors, samples):
 
                 def f(x,b,h,k):
                     return b*(x - h)**2 + k
-                popt, _ = curve_fit(
-                    f, 
-                    fit_data[:,0], 
-                    fit_data[:,1], 
-                    p0=(0,10,100), 
-                    bounds=((-10,-100,-500), (10,100,500)),
-                )
-                y_rot = f(x_rot, *popt)
-                curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
-                _ax.plot(curve_reg[:,0], curve_reg[:,1], "--", color="red", label="fit", zorder=3.)
-                curvatures[samples[i]] = curvatures[samples[i]] + popt[0]
-                curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
+                try:
+                    popt, _ = curve_fit(
+                        f, 
+                        fit_data[:,0], 
+                        fit_data[:,1], 
+                        p0=(0,10,100), 
+                        bounds=((-10,-100,-500), (10,100,500)),
+                    )
+                    y_rot = f(x_rot, *popt)
+                    curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
+                    _ax.plot(curve_reg[:,0], curve_reg[:,1], "--", color="red", label="fit", zorder=3.)
+                    curvatures[samples[i]] = curvatures[samples[i]] + popt[0]
+                    curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
+                except RuntimeError:
+                    print(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}")
 
                 if i > 0:
                     _ax.set_ylabel("")
@@ -455,7 +463,8 @@ def name_to_sym(name, cap_sense=False):
         'qA1':r'$q_{A1}$',
         'qB1':r'$q_{B1}$',
         'qA2':r'$q_{A2}$',
-        'qB2':r'$q_{B2}$'
+        'qB2':r'$q_{B2}$',
+        'g0exp':r'log($\gamma_0$)',
         }
     if cap_sense is True:
         have_key = name in name_to_sym_dict.keys()
