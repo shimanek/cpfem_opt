@@ -150,6 +150,14 @@ def main():
     print("retraining surrogate model")
     opt = instantiate_optimizer(in_opt, uset)
     opt = load_opt(opt, search_local=True)
+    if opt._n_initial_points > 0:
+        print(f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points...")
+        opt._n_initial_points = 0
+        fake_x = opt.Xi[-1]
+        fake_y = opt.yi[-1]
+        opt.Xi = opt.Xi[:-1]
+        opt.yi = opt.yi[:-1]
+        opt.tell(fake_x, fake_y)
     # plot parameter distribution
     if __debug__: print('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
