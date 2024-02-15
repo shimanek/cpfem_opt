@@ -13,6 +13,7 @@ dependencies = [
 [project.optional-dependencies]
 doc = [
     "mkdocstrings-python",
+	"mkdocs-material",
 ]
 
 [tool.ruff]
