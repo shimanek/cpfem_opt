@@ -2,6 +2,7 @@
 Module for optimization state indicators.
 """
 import time
+import warnings
 
 class State:
 
@@ -31,7 +32,10 @@ class State:
             def __enter__(innerself):
                 innerself.tic = time.time()
             def __exit__(innerself, exc_type, exc_value, exc_tb):
-                self.tell_time = time.time() - innerself.tic
+                new_time_tell = time.time() - innerself.tic
+                if new_time_tell > self.run_time:
+                    warnings.warn(f"Taking longer to tell than to run: {new_time_tell:.1f} vs {self.run_time:.1f} seconds.", RuntimeWarning)
+                self.tell_time = new_time_tell
         return TimeTell
 
 
