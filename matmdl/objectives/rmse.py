@@ -95,8 +95,10 @@ def _stress_diff(x, curve1, curve2):
     ycurve2 = curve2(x)
     stress_error = ycurve1 - ycurve2
 
-    range_curve2 = max(ycurve2) - min(ycurve2)
-    error = np.sqrt(np.sum(stress_error**2) / len(x)) / range_curve2 * 100
+    # norm_factor = max(ycurve2) - min(ycurve2)
+    norm_factor = np.abs(np.mean(stress_error))
+    error = np.sqrt(np.sum(stress_error**2) / len(x)) / norm_factor * 100
+    import pdb; pdb.set_trace()
     return error
 
 
@@ -135,6 +137,8 @@ def _slope_diff(x, curve1, curve2):
     dcurve1 = ddx_rolling(curve1, x, window_width)
     dcurve2 = ddx_rolling(curve2, x, window_width)
     slope_diffs = dcurve1 - dcurve2
-    range_dcurve2 = max(dcurve2) - min(dcurve2)
-    error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / range_dcurve2 * 100
+
+    norm_factor = max(np.abs(dcurve2))
+
+    error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / norm_factor * 100
     return error
