@@ -6,3 +6,4 @@ documentation/site
 **/*.png
 *egg-info
 .notes*
+build/
