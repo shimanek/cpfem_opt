@@ -93,10 +93,10 @@ def _stress_diff(x, curve1, curve2):
     """
     ycurve1 = curve1(x)
     ycurve2 = curve2(x)
-    percent_error = (ycurve1 - ycurve2)
+    stress_error = ycurve1 - ycurve2
 
     range_curve2 = max(ycurve2) - min(ycurve2)
-    error = np.sqrt(np.sum(percent_error**2) / len(x)) / range_curve2 * 100
+    error = np.sqrt(np.sum(stress_error**2) / len(x)) / range_curve2 * 100
     return error
 
 
