@@ -78,7 +78,7 @@ def calc_error(
     slope_error = _slope_diff(x_error_eval_pts, interpSim, interpExp)
     w = uset.slope_weight
     error = (1-w)*stress_error + w*slope_error
-    # print(f"DBG:err: stress, slope, mean: {stress_error}, {slope_error}, {error}")
+    print(f"DBG:err: stress, slope, mean: {stress_error}, {slope_error}, {error}")
     return error
 
 
@@ -95,10 +95,8 @@ def _stress_diff(x, curve1, curve2):
     ycurve2 = curve2(x)
     stress_error = ycurve1 - ycurve2
 
-    # norm_factor = max(ycurve2) - min(ycurve2)
-    norm_factor = np.abs(np.mean(stress_error))
-    error = np.sqrt(np.sum(stress_error**2) / len(x)) / norm_factor * 100
-    import pdb; pdb.set_trace()
+    norm_factor = np.mean(np.abs(ycurve2))
+    error = np.sqrt(np.sum(stress_error**2) / len(stress_error)) / norm_factor * 100
     return error
 
 
@@ -138,7 +136,7 @@ def _slope_diff(x, curve1, curve2):
     dcurve2 = ddx_rolling(curve2, x, window_width)
     slope_diffs = dcurve1 - dcurve2
 
-    norm_factor = max(np.abs(dcurve2))
+    norm_factor = np.mean(np.abs(dcurve2))
 
-    error = np.sqrt(np.sum(slope_diffs**2) / (len(x))) / norm_factor * 100
+    error = np.sqrt(np.sum(slope_diffs**2) / (len(slope_diffs))) / norm_factor * 100
     return error

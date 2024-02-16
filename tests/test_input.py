@@ -23,7 +23,7 @@ class TestError(unittest.TestCase):
 	def diff_test_linear(self, b1, m1, b2, m2, err_stress=None, err_slope=None, tol_stress=None, tol_slope=None):
 		# tolerances are RMSE in respective units
 		from matmdl.objectives.rmse import _stress_diff, _slope_diff
-		x = np.linspace(0.01, 1.0, 1000)
+		x = np.linspace(0.0, 1.0, 100)
 		def curve1(x):
 			return b1 + m1*x
 		def curve2(x):
@@ -52,7 +52,7 @@ class TestError(unittest.TestCase):
 				raise e
 
 	def test_diff(self):
-		self.diff_test_linear(b1=0, m1=5, b2=0, m2=10, err_stress=25, err_slope=5, tol_stress=1, tol_slope=1)
+		self.diff_test_linear(b1=0, m1=5, b2=0, m2=10, err_stress=58, err_slope=50, tol_stress=1, tol_slope=1)
 		self.diff_test_linear(b1=0, m1=5, b2=2, m2=5, err_slope=0, tol_slope=1)
 
 
