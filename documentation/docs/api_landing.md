@@ -1,6 +1,6 @@
 ---
 toc:
-  toc_depth: 0
+  toc_depth: 1
 ---
 
 # Other modules
@@ -17,14 +17,16 @@ The runnable files `run` and `plot` rely on the following modules:
 ### Crystal Plasticity
 ::: matmdl.crystalPlasticity
 
+### Parallel
+::: matmdl.parallel
+
+
 ### Optimizer
 ::: matmdl.optimizer
 
 ### Parser
 ::: matmdl.parser
 
-### Parallel
-::: matmdl.parallel
 
 ### Experimental
 ::: matmdl.experimental

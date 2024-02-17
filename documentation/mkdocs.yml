@@ -56,7 +56,8 @@ nav:
     - Output: output.md
   - Theory:
     - Intro: theory.md
-    - Advanced: theory2.md
+    - Objective: objective.md
+    - Extra: theory2.md
   - API: 
     - run: api_run.md
     - plot: api_plot.md
