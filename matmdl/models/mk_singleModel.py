@@ -15,7 +15,6 @@ def ask_dimensions():
     Get user input for model dimensions.
 
     Args:
-        None
 
     Returns:
         number_of_elements (int): Length of model in the y (loading) direction
@@ -34,7 +33,7 @@ def mk_singleModel(number_of_elements):
 				direction, which is y
 
 		Returns:
-			Nothing; writes out mesh input file.
+
 	"""
 
 	# name = 'Mesh_' + str(number_of_elements) + '_elements.inp'

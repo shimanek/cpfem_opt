@@ -18,4 +18,4 @@ The runnable modes are each modules:
 * `matmdl.run` starts an optimization run
 * `matmdl.plot` plots the results of a complete or incomplete optimization run
 
-The input options are detailed in [input](../input.html).
+The input options are detailed in [input](input.md).

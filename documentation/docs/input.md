@@ -9,7 +9,7 @@
 
 The `input.toml` file contains all of the most common user options for runs. However, several details are not described by this file. For example, the surrogate model details are specified in `optimizer.py` and not at all in the input file. This may change in future iterations if needed, but since the repo is installed in editable mode, changes in the source code are straightforward.
 
-Also note that some common options have default values, defined in [`parser.py`](../api_landing.html#matmdl.parser) in the `input_reqs` dictionary.
+Also note that some common options have default values, defined in [`parser.py`](API/core.md#matmdl.parser) in the `input_reqs` dictionary.
 
 Below are details of setting, grouped by toml heading.
 

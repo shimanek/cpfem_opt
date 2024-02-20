@@ -18,9 +18,8 @@ class InOpt:
 
     Args:
         orientations (dict): Orientation information directly from ``opt_input``.
-        param_list (list): List of material parameters to be optimized.
-        param_bounds (list): List of tuples describing optimization bounds for
-            variables given in ``param_list``.
+        params (dict): name and bounds of parameters to be optimized.
+
 
     Attributes:
         orients (list): Nickname strings defining orientations, as given

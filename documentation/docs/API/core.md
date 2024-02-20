@@ -15,3 +15,5 @@
 ::: matmdl.utilities
 
 ::: matmdl.writer
+
+::: matmdl.parser

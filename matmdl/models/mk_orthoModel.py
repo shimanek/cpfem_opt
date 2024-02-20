@@ -16,10 +16,9 @@ def ask_dimensions():
     Get user input for model dimensions.
 
     Args:
-        None
 
     Returns:
-        obj: Dimensions of the model as outlined in :class:`dim`.
+        obj (dim): Dimensions of the model.
 
     """
     dim.edge_x = int(input('Enter edge length of cubic model (integer): '))
@@ -53,17 +52,16 @@ def mk_orthoModel(dim):
     cubic models.
 
     Args:
-        dim (obj): Structure outlined in :class:`dim` containing the dimensions 
+        dim (dim): Structure containing the dimensions 
             of both the RVE and the constituent grains as well as the maximum 
-            engineering strain for uniaxial tension (``eng_strain``). 
+            engineering strain for uniaxial tension (`eng_strain`). 
             This object is generated from interactive user input by 
-            :func:`ask_dimensions` within this module.
+            [`ask_dimensions`][matmdl.models.mk_orthoModel.ask_dimensions].
 
     Returns:
-        Nothing; writes out all CPFEM input files.
 
     Notes:
-        Requires (and checks) that ``(edge_i % grain_i) == 0`` 
+        Requires (and checks) that `(edge_i % grain_i) == 0``
         for each dimension.
     """
     
@@ -407,8 +405,8 @@ class dim(object):
     A place to store details of model dimensions.
 
     Attributes:
-        edge_x, _y, _z (int): Length of model in each direction (loading along y)
-        grain_x, _y, _z (int): Length of grain in in each direction (loading along y)
+        edge_i, (int): Length of model in each direction (i=x,y,z; note that loading is along y)
+        grain_i (int): Length of grain in in each direction (i=x,y,z; note that loading is along y)
         eng_strain (float): Engineering strain to be applied as uniaxial tension
         disp (float): Displacement (calculated from strain) to be applied in y-direction
         num_nodes (int): Total number of nodes

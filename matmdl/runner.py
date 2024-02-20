@@ -143,7 +143,7 @@ def refine_run(ct: int=0):
 
     Args:
         ct: Number of times this function has already been called. Starts
-        at 0 and can go up to ``uset.recursion_depth``.
+            at 0 and can go up to ``uset.recursion_depth``.
     """
     factor = 5.0
     ct += 1
