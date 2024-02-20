@@ -19,7 +19,6 @@ theme:
     toggle:
       icon: material/toggle-switch-off-outline
       name: Switch to light mode
-    scheme: slate
     primary: black
     accent: indigo
   font:
@@ -54,7 +53,7 @@ plugins:
 
 
 nav:
-  - Home: index.md
+  - index.md
   - Installation: install.md
   - Getting Started:
     - Input: input.md
@@ -65,7 +64,10 @@ nav:
     - Extra: theory2.md
   - API: 
     - API/index.md
-    - run: api_run.md
-    - plot: api_plot.md
+    - run: API/run.md
+    - plot: API/plot.md
     - other: 
-      - core: api_core.md
+      - core: API/core.md
+      - engines: API/engines.md
+      - objectives: API/objectives.md
+      - models: API/models.md

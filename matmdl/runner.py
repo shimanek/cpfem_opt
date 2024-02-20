@@ -1,3 +1,7 @@
+"""
+Helper module for some abstracted commands used in [run][matmdl.run].
+"""
+
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine
 from matmdl.experimental import ExpData
