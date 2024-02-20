@@ -11,29 +11,32 @@ cd /path/to/persistent/storage/
 "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
 ```
 
-Maybe create a quicker alias for `micromamba`:
+Maybe create a quicker alias for the `micromamba` binary just installed or add that to a bashrc file if using:
 
 ```sh
 alias mamba=$(echo $(pwd)/micromamba/bin/micromamba)
+# or:
+echo "alias mamba=$(echo $(pwd)/micromamba/bin/micromamba)" >> ~/.bashrc
 ```
 
-Then create a new environment:
-
-```sh
-mamba env create -n opt python=3.11 pip
-```
-
-Then navigate to the main directory of `matmdl` and install in editable mode:
+Now create a new environment with the project dependencies:
 
 ```sh
 cd /path/to/matmdl/
-pip install -e .
+mamba create -n opt python=3.11 --file requirements.txt
+```
+
+Then activate the new environement and install this repository in editable mode:
+
+```sh
+mamba activate opt
+pip install --no-build-isolation --no-deps -e .
 ```
 
 If you want to build the docs, install the additional dependencies, then build in the `documentation` folder:
 
 ```sh
-pip install -e .[doc]
+pip install -e '.[doc]'
 cd documentation
 mkdocs build
 ```

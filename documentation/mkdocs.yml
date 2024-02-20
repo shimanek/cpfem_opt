@@ -5,9 +5,10 @@ theme:
     - content.code.annotate
     - content.code.copy
     - content.code.select
-    - navigation.sections  # expands nav sections
+    - navigation.sections
     - navigation.instant
     - search.suggest
+    - navigation.indexes
   custom_dir: overrides
   palette:
   - scheme: default
@@ -47,6 +48,10 @@ plugins:
         paths: [..]
         options:
           show_submodules: true
+          show_symbol_type_heading: true
+          group_by_category: true
+          show_root_heading: true
+
 
 nav:
   - Home: index.md
@@ -59,6 +64,8 @@ nav:
     - Objective: objective.md
     - Extra: theory2.md
   - API: 
+    - API/index.md
     - run: api_run.md
     - plot: api_plot.md
-    - other: api_landing.md
+    - other: 
+      - core: api_core.md
