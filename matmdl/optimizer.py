@@ -1,3 +1,7 @@
+"""
+Module for instantiating and updating the optimizer object.
+"""
+
 from matmdl.runner import write_input_params
 from matmdl.utilities import as_float_tuples, round_sig
 from matmdl.parallel import Checkout

@@ -13,11 +13,15 @@ import time
 
 
 def check_parallel():
-	"""parallel initialization if needed"""
+	"""
+	Starts parallel initialization if needed.
+
+	Note:
+		This copies files from `uset.main_path` but does not reload the input file.
+	"""
 	if uset.main_path not in [os.getcwd(), "."]:
 		print("Starting as a parallel instance", flush=True)
 		copy_files()
-		# TODO: reload copied input.toml
 
 
 def _get_num_newlines():
@@ -48,8 +52,17 @@ def _get_totlines():
 	return totlines
 
 
-def update_parallel(opt):
-	""" state if dict of filename: linux seconds of last modification"""
+def update_parallel():
+	"""
+	Update state if needed based on shared database timing information.
+
+	Returns:
+		params (list): parameter values (list) of unseen points to be updated
+		errors (list): error values (scalar) of unseen points to be updated
+
+	Note:
+		Also updates `state.last_updated` timing information.
+	"""
 	if uset.main_path in [os.getcwd(), "."]:
 		return ([], [])
 
@@ -141,7 +154,7 @@ def copy_files():
 
 
 class Checkout:
-	"""checkout shared resource without write collisions"""
+	"""Checkout shared resource without write collisions."""
 	def __init__(self, fname, local=False):
 		self.start = time.time()
 		self.fname = fname

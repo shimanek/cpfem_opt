@@ -1,5 +1,5 @@
 """
-module for writing to files
+Module for writing to files.
 """
 from matmdl.parser import uset
 from matmdl.parallel import Checkout
@@ -12,7 +12,7 @@ def write_params_to_file(
         param_values: list[float],
         param_names : list[str]
     ) -> None:
-    """Appends last iteration params to file."""
+    """Appends last iteration params to file `out_progress.txt`."""
 
     opt_progress_header = ['time_ns'] + param_names
     out_fpath = os.path.join(uset.main_path, 'out_progress.txt')
