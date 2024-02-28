@@ -1,3 +1,7 @@
+"""
+Helper module for some abstracted commands used in [run][matmdl.run].
+"""
+
 from matmdl.engines.abaqus import job_run, check_complete, job_extract
 from matmdl.crystalPlasticity import get_orient_info, load_subroutine
 from matmdl.experimental import ExpData
@@ -139,7 +143,7 @@ def refine_run(ct: int=0):
 
     Args:
         ct: Number of times this function has already been called. Starts
-        at 0 and can go up to ``uset.recursion_depth``.
+            at 0 and can go up to ``uset.recursion_depth``.
     """
     factor = 5.0
     ct += 1

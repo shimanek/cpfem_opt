@@ -1,3 +1,6 @@
+"""
+Module that loads and checks input file.
+"""
 from contextlib import contextmanager
 from pprint import pprint
 import datetime
@@ -8,9 +11,16 @@ input_fname = "input.toml"
 
 
 class UserSettings:
-	"""Load, check, and store input from toml file."""
+	"""
+	Load, check, and store input from the input file.
+
+	Note:
+		Attributes must be written/deleted within an unlock context
+		manager and should not be overwitten during the optimization
+		since changing behavior makes the history harder to follow.
+	"""
 	class Option:
-		"""For basic input checking."""
+		"""Options that are commonly associated with each input."""
 		def __init__(self, **kwargs):
 			"""Defaults for option instances."""
 			if 'crit' in kwargs:

@@ -1,10 +1,24 @@
 """
-Module for optimization state indicators.
+Module for optimization state meta-indicators, like iteration number and time.
 """
 import time
 import warnings
 
 class State:
+    """
+    Contains and updates iteration and timing for each optimization process.
+
+    Attributes:
+        iterations (int): number of iterations performed by this process
+        last_updated (int): time in unix nanoseconds of the last update to the
+            optimizer state from any process
+        tell_time (float): duration of time in seconds for the opt.tell process
+        run_time (float): duration of time in seconds for a single iteration of the
+            run process
+
+    Note:
+        Warns when `tell_time` > `run_time` but does not change behavior.
+    """
 
     def __init__(self):
         self.iterations = 0

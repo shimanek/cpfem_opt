@@ -1,5 +1,5 @@
 """
-Utility functions.
+Utility functions that fit nowhere else.
 """
 import numpy as np
 from numpy.linalg import norm

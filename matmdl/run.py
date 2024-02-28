@@ -1,8 +1,6 @@
 """
-Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
-All user inputs should be in the ``opt_input.py`` file.
-Two import modes: tries to load Abaqus modules (when running to extract stress-strain
-info) or else imports sciki-optimize library (when running as main outside of Abaqus).
+Runnable module to start an optimization run. 
+All input should be in an `input.toml` file in the directory where this is called.
 """
 import os
 import shutil
@@ -22,8 +20,14 @@ from matmdl.state import state
 
 
 def main():
-    """Instantiate data structures, start optimization loop."""
-    check_single()  # takes over, runs, exits
+    """
+    Instantiate data structures, start optimization loop. 
+
+    Checks for single run option, which runs then exits. 
+    Checks if current process is part of a parallel pool. 
+    Checks if previous output should be reloaded. 
+    """
+    check_single()
     check_parallel()
     remove_out_files()
     global exp_data, in_opt

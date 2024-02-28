@@ -1,3 +1,7 @@
+"""
+Module for instantiating and updating the optimizer object.
+"""
+
 from matmdl.runner import write_input_params
 from matmdl.utilities import as_float_tuples, round_sig
 from matmdl.parallel import Checkout
@@ -18,9 +22,8 @@ class InOpt:
 
     Args:
         orientations (dict): Orientation information directly from ``opt_input``.
-        param_list (list): List of material parameters to be optimized.
-        param_bounds (list): List of tuples describing optimization bounds for
-            variables given in ``param_list``.
+        params (dict): name and bounds of parameters to be optimized.
+
 
     Attributes:
         orients (list): Nickname strings defining orientations, as given
