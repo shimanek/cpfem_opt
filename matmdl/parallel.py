@@ -178,7 +178,7 @@ class Checkout:
 				if len(lines) != 1:
 					print("Warning: collision detected between processes:", flush=True)
 					for line in lines:
-						print("line", flush=True)
+						print(f"\t{line}", flush=True)
 					print("Reattempting to checkout resource", flush=True)
 					try:
 						os.remove(self.fpath + ".lck")
