@@ -3,6 +3,7 @@ Module for optimization state meta-indicators, like iteration number and time.
 """
 import time
 import warnings
+warnings.formatwarning = lambda msg, *args, **kwargs: f"{type(args[0]).__name__}: {msg}\n"
 
 class State:
     """
