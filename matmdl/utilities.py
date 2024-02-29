@@ -4,6 +4,13 @@ Utility functions that fit nowhere else.
 import numpy as np
 from numpy.linalg import norm
 from typing import Union
+import time
+
+
+def log(msg: str):
+    """append message to local log file with time stamp"""
+    with open("out_log.txt", "a+") as f:
+        f.write(f"{time.time():.2f}: {msg}\n")
 
 
 def unit_vector(vector: 'vector') -> 'vector':
