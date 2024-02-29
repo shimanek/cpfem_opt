@@ -10,7 +10,7 @@ from matmdl.experimental import ExpData
 from matmdl.optimizer import InOpt
 from matmdl.optimizer import instantiate_optimizer, get_next_param_set, load_opt, update_optimizer_if_needed
 from matmdl.runner import get_first, remove_out_files, write_input_params, refine_run, check_single
-from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
+from matmdl.crystalPlasticity import get_orient_info, load_subroutine
 from matmdl.engines import job_run, job_extract, check_complete
 from matmdl.objectives import calc_error
 from matmdl.writer import write_error_to_file, combine_SS, write_params_to_file

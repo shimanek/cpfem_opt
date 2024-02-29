@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from copy import deepcopy
 from scipy.interpolate import interp1d

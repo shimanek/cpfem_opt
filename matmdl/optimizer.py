@@ -4,7 +4,6 @@ Module for instantiating and updating the optimizer object.
 
 from matmdl.runner import write_input_params
 from matmdl.utilities import as_float_tuples, round_sig, log
-from matmdl.parallel import Checkout
 from skopt import Optimizer
 from matmdl.parser import uset
 from matmdl.state import state
