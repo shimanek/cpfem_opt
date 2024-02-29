@@ -2,7 +2,6 @@
 Module for writing to files.
 """
 from matmdl.parser import uset
-from matmdl.parallel import Checkout
 from matmdl.state import state
 import numpy as np
 import os

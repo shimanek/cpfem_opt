@@ -3,12 +3,12 @@ Module for instantiating and updating the optimizer object.
 """
 
 from matmdl.runner import write_input_params
-from matmdl.utilities import as_float_tuples, round_sig
-from matmdl.parallel import Checkout
+from matmdl.utilities import as_float_tuples, round_sig, log
 from skopt import Optimizer
 from matmdl.parser import uset
 from matmdl.state import state
 import numpy as np
+import time
 import os
 
 
@@ -139,38 +139,56 @@ def instantiate_optimizer(in_opt: object, uset: object) -> object:
     return opt
 
 
+def update_optimizer_if_needed(opt, in_params, in_errors):
+    """
+    Give params and errors to state, updating optimizer if needed.
+
+    Need is determined by state.num_paramsets, which is set by relative
+    timing of the FEA and opt.tell() procedures.
+
+    `in_params` and `state.last_params` may contain duplicate updates from 
+    parallel instances, but these will be dealt with by opt.tell()
+    """
+    if len(state.next_params) < 1:
+        # tell optimizer all accumulated params and errors and clear from state
+        update_params = []
+        update_errors = []
+        # check for old data stored in state:
+        for params, errors in zip(state.last_params, state.last_errors):
+            update_params.append(params)
+            update_errors.append(errors)
+        # add current information from args:
+        update_params.append(in_params[0])
+        update_errors.append(in_errors[0])
+        # tell opt and clear state:
+        with state.TimeTell()():
+            opt.tell(update_params, update_errors)
+        state.last_params = []
+        state.last_errors = []
+    else:
+        # tell state of the params and error value
+        state.last_params.append(in_params[0])
+        state.last_errors.append(in_errors[0])
+
+
 def get_next_param_set(opt: object, in_opt: object) -> list[float]:
     """
     Give next parameter set to try using current optimizer state.
 
     Allow to sample bounds exactly, round all else to reasonable precision.
     """
-    raw_params = opt.ask()
-    new_params = []
-    for param, bound in zip(raw_params, in_opt.bounds):
-        if param in bound:
-            new_params.append(param)
-        else:
-            new_params.append(round_sig(param, sig=6))
+    if len(state.next_params) < 1:
+        raw_param_list = opt.ask(n_points=state.num_paramsets)
+        for raw_params in raw_param_list:
+            new_params = []
+            for param, bound in zip(raw_params, in_opt.bounds):
+                if param in bound:
+                    new_params.append(param)
+                else:
+                    new_params.append(round_sig(param, sig=6))
+            state.next_params.append(new_params)
+    new_params = state.next_params.popleft()
     return new_params
-
-
-# def update_progress(i:int, next_params:tuple, error:float) -> None:
-#     """
-#     Writes parameters and error values to State.
-
-#     Args:
-#         i: Optimization iteration loop number.
-#         next_params: Parameter values evaluated during iteration ``i``.
-#         error: Error value of these parameters, which is defined in 
-#             :func:`calc_error`.
-#     """
-#     global opt_progress
-#     if (i == 0) and (uset.do_load_previous is False): 
-#         opt_progress = np.transpose(np.asarray([i] + next_params + [error]))
-#     else: 
-#         opt_progress = np.vstack((opt_progress, np.asarray([i] + next_params + [error])))
-#     return opt_progress
 
 
 def load_opt(opt: object, search_local:bool=False) -> object:
@@ -207,5 +225,8 @@ def load_opt(opt: object, search_local:bool=False) -> object:
             f.write('loading previous results\n')
             f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
 
+    tic = time.time()
+    log("Starting to reload previous data")
     opt.tell(x_in, y_in)
+    log(f"Finished reloading previous data after {time.time()-tic:.2f} seconds.")
     return opt
