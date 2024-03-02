@@ -3,11 +3,10 @@ Module that loads and checks input file.
 """
 from contextlib import contextmanager
 from pprint import pprint
+from matmdl.utilities import log
 import datetime
 import tomllib
 import os
-
-input_fname = "input.toml"
 
 
 class UserSettings:
@@ -44,7 +43,6 @@ class UserSettings:
 
 	input_reqs = {
 		'run': {
-			'do_single': Option(types=[bool], crit=False, default=False),
 			'loop_len': Option(types=[int], lower=2),
 			'n_initial_points': Option(types=[int], lower=2),
 			'large_error': Option(types=[int,float]),
@@ -71,7 +69,7 @@ class UserSettings:
 	}
 
 
-	def __init__(self):
+	def __init__(self, input_fname="input.toml"):
 		categories = ["run", "plot"]
 		with open(input_fname, "rb") as f:
 			conf = tomllib.load(f)
@@ -121,6 +119,16 @@ class UserSettings:
 				value = self.__dict__[key]
 				if value < req.upper:
 					raise ValueError(f"Input of {value} for `{key}` is below lower bound of {req.upper}")
+
+		# check if this is a single run
+		any_bounds = False
+		for param_name, param_value in self.params.items():
+			if type(param_value) in [list, tuple]:
+				any_bounds = True
+		if not any_bounds:
+			with self.unlock():
+				self.do_single = True
+				log("Warning: parser: no bounded parameters in input file, running single.")
 
 		# individual checks:
 		if self.i_powerlaw not in [0, 1]:

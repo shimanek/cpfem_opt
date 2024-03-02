@@ -1,5 +1,5 @@
 import unittest
-from matmdl.parser import uset
+from matmdl.parser import uset, UserSettings
 import numpy as np
 import os
 
@@ -60,6 +60,10 @@ class TestInput(unittest.TestCase):
 	def test_input(self):
 		self.assertTrue(uset.params['Tau0'] == [100,200])
 		self.assertTrue(uset.orientations['001']['inp'] == 'mat_orient_100.inp')
+
+	def test_input_single(self):
+		uset_single = UserSettings("input_single.toml")
+		self.assertTrue(uset_single.do_single is True)
 
 
 class TestCP(unittest.TestCase):

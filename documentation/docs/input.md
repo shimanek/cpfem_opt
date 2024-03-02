@@ -18,7 +18,8 @@ Below are details of setting, grouped by toml heading.
 Contains hardening parameter names as keys. 
 Values having these names in the file specified as the ``param_file`` variable will be found and modified during optimization. 
 Values are lower and upper bounds on each parameter, in a tuple.
-If the dictionary value is a single number, that parameter value is written to the ``param_file`` and not cosidered during optimization, as in the first value in the following example:
+If the dictionary value is a single number, that parameter value is written to the ``param_file`` and not cosidered during optimization, as in the first value in the following example.
+If all parameters are fixed (here and within the orientation structure), then a single run with fixed parameters will be run.
 
 
 ```toml
