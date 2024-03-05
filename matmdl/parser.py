@@ -125,10 +125,12 @@ class UserSettings:
 		for param_name, param_value in self.params.items():
 			if type(param_value) in [list, tuple]:
 				any_bounds = True
-		if not any_bounds:
-			with self.unlock():
+		with self.unlock():
+			if not any_bounds:
 				self.do_single = True
 				log("Warning: parser: no bounded parameters in input file, running single.")
+			else:
+				self.do_single = False
 
 		# individual checks:
 		if self.i_powerlaw not in [0, 1]:
