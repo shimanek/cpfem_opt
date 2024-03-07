@@ -117,7 +117,7 @@ def main():
     if len(orients) > 1:
         if __debug__: print('all stress-strain')
         plot_settings(ax0, legend=False)
-        ax0.legend(loc='best', labels=labels0, fancybox=False)
+        ax0.legend(loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False)
         if uset.max_strain > 0:
             ax0.set_xlim(right=uset.max_strain)
         fig0.savefig(os.path.join(os.getcwd(), 'res_all.png'), bbox_inches='tight', dpi=400)
