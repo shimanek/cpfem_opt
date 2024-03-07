@@ -93,6 +93,11 @@ def write_input_params(
         param_values: List of parameter values (or single value) to be written.
             Shares order with ``param_names``.
     """
+    match uset.format:
+        case "huang":
+            separator = " = "
+        case "fepx":
+            separator = " "
     if type(param_names) not in (list, tuple) and type(param_values) not in (list, tuple):
         param_names = [param_names]
         param_values = [param_values]
@@ -105,8 +110,9 @@ def write_input_params(
         for line in lines:
             skip = False
             for param_name, param_value in zip(param_names, param_values):
-                if line[:line.find('=')].strip() == param_name:
-                    f2.write(param_name + ' = ' + str(param_value) + '\n')
+                # TODO find loc for case of fepx
+                if  param_name in line.strip():
+                    f2.write(param_name + separator + str(param_value) + '\n')
                     skip = True
             if not skip:
                 f2.write(line)

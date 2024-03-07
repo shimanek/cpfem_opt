@@ -82,7 +82,7 @@ Offset information:
 
 * **max_strain**: Maximum strain to consider from the experimental data and therefore a maximum strain to run the CPFEM calculations until. Set 0 for max experimental value, or use fractional strain (0.01=1%) otherwise.
 
-* **i_powerlaw**: Specifies the interpolation type. Defualt is linear (`0`), good for fine resolution experimental data. Also available is power-law (`1`), which is useful for polycrystal data with low resolution (\~ 8 data points per curve).
+* **i_powerlaw**: Specifies the interpolation type. Default is linear (`0`), good for fine resolution experimental data. Also available is power-law (`1`), which is useful for polycrystal data with low resolution (\~ 8 data points per curve).
 
 * **umat**: File name specifying the location of the user material subroutine.
 

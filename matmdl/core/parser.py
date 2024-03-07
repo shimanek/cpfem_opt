@@ -54,7 +54,7 @@ class UserSettings:
 			'max_strain': Option(types=[int, float], crit=False, default=0.0),
 			'min_strain': Option(types=[int, float], crit=False, default=0.0),
 			'i_powerlaw': Option(types=[int]),
-			'umat': Option(types=[str]),
+			'umat': Option(types=[str, bool], crit=False, default=False),
 			'cpus': Option(types=[int]),
 			'do_load_previous': Option(types=[bool, int]),
 			'is_compression': Option(types=[bool]),
@@ -98,7 +98,7 @@ class UserSettings:
 							print(f"Input warning: input {key} not found, using default value of {value.default}")
 							self.__dict__[key] = value.default
 						except AttributeError:
-							raise AttributeError(f"\nInput: no defualt found for option {key}\n")
+							raise AttributeError(f"\nInput: no default found for option {key}\n")
 
 
 		# general checks:
@@ -138,6 +138,8 @@ class UserSettings:
 			raise NotImplementedError(f"No known option for i_powerlaw: {self.i_powerlaw}")
 		if self.n_initial_points > self.loop_len:
 			raise ValueError(f"Input initial points ({self.n_initial_points}) greater than total iterations ({self.loop_len})")
+		if self.format.lower() not in ["huang", "fepx"]:
+			raise ValueError(f"Unexpected format option {self.format}; should be either huang or fepx.")
 		#TODO add more individual checks if needed
 
 	@contextmanager
