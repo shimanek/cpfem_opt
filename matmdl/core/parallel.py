@@ -3,8 +3,8 @@ Module for dealing with the present optimization being one of many simultaneous 
 This is presumed to be the case when the setting `main_path` has a value.
 Everything here should be called within a Checkout guard.
 """
-from matmdl.parser import uset
-from matmdl.state import state
+from matmdl.core.parser import uset
+from matmdl.core.state import state
 import numpy as np
 from shutil import copy
 import random

@@ -1,14 +1,14 @@
 """
 Helper module for some abstracted commands used in [run][matmdl.run].
 """
-
-from matmdl.engines.abaqus import job_run, check_complete, job_extract
-from matmdl.crystalPlasticity import get_orient_info, load_subroutine
-from matmdl.experimental import ExpData
-from matmdl.parser import uset
+from matmdl import engines as engine
+from matmdl.core import optimizer as optimizer
+from matmdl.core import writer as writer
+from matmdl.core.crystalPlasticity import get_orient_info
+from matmdl.core.experimental import ExpData
+from matmdl.core.parser import uset
 from typing import Union
 import numpy as np
-import matmdl.optimizer
 import subprocess
 import shutil
 import sys
@@ -19,10 +19,10 @@ def get_first(opt: object, in_opt: object) -> None:
     """
     Run one simulation so its output dimensions can later inform the shape of output data.
     """
-    job_run()
-    if not check_complete():
+    engine.run()
+    if not engine.has_completed():
         refine_run()
-    job_extract('initial')
+    engine.extract('initial')
 
 
 def check_single():
@@ -32,7 +32,7 @@ def check_single():
     print("DBG: starting single run!")
 
     # load options:
-    in_opt = matmdl.optimizer.InOpt(uset.orientations, uset.params)
+    in_opt = optimizer.InOpt(uset.orientations, uset.params)
     next_params = []
     exp_data = ExpData(uset.orientations)  # noqa: F841
     # above line to make main input files with correct strain magnitude
@@ -42,12 +42,12 @@ def check_single():
         if type(param_value) in [list, tuple]:
             raise TypeError(f"Expected prescribed parameters for single run; found parameter bounds for {param_name}")
     
-    load_subroutine()
+    engine.prepare()
     for orient in in_opt.orients:
         print(f"DBG: starting orient {orient}")
         if in_opt.has_orient_opt[orient]:
             orient_components = get_orient_info(next_params, orient, in_opt)
-            write_input_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+            writer.write_input_params('mat_orient.inp', orient_components['names'], orient_components['values'])
             shutil.copy('mat_orient.inp', f"mat_orient_{orient}.inp")
         else:
             try:
@@ -57,18 +57,18 @@ def check_single():
         shutil.copy(f"mat_orient_{orient}.inp", 'mat_orient.inp')
         shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
 
-        job_run()
-        if not check_complete():
+        engine.run()
+        if not engine.has_completed():
             print(f"DBG: refining orient {orient}")
             refine_run()
-        if not check_complete():
+        if not engine.has_completed():
             print(f"DBG: not complete with {orient}, exiting...")
             sys.exit(1)
         else:
             output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
             if os.path.isfile(output_fname): 
                 os.remove(output_fname)
-            job_extract(orient)  # extract data to temp_time_disp_force.csv
+            engine.extract(orient)  # extract data to temp_time_disp_force.csv
             if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
                 print(f"Warning: incomplete run for {orient}, continuing...")
                 return
@@ -91,44 +91,6 @@ def remove_out_files():
             os.rmdir(f)
         else:
             os.remove(f)
-
-
-def write_input_params(
-        fname: str, 
-        param_names: Union[list[str], str], 
-        param_values: Union[list[float], float],
-    ) -> None:
-    """
-    Write parameter values to file with ``=`` as separator.
-
-    Used for material and orientation input files.
-
-    Args:
-        fname: Name of file in which to look for parameters.
-        param_names: List of strings (or single string) describing parameter names.
-            Shares order with ``param_values``.
-        param_values: List of parameter values (or single value) to be written.
-            Shares order with ``param_names``.
-    """
-    if type(param_names) not in (list, tuple) and type(param_values) not in (list, tuple):
-        param_names = [param_names]
-        param_values = [param_values]
-    elif len(param_names) != len(param_values):
-        raise IndexError('Length of names must match length of values.')
-
-    with open(fname, 'r') as f1:
-        lines = f1.readlines()
-    with open('temp_' + fname, 'w+') as f2:
-        for line in lines:
-            skip = False
-            for param_name, param_value in zip(param_names, param_values):
-                if line[:line.find('=')].strip() == param_name:
-                    f2.write(param_name + ' = ' + str(param_value) + '\n')
-                    skip = True
-            if not skip:
-                f2.write(line)
-    os.remove(fname)
-    os.rename('temp_' + fname, fname)
 
 
 def refine_run(ct: int=0):
@@ -181,8 +143,8 @@ def refine_run(ct: int=0):
         f.writelines(lines[:step_line_ind])
         f.writelines(new_step_line_str)
         f.writelines(lines[step_line_ind+1:])
-    job_run()
-    if check_complete():
+    engine.run()
+    if engine.has_completed():
         write_original(filename)
         return
     elif ct >= uset.recursion_depth:

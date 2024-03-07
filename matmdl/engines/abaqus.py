@@ -7,7 +7,7 @@ import subprocess
 import os
 
 
-def job_run():
+def run():
     """Run the Abaqus job!"""
     subprocess.run( 
         'abaqus job=' + uset.jobname \
@@ -17,7 +17,21 @@ def job_run():
     )
 
 
-def job_extract(outname: str):
+def prepare():
+    """
+    Main call to prepare for all runs.
+    """
+    load_subroutine()
+
+
+def load_subroutine():
+    """
+    Compile the user subroutine uset.umat as a shared library in the directory.
+    """
+    subprocess.run('abaqus make library=' + uset.umat, shell=True)
+
+
+def extract(outname: str):
     """
     Call :py:mod:`matmdl.engines.abaqus_extract` from new shell to extract force-displacement data.
     """
@@ -28,7 +42,7 @@ def job_extract(outname: str):
     os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
-def check_complete():
+def has_completed():
     """
     Return ``True`` if Abaqus has finished sucessfully.
     """

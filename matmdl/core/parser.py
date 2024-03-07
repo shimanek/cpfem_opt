@@ -3,7 +3,7 @@ Module that loads and checks input file.
 """
 from contextlib import contextmanager
 from pprint import pprint
-from matmdl.utilities import log
+from matmdl.core.utilities import log
 import datetime
 import tomllib
 import os
@@ -60,6 +60,7 @@ class UserSettings:
 			'is_compression': Option(types=[bool]),
 			'slope_weight': Option(types=[int,float], crit=False, default=0.4),
 			'main_path': Option(types=[str], crit=False, default=os.getcwd()),
+			'format': Option(types=[str], crit=False, default='huang'),
 		},
 		'plot': {
 			'grain_size_name': Option(crit=False, types=[str]),

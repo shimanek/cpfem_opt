@@ -12,17 +12,18 @@ Prints best parameters to file out_best_params.txt
 TODO: refactor overlap between main() and plot_single()
 """
 import os
-from skopt.plots import plot_evaluations, plot_objective
-
 import numpy as np
-from matmdl.optimizer import InOpt, load_opt, instantiate_optimizer
-from matmdl.parser import uset
-from matmdl.parallel import Checkout
+from skopt.plots import plot_evaluations, plot_objective
+from scipy.optimize import curve_fit
+
+from .core.parser import uset
+from .core.parallel import Checkout
+from .core import optimizer as optimizer
 
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
-from scipy.optimize import curve_fit
+
 
 # use local path for plots
 with uset.unlock():
@@ -32,7 +33,7 @@ with uset.unlock():
 def main():
     if __debug__: print('\n# start plotting')
     global in_opt
-    in_opt = InOpt(uset.orientations, uset.params)
+    in_opt = optimizer.InOpt(uset.orientations, uset.params)
     orients = in_opt.orients
     fig0, ax0 = plt.subplots()
     labels0 = []
@@ -148,8 +149,8 @@ def main():
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
     print("retraining surrogate model")
-    opt = instantiate_optimizer(in_opt, uset)
-    opt = load_opt(opt, search_local=True)
+    opt = optimizer.instantiate(in_opt, uset)
+    opt = optimizer.load_previous(opt, search_local=True)
     if opt._n_initial_points > 0:
         print(f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points...")
         opt._n_initial_points = 0
@@ -175,7 +176,7 @@ def main():
 def plot_single():
     if __debug__: print('\n# start plotting single')
     fig0, ax0 = plt.subplots()
-    in_opt = InOpt(uset.orientations, uset.params)
+    in_opt = optimizer.InOpt(uset.orientations, uset.params)
     orients = in_opt.orients
     labels0 = []
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
