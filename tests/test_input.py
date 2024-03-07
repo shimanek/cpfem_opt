@@ -1,5 +1,5 @@
 import unittest
-from matmdl.parser import uset, UserSettings
+from matmdl.core.parser import uset, UserSettings
 import numpy as np
 import os
 
@@ -12,7 +12,7 @@ class TestExp(unittest.TestCase):
 		self.assertTrue(equal_elements.all())
 
 	def test_data_limits(self):
-		from matmdl.experimental import ExpData
+		from matmdl.core.experimental import ExpData
 		exp = ExpData(uset.orientations)
 		self._by_orientation_name(exp, "test")
 		self._by_orientation_name(exp, "001")
@@ -68,7 +68,7 @@ class TestInput(unittest.TestCase):
 
 class TestCP(unittest.TestCase):
 	def test_rot(self):
-		from matmdl.crystalPlasticity import get_offset_angle
+		from matmdl.core.crystalPlasticity import get_offset_angle
 		dir_in_load = np.array([1,2,3])
 		dir_in_0deg = np.array([7,8,9])
 		angle_in = 8.64489
