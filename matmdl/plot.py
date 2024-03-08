@@ -251,7 +251,6 @@ def plot_error_front_fit(errors, samples):
 
     rotation = get_rotation_ccw(degrees=45)
     curvatures = {sample:0.0 for sample in samples}
-    diff_xs = {sample:0.0 for sample in samples}  # x-shift between parabola center and y=x (equal error)
     diff_ys = {sample:0.0 for sample in samples}  # y-shift between parabola center and global min
     diff_rs = {sample:0.0 for sample in samples}  # height of parabola from line where equal error is 0
     global_best_ind = np.argmin(errors[:,-1])
@@ -313,15 +312,15 @@ def plot_error_front_fit(errors, samples):
                 # also want location of least error in rotated frame
                 global_best_loc = plt_errors[global_best_ind] @ rotation
 
-                def f(x,b,h,k):
-                    return b*(x - h)**2 + k
+                def f(x,b,k):
+                    return b*(x)**2 + k
                 try:
                     popt, _ = curve_fit(
                         f, 
                         fit_data[:,0], 
                         fit_data[:,1], 
-                        p0=(0,10,100), 
-                        bounds=((-10,-100,-500), (10,100,500)),
+                        p0=(0,100), 
+                        bounds=((-10,-500), (10,500)),
                     )
                     y_rot = f(x_rot, *popt)
                     curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
@@ -330,11 +329,8 @@ def plot_error_front_fit(errors, samples):
                     curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
 
                     # also want difference from global best error:
-                    diff_ys[samples[i]] = diff_ys[samples[i]] + global_best_loc[1] + popt[2]
-                    diff_ys[samples[j+1]] = diff_ys[samples[j+1]] + global_best_loc[1] + popt[2]
-                    # and x-shift from equal error (let positive favor lower error for that sample):
-                    diff_xs[samples[i]] = diff_xs[samples[i]] + popt[1]
-                    diff_xs[samples[j+1]] = diff_xs[samples[j+1]] - popt[1]
+                    diff_ys[samples[i]] = diff_ys[samples[i]] + global_best_loc[1] + popt[1]
+                    diff_ys[samples[j+1]] = diff_ys[samples[j+1]] + global_best_loc[1] + popt[1]
                     # overall height of parabola in rotated frame:
                     diff_rs[samples[i]] = diff_rs[samples[i]] + f(0, *popt)
                     diff_rs[samples[j+1]] = diff_rs[samples[j+1]] + f(0, *popt)
@@ -352,12 +348,6 @@ def plot_error_front_fit(errors, samples):
         for sample in samples:
             f.write(f"    {sample}: {curvatures[sample]/num_samples}\n")
         f.write(f"Mean overall pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n")
-
-        # x-shifts between global min and parabola center:
-        f.write("Mean pairwise x-shifts:\n")
-        for sample in samples:
-            f.write(f"    {sample}: {diff_xs[sample]/num_samples}\n")
-        f.write(f"Mean overall pairwise x-shifts:\n{np.mean(list(diff_xs.values()))}\n\n")
 
         # y-shifts between global min and parabola center:
         f.write("Mean pairwise y-shifts:\n")
