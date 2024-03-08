@@ -248,8 +248,14 @@ def plot_error_front_fit(errors, samples):
         figsize=(xsize*(num_samples-1), ysize*(num_samples-1)),
         layout= 'constrained',
     )
+
     rotation = get_rotation_ccw(degrees=45)
     curvatures = {sample:0.0 for sample in samples}
+    diff_xs = {sample:0.0 for sample in samples}  # x-shift between parabola center and y=x (equal error)
+    diff_ys = {sample:0.0 for sample in samples}  # y-shift between parabola center and global min
+    diff_rs = {sample:0.0 for sample in samples}  # height of parabola from line where equal error is 0
+    global_best_ind = np.argmin(errors[:,-1])
+
     for i in range(0, num_samples-1):  # i horizontal going right
         for j in range(0, num_samples-1):  # j vertical going down
             _ax = ax[j,i]
@@ -304,6 +310,9 @@ def plot_error_front_fit(errors, samples):
                 # only want x bounds in new frame for curve fitting
                 x_rot = np.linspace(minmax_rot[0,0], minmax_rot[1,0], 200)
 
+                # also want location of least error in rotated frame
+                global_best_loc = plt_errors[global_best_ind] @ rotation
+
                 def f(x,b,h,k):
                     return b*(x - h)**2 + k
                 try:
@@ -319,6 +328,16 @@ def plot_error_front_fit(errors, samples):
                     _ax.plot(curve_reg[:,0], curve_reg[:,1], "--", color="red", label="fit", zorder=3.)
                     curvatures[samples[i]] = curvatures[samples[i]] + popt[0]
                     curvatures[samples[j+1]] = curvatures[samples[j+1]] + popt[0]
+
+                    # also want difference from global best error:
+                    diff_ys[samples[i]] = diff_ys[samples[i]] + global_best_loc[1] + popt[2]
+                    diff_ys[samples[j+1]] = diff_ys[samples[j+1]] + global_best_loc[1] + popt[2]
+                    # and x-shift from equal error (let positive favor lower error for that sample):
+                    diff_xs[samples[i]] = diff_xs[samples[i]] + popt[1]
+                    diff_xs[samples[j+1]] = diff_xs[samples[j+1]] - popt[1]
+                    # overall height of parabola in rotated frame:
+                    diff_rs[samples[i]] = diff_rs[samples[i]] + f(0, *popt)
+                    diff_rs[samples[j+1]] = diff_rs[samples[j+1]] + f(0, *popt)
                 except RuntimeError:
                     print(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}")
 
@@ -328,10 +347,30 @@ def plot_error_front_fit(errors, samples):
                     _ax.set_xlabel("")
 
     with open('out_best_params.txt', 'a+') as f:
-        f.write("Cumulative pairwise error curvatures:\n")
+        # curvatures:
+        f.write("Mean pairwise error curvatures:\n")
         for sample in samples:
-            f.write(f"    {sample}: {curvatures[sample]}\n")
-        f.write(f"Mean pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n")
+            f.write(f"    {sample}: {curvatures[sample]/num_samples}\n")
+        f.write(f"Mean overall pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n")
+
+        # x-shifts between global min and parabola center:
+        f.write("Mean pairwise x-shifts:\n")
+        for sample in samples:
+            f.write(f"    {sample}: {diff_xs[sample]/num_samples}\n")
+        f.write(f"Mean overall pairwise x-shifts:\n{np.mean(list(diff_xs.values()))}\n\n")
+
+        # y-shifts between global min and parabola center:
+        f.write("Mean pairwise y-shifts:\n")
+        for sample in samples:
+            f.write(f"    {sample}: {diff_ys[sample]/num_samples}\n")
+        f.write(f"Mean overall pairwise y-shifts:\n{np.mean(list(diff_ys.values()))}\n\n")
+
+        # distance from parabola to line of y=-x (so no rotated x-shift included):
+        f.write("Mean pairwise heights above 0 error:\n")
+        for sample in samples:
+            f.write(f"    {sample}: {diff_rs[sample]/num_samples}\n")
+        f.write(f"Mean overall pairwise heights:\n{np.mean(list(diff_rs.values()))}\n\n")
+
     fig.savefig(os.path.join(os.getcwd(), 'res_errors_fit.png'), bbox_inches='tight', dpi=600)
     plt.close(fig)
 
