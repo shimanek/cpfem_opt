@@ -59,8 +59,12 @@ def loop(opt, loop_len):
                     orient_components = get_orient_info(next_params, orient, in_opt)
                     write_input_params('mat_orient.inp', orient_components['names'], orient_components['values'])
                 else:
-                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+                    if 'inp' in uset.orientations[orient]:
+                        shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+                try:
+                    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+                except: # todo: get exception or redo this whole logic block
+                    pass
 
                 job_run()
                 if not check_complete(): # try decreasing max increment size
