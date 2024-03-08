@@ -1,5 +1,4 @@
 """
 Choose the objective function form. Currently only rmse exists.
 """
-from matmdl.objectives.rmse import calc_error
-from matmdl.writer import write_error_to_file
+from .rmse import calc_error

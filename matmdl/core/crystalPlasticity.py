@@ -2,13 +2,12 @@
 This module contains functions relevant to the application of Huang's
 crystal plasticity subroutine.
 """
-import subprocess
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import root
 
-from matmdl.utilities import unit_vector
-from matmdl.parser import uset
+from matmdl.core.utilities import unit_vector
+from matmdl.core.parser import uset
 
 
 def get_orient_info(
@@ -135,13 +134,6 @@ def get_offset_angle(
 
     sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x[0]
     return sol
-
-
-def load_subroutine():
-    """
-    Compile the user subroutine uset.umat as a shared library in the directory.
-    """
-    subprocess.run('abaqus make library=' + uset.umat, shell=True)
 
 
 def param_check(param_list: list[str]):
