@@ -3,8 +3,14 @@ This module contains helper functions for dealing with Abaqus but
 has no Abaqus-specific imports.
 """
 from matmdl.core.parser import uset
+from matmdl.core.crystalPlasticity import do_orientation_inputs
 import subprocess
 import os
+
+
+def pre_run(next_params, orient, in_opt):
+    """Things to do before each run."""
+    do_orientation_inputs(next_params, orient, in_opt)
 
 
 def run():
@@ -95,7 +101,7 @@ def write_strain(jobname: str, strain: float):
     for i in range(1, len(new_bound_line)):
         new_bound_line_str = new_bound_line_str + ', '
         new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-    new_bound_line_str = '   ' + new_bound_line_str + '\n'
+    new_bound_line_str = new_bound_line_str + '\n'
 
     # write to uset.jobname file
     with open(jobname, 'w') as f:

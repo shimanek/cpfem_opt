@@ -8,7 +8,6 @@ import numpy as np
 
 from .core.parser import uset
 from .core.experimental import ExpData
-from .core.crystalPlasticity import get_orient_info
 from .core.state import state
 from .core import runner as runner
 from .core import writer as writer
@@ -55,19 +54,10 @@ def loop(opt, loop_len):
 
         with state.TimeRun()():
             for orient in in_opt.orients:
-                # TODO: below block group and replace
-                if in_opt.has_orient_opt[orient]:
-                    orient_components = get_orient_info(next_params, orient, in_opt)
-                    writer.write_input_params('mat_orient.inp', orient_components['names'], orient_components['values'])
-                else:
-                    if 'inp' in uset.orientations[orient]:
-                        shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                try:
-                    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
-                except: # todo: get exception or redo this whole logic block
-                    pass
+                engine.pre_run(next_params, orient, in_opt)
 
                 engine.run()
+
                 if not engine.has_completed(): # try decreasing max increment size
                     runner.refine_run()
                 if not engine.has_completed(): # if it still fails, tell optimizer a large error, continue
@@ -111,7 +101,7 @@ def loop(opt, loop_len):
         optimizer.update_if_needed(opt, update_params, update_errors)
 
 
-    runner.get_first(opt, in_opt)
+    runner.get_first(opt, in_opt, exp_data)
     for _ in range(loop_len):
         single_loop(opt)
 

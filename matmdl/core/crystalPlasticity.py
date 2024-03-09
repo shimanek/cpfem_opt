@@ -8,6 +8,25 @@ from scipy.optimize import root
 
 from matmdl.core.utilities import unit_vector
 from matmdl.core.parser import uset
+from matmdl.core import writer as writer
+
+
+def do_orientation_inputs(next_params, orient, in_opt):
+    """
+    Get and write new orientation information, if necessary.
+
+    If input file is in orientation structure, uses that.
+    """
+    if not in_opt.has_orient_opt[orient] and not 'inp' in uset.orientations[orient]:
+        return
+
+    if in_opt.has_orient_opt[orient]:
+        orient_components = get_orient_info(next_params, orient, in_opt)
+        writer.write_input_params('mat_orient.inp', orient_components['names'], orient_components['values'])
+    else:
+        if 'inp' in uset.orientations[orient]:
+            shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
+    shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
 
 
 def get_orient_info(
