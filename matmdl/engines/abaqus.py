@@ -28,6 +28,15 @@ def load_subroutine():
     """
     Compile the user subroutine uset.umat as a shared library in the directory.
     """
+    try:
+        os.remove('libstandardU.so')
+    except FileNotFoundError:
+        pass
+    try:
+        os.remove(f'{uset.umat[:uset.umat.find(".")]}-std.o')
+    except FileNotFoundError:
+        pass
+
     subprocess.run('abaqus make library=' + uset.umat, shell=True)
 
 
