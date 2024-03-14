@@ -6,6 +6,11 @@ import subprocess
 import os
 
 
+def pre_run(next_params, orient, in_opt):
+    """Things to do before each run."""
+    do_orientation_inputs(next_params, orient, in_opt)
+
+
 def run():
     """Starts FEPX, assuming `fepx` and `mpirun` are on system's path."""
     runlog = "temp_run_log"
