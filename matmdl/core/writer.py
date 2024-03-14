@@ -6,6 +6,7 @@ from matmdl.core.state import state
 from typing import Union
 import numpy as np
 import os
+import re
 
 
 def write_params_to_file(
@@ -76,10 +77,12 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
     with open(error_fpath, 'a+') as f:
         f.write(','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]) + '\n')
 
+
 def write_input_params(
         fname: str, 
         param_names: Union[list[str], str], 
         param_values: Union[list[float], float],
+        debug=False,
     ) -> None:
     """
     Write parameter values to file with ``=`` as separator.
@@ -111,10 +114,12 @@ def write_input_params(
             skip = False
             for param_name, param_value in zip(param_names, param_values):
                 # TODO find loc for case of fepx
-                if  param_name in line.strip():
+                if re.match(r"(?i)\b"+param_name+"(?!\w)", line):
                     f2.write(param_name + separator + str(param_value) + '\n')
                     skip = True
             if not skip:
                 f2.write(line)
-    os.remove(fname)
-    os.rename('temp_' + fname, fname)
+
+    if not debug:
+        os.remove(fname)
+        os.rename('temp_' + fname, fname)

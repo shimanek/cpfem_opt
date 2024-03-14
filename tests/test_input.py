@@ -1,7 +1,20 @@
 import unittest
 from matmdl.core.parser import uset, UserSettings
+import filecmp
 import numpy as np
 import os
+
+
+class TestWriter(unittest.TestCase):
+	def test_param_writer(self):
+		try:
+			os.remove("temp_mat_params.inp")
+		except FileNotFoundError:
+			pass
+		from matmdl.core.writer import write_input_params
+		params = {'Tau0': 2.22, 'TauS_shift': 3.33}
+		write_input_params("mat_params.inp", list(params.keys()), list(params.values()), debug=True)
+		self.assertTrue(filecmp.cmp("temp_mat_params.inp", "mat_params_out.inp"))
 
 
 class TestExp(unittest.TestCase):
