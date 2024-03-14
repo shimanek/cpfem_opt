@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 import warnings
 
-from matmdl.parser import uset
+from matmdl.core.parser import uset
 # from matmdl.optimizer import update_progress
 
 
