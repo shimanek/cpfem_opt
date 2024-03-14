@@ -1,72 +1,52 @@
 """
-This module contains helper functions for dealing with Abaqus but 
-has no Abaqus-specific imports.
+Functions for dealing with FEPX.
 """
 from matmdl.core.parser import uset
-from matmdl.core.crystalPlasticity import do_orientation_inputs
 import subprocess
 import os
 
 
-def pre_run(next_params, orient, in_opt):
-    """Things to do before each run."""
-    do_orientation_inputs(next_params, orient, in_opt)
-
-
 def run():
-    """Run the Abaqus job!"""
-    subprocess.run( 
-        'abaqus job=' + uset.jobname \
-        + ' user=' + uset.umat[:uset.umat.find('.')] + '-std.o' \
-        + ' cpus=' + str(uset.cpus) \
-        + ' double int ask_delete=OFF', shell=True
-    )
+    """Starts FEPX, assuming `fepx` and `mpirun` are on system's path."""
+    runlog = "temp_run_log"
+    if uset.executable_path:
+        fepx = uset.executable_path
+    else:
+        fepx = "fepx"
+    subprocess.CompletedProcess(f"mpirun -np ${{SLURM_NTASKS}} {fepx} | tee {runlog}", shell=True)
+    # ^ or just run?
 
 
 def prepare():
     """
-    Main call to prepare for all runs.
+    Main call to prepare for all runs. Nothing to do for FEPX?
     """
-    load_subroutine()
-
-
-def load_subroutine():
-    """
-    Compile the user subroutine uset.umat as a shared library in the directory.
-    """
-    try:
-        os.remove('libstandardU.so')
-    except FileNotFoundError:
-        pass
-    try:
-        os.remove(f'{uset.umat[:uset.umat.find(".")]}-std.o')
-    except FileNotFoundError:
-        pass
-
-    subprocess.run('abaqus make library=' + uset.umat, shell=True)
+    pass
 
 
 def extract(outname: str):
     """
-    Call :py:mod:`matmdl.engines.abaqus_extract` from new shell to extract force-displacement data.
+    Get stress-strain data from simdir.
     """
-    src_dir = os.path.dirname(os.path.abspath(__file__))
-    extractions_script_path = os.path.join(src_dir, "abaqus_extract.py")
-    run_string = f'abaqus python {extractions_script_path}'
-    subprocess.run(run_string, shell=True)
-    os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
+    # TODO: all of it
+    pass
+    # src_dir = os.path.dirname(os.path.abspath(__file__))
+    # extractions_script_path = os.path.join(src_dir, "abaqus_extract.py")
+    # run_string = f'abaqus python {extractions_script_path}'
+    # subprocess.run(run_string, shell=True)
+    # os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
 
 
 def has_completed():
     """
     Return ``True`` if Abaqus has finished sucessfully.
     """
-    stafile = uset.jobname + '.sta'
-    if os.path.isfile(stafile):
-        last_line = str(subprocess.check_output(['tail', '-1', stafile]))
+    runlog = "temp_run_log"
+    if os.path.isfile(runlog):
+        check_line = str(subprocess.check_output(['tail', '-2', runlog, '|', 'head', '-n1']))
     else: 
-        last_line = ''
-    return ('SUCCESSFULLY' in last_line)
+        check_line = ''
+    return ('completed successfully.' in check_line)
 
 
 def write_strain(jobname: str, strain: float):
@@ -101,7 +81,7 @@ def write_strain(jobname: str, strain: float):
     for i in range(1, len(new_bound_line)):
         new_bound_line_str = new_bound_line_str + ', '
         new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-    new_bound_line_str = new_bound_line_str + '\n'
+    new_bound_line_str = '   ' + new_bound_line_str + '\n'
 
     # write to uset.jobname file
     with open(jobname, 'w') as f:
