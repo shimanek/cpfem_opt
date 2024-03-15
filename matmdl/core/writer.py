@@ -114,7 +114,7 @@ def write_input_params(
             skip = False
             for param_name, param_value in zip(param_names, param_values):
                 # TODO find loc for case of fepx
-                if re.match(r"(?i)\b"+param_name+"(?!\w)", line):
+                if re.match(r"\b"+param_name+"(?!\w)", line):
                     f2.write(param_name + separator + str(param_value) + '\n')
                     skip = True
             if not skip:
