@@ -35,6 +35,13 @@ def extract(outname: str):
     """
     # TODO: all of it
     pass
+    # simulation.sim/results/forces/z1
+    # with head:
+# % step     incr     Fx             Fy             Fz             area a         time                   
+# % -------- -------- -------------- -------------- -------------- -------------- --------------         
+#        0       0    0.00000E+00    0.00000E+00    0.00000E+00    0.10000E+01    0.00000E+00            
+#        1       1   -0.55193E+00    0.10451E+01    0.34263E+03    0.99841E+00    0.20000E+01    
+
     # src_dir = os.path.dirname(os.path.abspath(__file__))
     # extractions_script_path = os.path.join(src_dir, "abaqus_extract.py")
     # run_string = f'abaqus python {extractions_script_path}'
