@@ -29,7 +29,7 @@ class ExpData():
             min_strain, max_strain = self._get_bounds(expname, orient)
             raw = self._get_SS(expname, min_strain, max_strain)
             sgn = -1 if uset.is_compression else 1
-            engine.write_strain(jobname, sgn*max_strain)
+            engine.write_strain(sgn*max_strain, jobname)
             self.data[orient] = {
                 'max_strain': max_strain,
                 'min_strain': min_strain,

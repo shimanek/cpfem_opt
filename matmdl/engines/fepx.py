@@ -2,6 +2,7 @@
 Functions for dealing with FEPX.
 """
 from matmdl.core.parser import uset
+import numpy as np
 import subprocess
 import os
 
@@ -18,8 +19,7 @@ def run():
         fepx = uset.executable_path
     else:
         fepx = "fepx"
-    subprocess.CompletedProcess(f"mpirun -np ${{SLURM_NTASKS}} {fepx} | tee {runlog}", shell=True)
-    # ^ or just run?
+    subprocess.run(f"mpirun -np ${{SLURM_NTASKS}} {fepx} | tee {runlog}", shell=True)
 
 
 def prepare():
@@ -31,22 +31,54 @@ def prepare():
 
 def extract(outname: str):
     """
-    Get stress-strain data from simdir.
-    """
-    # TODO: all of it
-    pass
-    # simulation.sim/results/forces/z1
-    # with head:
-# % step     incr     Fx             Fy             Fz             area a         time                   
-# % -------- -------- -------------- -------------- -------------- -------------- --------------         
-#        0       0    0.00000E+00    0.00000E+00    0.00000E+00    0.10000E+01    0.00000E+00            
-#        1       1   -0.55193E+00    0.10451E+01    0.34263E+03    0.99841E+00    0.20000E+01    
+    Get time, displacement, force data from simdir.
 
-    # src_dir = os.path.dirname(os.path.abspath(__file__))
-    # extractions_script_path = os.path.join(src_dir, "abaqus_extract.py")
-    # run_string = f'abaqus python {extractions_script_path}'
-    # subprocess.run(run_string, shell=True)
-    # os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
+    Note:
+        This does extra work to match the Abaqus format... worth a change?
+    """
+    # get loading direction from config
+    config = _parse_config()
+    loading_dir = config["loading_direction"]
+    strain = config["target_strain"][0]
+
+    # extract output data:
+    data = np.loadtxt(os.path.join("simulation.sim", "results", "forces", loading_dir+"1"), skiplines=2)
+    force = data[2+possible_dirs.index(loading_dir),:]
+    time = data[-1,:]
+    time = time / max(time)
+
+    # use uset dimensions if available, fallback to area and assumption of a cube
+    if uset.length:
+        length_og = uset.length
+    else:
+        area = data[0,5]
+        print("DBG: this should be 1.0:", area)
+        length_og = area**(0.5)
+
+    displacement = time * strain * length_og
+
+
+    time_disp_force = np.stack((time.transpose(), displacement.transpose(), force.transpose()), ax=1)
+    header = "time, displacement, force"
+    np.savetxt(f"temp_time_disp_force{outname}.csv", time_disp_force, header=header, delimiter=",")
+
+
+def _parse_config(key=None):
+    """read simulation.cfg, return string dictionary of key:[list of values], all lowercase"""
+    lines = {}
+    with open("simulation.cfg", "r") as f:
+        for line in f.readlines():
+            if line.strip() and not line.strip().startswith("#"):
+                sections = line.strip().split(" ")
+                if sections[0] not in lines.keys():
+                    lines[sections[0]] = [section.lower() for section in sections[1:]]
+                else:
+                    lines[sections[0]] = lines[sections[0]] + [section.lower() for section in sections[1:]]
+
+    if key is not None:
+        return lines[key]
+    else:
+        return lines
 
 
 def has_completed():
@@ -55,48 +87,45 @@ def has_completed():
     """
     runlog = "temp_run_log"
     if os.path.isfile(runlog):
-        check_line = str(subprocess.check_output(['tail', '-2', runlog, '|', 'head', '-n1']))
+        try:
+            check_line = subprocess.run(f"tail -n2 {runlog} | head -n 1", capture_output=True, check=True, shell=True).stdout.decode("utf-8")
+        except subprocess.CalledProcessError:
+            raise RuntimeError("FEPX incomplete run")
     else: 
         check_line = ''
-    return ('completed successfully.' in check_line)
+    return ('Final step terminated. Simulation completed successfully.' in check_line)
 
 
-def write_strain(jobname: str, strain: float):
+def write_strain(strain: float, jobname: str=None, debug=False):
     """
     Modify boundary conditions in main Abaqus input file to match max strain.
     
     Args:
-        jobname: Filename for main Abaqus job -- unique to 
-            orientation if applicable.
         strain: signed float used to specify axial displacement
+        jobname: ignored, only included to match call signature in abaqus
 
     Note:
-        Relies on finding ``RP-TOP`` under ``*Boundary`` keyword in main
-        input file.
+        Relies on finding `target_strain` in simulation.cfg
     """
-    # input file:
-    max_bound = round(strain * uset.length, 4) #round to 4 digits
+    fname = "simulation.cfg"
+    key = "target_strain"
+    max_bound = round(strain, 4) #round to 4 digits
 
-    with open('{0}.inp'.format(uset.jobname), 'r') as f:
-        lines = f.readlines()
+    new_lines = []
+    with open(fname, "r+") as f:
+        for line in f.readlines():
+            if line.strip().startswith(key):
+                old_items = line.strip().split(" ")
+                # ^ expecting: target_strain <strainValue> <outputFrequency> print_data
+                space = " "  # to avoid another set of quotes within the follow f-string
+                new_line = line[0:line.find(key)] + f"{old_items[0]} {strain} {space.join(old_items[2:])}\n"
+                new_lines.append(new_line)
+            else:
+                new_lines.append(line)
 
-    # find last number after RP-TOP under *Boundary
-    bound_line_ind = [ i for i, line in enumerate(lines) \
-        if line.lower().startswith('*boundary')][0]
-    bound_line_ind += [ i for i, line in enumerate(lines[bound_line_ind:]) \
-        if line.strip().lower().startswith('rp-top')][0]
-    bound_line = [number.strip() for number in lines[bound_line_ind].strip().split(',')]
+    with open(f"temp_{fname}", 'w+') as f:
+        f.writelines(new_lines)
 
-    new_bound_line = bound_line[:-1] + [max_bound]
-    new_bound_line_str = str(new_bound_line[0])
-
-    for i in range(1, len(new_bound_line)):
-        new_bound_line_str = new_bound_line_str + ', '
-        new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
-    new_bound_line_str = '   ' + new_bound_line_str + '\n'
-
-    # write to uset.jobname file
-    with open(jobname, 'w') as f:
-        f.writelines(lines[:bound_line_ind])
-        f.writelines(new_bound_line_str)
-        f.writelines(lines[bound_line_ind+1:])
+    if not debug:
+        os.remove(fname)
+        os.rename('temp_' + fname, fname)

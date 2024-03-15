@@ -21,7 +21,7 @@ def get_first(opt, in_opt, exp_data) -> None:
     Run one simulation so its output dimensions can later inform the shape of output data.
     """
     # test with strain of 0.2%
-    engine.write_strain(f"{uset.jobname}.inp", uset.length * 0.002)
+    engine.write_strain(uset.length * 0.002, f"{uset.jobname}.inp")
     with state.TimeRun()():
         engine.run()
     if not engine.has_completed():
@@ -29,7 +29,7 @@ def get_first(opt, in_opt, exp_data) -> None:
     engine.extract('initial')
     # reset to first max_strain; if multiple samples, will be overwritten anyway
     first_sample = list(exp_data.data.keys())[0]
-    engine.write_strain(f"{uset.jobname}.inp", exp_data.data[first_sample]['max_strain'])
+    engine.write_strain(exp_data.data[first_sample]['max_strain'], f"{uset.jobname}.inp")
 
 
 def check_single():

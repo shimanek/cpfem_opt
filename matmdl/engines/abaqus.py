@@ -69,14 +69,14 @@ def has_completed():
     return ('SUCCESSFULLY' in last_line)
 
 
-def write_strain(jobname: str, strain: float):
+def write_strain(strain: float, jobname: str):
     """
     Modify boundary conditions in main Abaqus input file to match max strain.
     
     Args:
+        strain: signed float used to specify axial displacement
         jobname: Filename for main Abaqus job -- unique to 
             orientation if applicable.
-        strain: signed float used to specify axial displacement
 
     Note:
         Relies on finding ``RP-TOP`` under ``*Boundary`` keyword in main
