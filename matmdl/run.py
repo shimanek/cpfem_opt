@@ -62,7 +62,7 @@ def loop(opt, loop_len):
                     runner.refine_run()
                 if not engine.has_completed(): # if it still fails, tell optimizer a large error, continue
                     opt.tell(next_params, uset.large_error)
-                    print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
+                    print(f"Warning: early incomplete run for {orient}, skipping to next paramter set", flush=True)
                     return
                 else:
                     output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
@@ -71,7 +71,7 @@ def loop(opt, loop_len):
                     engine.extract(orient)  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
                         opt.tell(next_params, uset.large_error)
-                        print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
+                        print(f"Warning: early incomplete run for {orient}, skipping to next paramter set", flush=True)
                         return
 
         # write out:

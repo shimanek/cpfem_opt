@@ -114,6 +114,10 @@ def refine_run(ct: int=0):
         ct: Number of times this function has already been called. Starts
             at 0 and can go up to ``uset.recursion_depth``.
     """
+    if uset.format == "fepx":
+        # TODO should separate out all engine-specific calls
+        # and raise NotImplemented errors from there if applicable
+        return
     factor = 5.0
     ct += 1
     # remove old lock file from previous unfinished simulation

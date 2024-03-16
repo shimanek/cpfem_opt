@@ -9,7 +9,7 @@ import os
 
 def pre_run(next_params, orient, in_opt):
     """Things to do before each run."""
-    do_orientation_inputs(next_params, orient, in_opt)
+    pass
 
 
 def run():
@@ -20,6 +20,7 @@ def run():
     else:
         fepx = "fepx"
     subprocess.run(f"mpirun -np ${{SLURM_NTASKS}} {fepx} | tee {runlog}", shell=True)
+    # TODO should check uset which should have previously checked for Slurm variables
 
 
 def prepare():
@@ -38,13 +39,14 @@ def extract(outname: str):
     """
     # get loading direction from config
     config = _parse_config()
-    loading_dir = config["loading_direction"]
-    strain = config["target_strain"][0]
+    loading_dir = config["loading_direction"][0]
+    strain = float(config["target_strain"][0])
 
     # extract output data:
-    data = np.loadtxt(os.path.join("simulation.sim", "results", "forces", loading_dir+"1"), skiplines=2)
-    force = data[2+possible_dirs.index(loading_dir),:]
-    time = data[-1,:]
+    data = np.loadtxt(os.path.join("simulation.sim", "results", "forces", loading_dir+"1"), skiprows=2)
+    possible_dirs = ["x", "y", "z"]
+    force = data[:, 2+possible_dirs.index(loading_dir)]
+    time = data[:, -1]
     time = time / max(time)
 
     # use uset dimensions if available, fallback to area and assumption of a cube
@@ -58,7 +60,7 @@ def extract(outname: str):
     displacement = time * strain * length_og
 
 
-    time_disp_force = np.stack((time.transpose(), displacement.transpose(), force.transpose()), ax=1)
+    time_disp_force = np.stack((time.transpose(), displacement.transpose(), force.transpose()), axis=1)
     header = "time, displacement, force"
     np.savetxt(f"temp_time_disp_force{outname}.csv", time_disp_force, header=header, delimiter=",")
 
