@@ -18,7 +18,7 @@ from scipy.optimize import curve_fit
 
 from .core.parser import uset
 from .core.parallel import Checkout
-from .core.utilities import msg
+from .core.utilities import msg, warn
 from .core import optimizer as optimizer
 
 import matplotlib
@@ -150,11 +150,11 @@ def main():
     plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
-    print("retraining surrogate model")
+    msg("retraining surrogate model")
     opt = optimizer.instantiate(in_opt, uset)
     opt = optimizer.load_previous(opt, search_local=True)
     if opt._n_initial_points > 0:
-        print(f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points...")
+        msg(f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points...")
         opt._n_initial_points = 0
         fake_x = opt.Xi[-1]
         fake_y = opt.yi[-1]
@@ -246,10 +246,10 @@ def plot_error_front_fit(errors, samples):
     """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
-        # print("skipping multi-error plot")
+        warn("skipping multi-error plot")
         return
     else:
-        print("error front fits")
+        msg("error front fits")
 
     xsize = 2.5
     ysize = 2
@@ -308,7 +308,7 @@ def plot_error_front_fit(errors, samples):
 
                 # check if sufficient points in front
                 if np.shape(boundary_errors)[0] < 3:
-                    print(f"Warning: insufficient front found for samples {samples[i]} and {samples[j+1]}")
+                    warn(f"Warning: insufficient front found for samples {samples[i]} and {samples[j+1]}", RuntimeWarning)
                     continue
 
                 # fit with parabola in rotated frame
@@ -354,7 +354,7 @@ def plot_error_front_fit(errors, samples):
                     diff_rs[samples[i]] = diff_rs[samples[i]] + f(0, *popt)
                     diff_rs[samples[j+1]] = diff_rs[samples[j+1]] + f(0, *popt)
                 except RuntimeError:
-                    print(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}")
+                    warn(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}", RuntimeWarning)
 
                 if i > 0:
                     _ax.set_ylabel("")
@@ -399,10 +399,10 @@ def plot_error_front(errors, samples):
     """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
-        print("skipping multi-error plot")
+        warn("skipping multi-error plot")
         return
     else:
-        print("error fronts")
+        msg("error fronts")
 
     size = 2  # size in inches of each suplot here
     fig, ax = plt.subplots(
@@ -544,7 +544,8 @@ def name_to_sym(name, cap_sense=False):
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError(f'Unknown parameter name: {name}')
+        warn(f'Unknown parameter name: {name}', UserWarning)
+        return str(name)
 
 
 def get_param_value(param_name):

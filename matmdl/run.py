@@ -4,11 +4,11 @@ All input should be in an `input.toml` file in the directory where this is calle
 """
 import os
 import numpy as np
-import warnings
 
 from .core.parser import uset
 from .core.experimental import ExpData
 from .core.state import state
+from .core.utilities import warn
 from .core import runner as runner
 from .core import writer as writer
 from .core import parallel as parallel
@@ -62,7 +62,7 @@ def loop(opt, loop_len):
                     runner.refine_run()
                 if not engine.has_completed(): # if it still fails, tell optimizer a large error, continue
                     opt.tell(next_params, uset.large_error)
-                    warnings.warn(f"Warning: early incomplete run for {orient}, skipping to next paramter set", RuntimeWarning)
+                    warn(f"Warning: early incomplete run for {orient}, skipping to next paramter set", RuntimeWarning)
                     return
                 else:
                     output_fname = f'temp_time_disp_force_{orient}.csv'
@@ -71,7 +71,7 @@ def loop(opt, loop_len):
                     engine.extract(orient)  # extract data to temp_time_disp_force.csv
                     if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
                         opt.tell(next_params, uset.large_error)
-                        warnings.warn(f"Warning: early incomplete run for {orient}, skipping to next paramter set", RuntimeWarning)
+                        warn(f"Warning: early incomplete run for {orient}, skipping to next paramter set", RuntimeWarning)
                         return
 
         # write out:

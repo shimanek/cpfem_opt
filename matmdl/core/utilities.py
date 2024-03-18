@@ -1,22 +1,31 @@
 """
 Utility functions that fit nowhere else.
+These should have no `matmdl` dependencies.
 """
 import numpy as np
 from numpy.linalg import norm
+import warnings
 from typing import Union
 import time
 
 
-def log(msg: str):
+def log(message: str):
     """append message to local log file with time stamp"""
     with open("out_log.txt", "a+") as f:
-        f.write(f"{time.time():.2f}: {msg}\n")
+        f.write(f"{time.time():.2f}: {message}\n")
 
 
 def msg(message: str):
     """broadcast message to stdout if not run with -0"""
     if __debug__:
         print(message, flush=True)
+
+
+def warn(message: str, warn_type=UserWarning):
+    """Raise warning with consistent formatting"""
+    warnings.formatwarning = lambda msg, warn_type, *args, **kwargs: f"{warn_type.__name__}: {msg}\n"
+    print("DBG warn", message, flush=True)
+    warnings.warn(message, warn_type)
 
 
 def unit_vector(vector: 'vector') -> 'vector':
