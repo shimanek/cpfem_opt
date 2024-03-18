@@ -18,6 +18,7 @@ from scipy.optimize import curve_fit
 
 from .core.parser import uset
 from .core.parallel import Checkout
+from .core.utilities import msg
 from .core import optimizer as optimizer
 
 import matplotlib
@@ -32,6 +33,7 @@ with uset.unlock():
 @Checkout("out", local=True)
 def main():
     if __debug__: print('\n# start plotting')
+    msg('\n# start plotting')
     global in_opt
     in_opt = optimizer.InOpt(uset.orientations, uset.params)
     orients = in_opt.orients
@@ -43,7 +45,7 @@ def main():
         num_iter = len(data[0,0,:])
         #-----------------------------------------------------------------------------------------------
         # plot all trials, in order:
-        if __debug__: print('{}: all curves'.format(orient))
+        msg(f'{orient}: all curves')
         fig, ax = plt.subplots()
         for i in range( num_iter ):
             eng_strain = data[:,1,i] / uset.length
@@ -102,7 +104,7 @@ def main():
         legend_info.append('Error: ' + str(errors[loc_min_error]))
         legend_info = '\n'.join(legend_info)
         
-        if __debug__: print('{}: best fit'.format(orient))
+        msg(f'{orient}: best fit')
         fig, ax = plt.subplots()
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
@@ -116,7 +118,7 @@ def main():
 
     # finish fig0, the plot of all sims and experimental data
     if len(orients) > 1:
-        if __debug__: print('all stress-strain')
+        msg('all stress-strain')
         plot_settings(ax0, legend=False)
         ax0.legend(loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False)
         if uset.max_strain > 0:
@@ -127,7 +129,7 @@ def main():
 
     #-----------------------------------------------------------------------------------------------
     # plot convergence
-    if __debug__: print('convergence information')
+    msg('convergence information')
     fig, ax = plt.subplots()
     running_min = np.empty((num_iter))
     running_min[0] = errors[0]
@@ -160,21 +162,23 @@ def main():
         opt.yi = opt.yi[:-1]
         opt.tell(fake_x, fake_y)
     # plot parameter distribution
-    if __debug__: print('parameter evaluations')
+    msg('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
     plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
     # plot partial dependence
-    if __debug__: print('partial dependencies')
+    msg('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
     plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
 
-    if __debug__: print('# stop plotting\n')
+    msg('# stop plotting\n')
+
 
 @Checkout("out", local=True)
 def plot_single():
     if __debug__: print('\n# start plotting single')
+    msg('\n# start plotting single')
     fig0, ax0 = plt.subplots()
     in_opt = optimizer.InOpt(uset.orientations, uset.params)
     orients = in_opt.orients
@@ -182,7 +186,7 @@ def plot_single():
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for ct_orient, orient in enumerate(orients):
         fig, ax = plt.subplots()
-        if __debug__: print(f'plotting {orient}')
+        msg(f'plotting {orient}')
 
         # experimental:
         exp_filename = uset.orientations[orient]['exp']
@@ -210,7 +214,7 @@ def plot_single():
 
     # finish fig0, the plot of all sims and experimental data
     if len(orients) > 1:
-        if __debug__: print('all stress-strain')
+        msg('all stress-strain')
         plot_settings(ax0, legend=False)
         ax0.legend(loc='best', labels=labels0, fancybox=False, bbox_to_anchor=(1.02, 1))
         if uset.max_strain > 0:
@@ -219,7 +223,7 @@ def plot_single():
     else:
         plt.close(fig0)
 
-    if __debug__: print('# stop plotting single\n')
+    msg('# stop plotting single\n')
 
 
 def get_rotation_ccw(degrees):

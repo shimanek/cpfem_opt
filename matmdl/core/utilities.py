@@ -13,6 +13,12 @@ def log(msg: str):
         f.write(f"{time.time():.2f}: {msg}\n")
 
 
+def msg(message: str):
+    """broadcast message to stdout if not run with -0"""
+    if __debug__:
+        print(message, flush=True)
+
+
 def unit_vector(vector: 'vector') -> 'vector':
     """Gives a normalized vector using ``numpy.linalg.norm``."""
     return vector/norm(vector)
