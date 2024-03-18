@@ -174,9 +174,9 @@ class Checkout:
 				try:
 					with open(self.fpath + ".lck", "r") as f:
 						source = f.read()
-					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}", RuntimeWarning)
+					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}")
 				except FileNotFoundError:
-					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds", RuntimeWarning)
+					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds")
 				time.sleep(1)
 			else:
 				with open(self.fpath + ".lck", "a+") as f:
@@ -201,7 +201,7 @@ class Checkout:
 					time.sleep(4.0*random.random())  # wait for a sec before restarting
 					self.__enter__()  # try again
 
-				msg(f"Unlocked after {time.time()-self.start:.3f} seconds", RuntimeWarning)
+				msg(f"Unlocked after {time.time()-self.start:.3f} seconds")
 				break
 		if time.time() - self.start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")

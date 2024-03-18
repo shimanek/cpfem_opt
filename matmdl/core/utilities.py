@@ -24,7 +24,6 @@ def msg(message: str):
 def warn(message: str, warn_type=UserWarning):
     """Raise warning with consistent formatting"""
     warnings.formatwarning = lambda msg, warn_type, *args, **kwargs: f"{warn_type.__name__}: {msg}\n"
-    print("DBG warn", message, flush=True)
     warnings.warn(message, warn_type)
 
 
