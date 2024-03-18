@@ -62,7 +62,7 @@ def extract(outname: str):
 
     time_disp_force = np.stack((time.transpose(), displacement.transpose(), force.transpose()), axis=1)
     header = "time, displacement, force"
-    np.savetxt(f"temp_time_disp_force{outname}.csv", time_disp_force, header=header, delimiter=",")
+    np.savetxt(f"temp_time_disp_force_{outname}.csv", time_disp_force, header=header, delimiter=",")
 
 
 def _parse_config(key=None):
