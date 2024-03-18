@@ -1,10 +1,12 @@
 """
 Module for writing to files.
 """
-from matmdl.parser import uset
-from matmdl.state import state
+from matmdl.core.parser import uset
+from matmdl.core.state import state
+from typing import Union
 import numpy as np
 import os
+import re
 
 
 def write_params_to_file(
@@ -46,8 +48,8 @@ def combine_SS(zeros: bool, orientation: str) -> None:
             in place of real time-force-displacement data.
         orientation: Orientation nickname to keep temporary output files separate.
     """
-    filename = os.path.join(uset.main_path, 'out_time_disp_force_{0}.npy'.format(orientation))
-    sheet = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)
+    filename = os.path.join(uset.main_path, f'out_time_disp_force_{orientation}.npy')
+    sheet = np.loadtxt(f'temp_time_disp_force_{orientation}.csv', delimiter=',', skiprows=1)
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
     if os.path.isfile(filename): 
@@ -74,3 +76,50 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
 
     with open(error_fpath, 'a+') as f:
         f.write(','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]) + '\n')
+
+
+def write_input_params(
+        fname: str, 
+        param_names: Union[list[str], str], 
+        param_values: Union[list[float], float],
+        debug=False,
+    ) -> None:
+    """
+    Write parameter values to file with ``=`` as separator.
+
+    Used for material and orientation input files.
+
+    Args:
+        fname: Name of file in which to look for parameters.
+        param_names: List of strings (or single string) describing parameter names.
+            Shares order with ``param_values``.
+        param_values: List of parameter values (or single value) to be written.
+            Shares order with ``param_names``.
+    """
+    match uset.format:
+        case "huang":
+            separator = " = "
+        case "fepx":
+            separator = " "
+    if type(param_names) not in (list, tuple) and type(param_values) not in (list, tuple):
+        param_names = [param_names]
+        param_values = [param_values]
+    elif len(param_names) != len(param_values):
+        raise IndexError('Length of names must match length of values.')
+
+    with open(fname, 'r') as f1:
+        lines = f1.readlines()
+    with open('temp_' + fname, 'w+') as f2:
+        for line in lines:
+            skip = False
+            for param_name, param_value in zip(param_names, param_values):
+                # TODO find loc for case of fepx
+                if re.match(r"\b"+param_name+"(?!\w)", line):
+                    f2.write(param_name + separator + str(param_value) + '\n')
+                    skip = True
+            if not skip:
+                f2.write(line)
+
+    if not debug:
+        os.remove(fname)
+        os.rename('temp_' + fname, fname)

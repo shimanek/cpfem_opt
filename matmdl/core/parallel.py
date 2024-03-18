@@ -3,8 +3,9 @@ Module for dealing with the present optimization being one of many simultaneous 
 This is presumed to be the case when the setting `main_path` has a value.
 Everything here should be called within a Checkout guard.
 """
-from matmdl.parser import uset
-from matmdl.state import state
+from matmdl.core.parser import uset
+from matmdl.core.state import state
+from matmdl.core.utilities import msg, warn
 import numpy as np
 from shutil import copy
 import random
@@ -20,7 +21,7 @@ def check_parallel():
 		This copies files from `uset.main_path` but does not reload the input file.
 	"""
 	if uset.main_path not in [os.getcwd(), "."]:
-		print("Starting as a parallel instance", flush=True)
+		msg("Starting as a parallel instance")
 		copy_files()
 
 
@@ -173,10 +174,10 @@ class Checkout:
 				try:
 					with open(self.fpath + ".lck", "r") as f:
 						source = f.read()
-					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}", flush=True)
+					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}")
 				except FileNotFoundError:
-					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds", flush=True)
-				time.sleep(2)
+					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds")
+				time.sleep(1)
 			else:
 				with open(self.fpath + ".lck", "a+") as f:
 					f.write(f"{os.getcwd()}\n")
@@ -189,10 +190,10 @@ class Checkout:
 				except FileNotFoundError:
 					lines = []
 				if len(lines) != 1:
-					print("Warning: collision detected between processes:", flush=True)
+					warn("Warning: collision detected between processes:", RuntimeWarning)
 					for line in lines:
 						print(f"\t{line}", flush=True)
-					print("Reattempting to checkout resource", flush=True)
+					warn("Reattempting to checkout resource", RuntimeWarning)
 					try:
 						os.remove(self.fpath + ".lck")
 					except FileNotFoundError:
@@ -200,7 +201,7 @@ class Checkout:
 					time.sleep(4.0*random.random())  # wait for a sec before restarting
 					self.__enter__()  # try again
 
-				print(f"Unlocked after {time.time()-self.start:.3f} seconds", flush=True)
+				msg(f"Unlocked after {time.time()-self.start:.3f} seconds")
 				break
 		if time.time() - self.start > cutoff_seconds:
 			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
@@ -211,7 +212,7 @@ class Checkout:
 				source = f.read()
 			print(f"Exit: rm lock from: {source}", flush=True)
 		os.remove(self.fpath + ".lck")
-		print(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.", flush=True)
+		msg(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.")
 
 	def __call__(self, fn):
 		"""

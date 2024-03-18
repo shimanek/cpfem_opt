@@ -2,11 +2,11 @@
 Module for instantiating and updating the optimizer object.
 """
 
-from matmdl.runner import write_input_params
-from matmdl.utilities import as_float_tuples, round_sig, log
+from matmdl.core.writer import write_input_params
+from matmdl.core.utilities import as_float_tuples, round_sig, log
+from matmdl.core.parser import uset
+from matmdl.core.state import state
 from skopt import Optimizer
-from matmdl.parser import uset
-from matmdl.state import state
 import numpy as np
 import time
 import os
@@ -117,7 +117,7 @@ class InOpt:
         self.num_params_total = len(self.params)
 
 
-def instantiate_optimizer(in_opt: object, uset: object) -> object:
+def instantiate(in_opt: object, uset: object) -> object:
     """
     Define all optimization settings, return optimizer object.
 
@@ -139,7 +139,7 @@ def instantiate_optimizer(in_opt: object, uset: object) -> object:
     return opt
 
 
-def update_optimizer_if_needed(opt, in_params, in_errors):
+def update_if_needed(opt, in_params, in_errors):
     """
     Give params and errors to state, updating optimizer if needed.
 
@@ -191,7 +191,7 @@ def get_next_param_set(opt: object, in_opt: object) -> list[float]:
     return new_params
 
 
-def load_opt(opt: object, search_local:bool=False) -> object:
+def load_previous(opt: object, search_local:bool=False) -> object:
     """
     Load input files of previous optimizations to use as initial points in current optimization.
     
@@ -223,7 +223,7 @@ def load_opt(opt: object, search_local:bool=False) -> object:
     if __debug__:
         with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
+            f.writelines([f'x_in: {x}\ty_in: {y}\n' for x,y in zip(x_in, y_in)])
 
     tic = time.time()
     log("Starting to reload previous data")

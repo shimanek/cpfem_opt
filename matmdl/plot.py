@@ -12,17 +12,19 @@ Prints best parameters to file out_best_params.txt
 TODO: refactor overlap between main() and plot_single()
 """
 import os
-from skopt.plots import plot_evaluations, plot_objective
-
 import numpy as np
-from matmdl.optimizer import InOpt, load_opt, instantiate_optimizer
-from matmdl.parser import uset
-from matmdl.parallel import Checkout
+from skopt.plots import plot_evaluations, plot_objective
+from scipy.optimize import curve_fit
+
+from .core.parser import uset
+from .core.parallel import Checkout
+from .core.utilities import msg, warn
+from .core import optimizer as optimizer
 
 import matplotlib
 matplotlib.use('Agg')  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
-from scipy.optimize import curve_fit
+
 
 # use local path for plots
 with uset.unlock():
@@ -30,9 +32,10 @@ with uset.unlock():
 
 @Checkout("out", local=True)
 def main():
-    if __debug__: print('\n# start plotting')
+    """Plots all available plot types"""
+    msg('\n# start plotting')
     global in_opt
-    in_opt = InOpt(uset.orientations, uset.params)
+    in_opt = optimizer.InOpt(uset.orientations, uset.params)
     orients = in_opt.orients
     fig0, ax0 = plt.subplots()
     labels0 = []
@@ -42,7 +45,7 @@ def main():
         num_iter = len(data[0,0,:])
         #-----------------------------------------------------------------------------------------------
         # plot all trials, in order:
-        if __debug__: print('{}: all curves'.format(orient))
+        msg(f'{orient}: all curves')
         fig, ax = plt.subplots()
         for i in range( num_iter ):
             eng_strain = data[:,1,i] / uset.length
@@ -101,7 +104,7 @@ def main():
         legend_info.append('Error: ' + str(errors[loc_min_error]))
         legend_info = '\n'.join(legend_info)
         
-        if __debug__: print('{}: best fit'.format(orient))
+        msg(f'{orient}: best fit')
         fig, ax = plt.subplots()
         ax.plot(exp_SS[:,0], exp_SS[:,1], '-s',markerfacecolor='black', color='black', 
             label='Experimental ' + uset.grain_size_name)
@@ -115,7 +118,7 @@ def main():
 
     # finish fig0, the plot of all sims and experimental data
     if len(orients) > 1:
-        if __debug__: print('all stress-strain')
+        msg('all stress-strain')
         plot_settings(ax0, legend=False)
         ax0.legend(loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False)
         if uset.max_strain > 0:
@@ -126,7 +129,7 @@ def main():
 
     #-----------------------------------------------------------------------------------------------
     # plot convergence
-    if __debug__: print('convergence information')
+    msg('convergence information')
     fig, ax = plt.subplots()
     running_min = np.empty((num_iter))
     running_min[0] = errors[0]
@@ -147,11 +150,11 @@ def main():
     plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
     #-----------------------------------------------------------------------------------------------
     # reload parameter guesses to use default plots
-    print("retraining surrogate model")
-    opt = instantiate_optimizer(in_opt, uset)
-    opt = load_opt(opt, search_local=True)
+    msg("retraining surrogate model")
+    opt = optimizer.instantiate(in_opt, uset)
+    opt = optimizer.load_previous(opt, search_local=True)
     if opt._n_initial_points > 0:
-        print(f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points...")
+        msg(f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points...")
         opt._n_initial_points = 0
         fake_x = opt.Xi[-1]
         fake_y = opt.yi[-1]
@@ -159,29 +162,31 @@ def main():
         opt.yi = opt.yi[:-1]
         opt.tell(fake_x, fake_y)
     # plot parameter distribution
-    if __debug__: print('parameter evaluations')
+    msg('parameter evaluations')
     apply_param_labels(plot_evaluations(opt.get_result()), diag_label='Freq.')
     plt.savefig(fname='res_evaluations.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
     # plot partial dependence
-    if __debug__: print('partial dependencies')
+    msg('partial dependencies')
     apply_param_labels(plot_objective(opt.get_result()), diag_label='Objective')
     plt.savefig(fname='res_objective.png', bbox_inches='tight', dpi=600, transparent=False)
     plt.close()
 
-    if __debug__: print('# stop plotting\n')
+    msg('# stop plotting\n')
+
 
 @Checkout("out", local=True)
 def plot_single():
-    if __debug__: print('\n# start plotting single')
+    """Plot results of single parameter run"""
+    msg('\n# start plotting single')
     fig0, ax0 = plt.subplots()
-    in_opt = InOpt(uset.orientations, uset.params)
+    in_opt = optimizer.InOpt(uset.orientations, uset.params)
     orients = in_opt.orients
     labels0 = []
     colors0 = plt.rcParams['axes.prop_cycle'].by_key()['color']
     for ct_orient, orient in enumerate(orients):
         fig, ax = plt.subplots()
-        if __debug__: print(f'plotting {orient}')
+        msg(f'plotting {orient}')
 
         # experimental:
         exp_filename = uset.orientations[orient]['exp']
@@ -209,7 +214,7 @@ def plot_single():
 
     # finish fig0, the plot of all sims and experimental data
     if len(orients) > 1:
-        if __debug__: print('all stress-strain')
+        msg('all stress-strain')
         plot_settings(ax0, legend=False)
         ax0.legend(loc='best', labels=labels0, fancybox=False, bbox_to_anchor=(1.02, 1))
         if uset.max_strain > 0:
@@ -218,7 +223,7 @@ def plot_single():
     else:
         plt.close(fig0)
 
-    if __debug__: print('# stop plotting single\n')
+    msg('# stop plotting single\n')
 
 
 def get_rotation_ccw(degrees):
@@ -232,12 +237,19 @@ def get_rotation_ccw(degrees):
 
 
 def plot_error_front_fit(errors, samples):
+    """
+    Plots Pareto efficient pairwise errors with parabolic fits.
+
+    Args:
+        errors: matrix of error values (cols iterations, rows samples)
+        samples: names of each sample
+    """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
-        # print("skipping multi-error plot")
+        warn("skipping multi-error plot")
         return
     else:
-        print("error front fits")
+        msg("error front fits")
 
     xsize = 2.5
     ysize = 2
@@ -296,7 +308,7 @@ def plot_error_front_fit(errors, samples):
 
                 # check if sufficient points in front
                 if np.shape(boundary_errors)[0] < 3:
-                    print(f"Warning: insufficient front found for samples {samples[i]} and {samples[j+1]}")
+                    warn(f"Warning: insufficient front found for samples {samples[i]} and {samples[j+1]}", RuntimeWarning)
                     continue
 
                 # fit with parabola in rotated frame
@@ -322,6 +334,9 @@ def plot_error_front_fit(errors, samples):
                         fit_data[:,1], 
                         p0=(0,10,100), 
                         bounds=((-10,-100,-500), (10,100,500)),
+                        # TODO: choose weighting method from below
+                        # sigma=1-np.abs(fit_data[:,0])/np.variance(fit_data[:,0]),
+                        # sigma=1/fit_data[:,0],  # sensitive to values near zero
                     )
                     y_rot = f(x_rot, *popt)
                     curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
@@ -339,7 +354,7 @@ def plot_error_front_fit(errors, samples):
                     diff_rs[samples[i]] = diff_rs[samples[i]] + f(0, *popt)
                     diff_rs[samples[j+1]] = diff_rs[samples[j+1]] + f(0, *popt)
                 except RuntimeError:
-                    print(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}")
+                    warn(f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}", RuntimeWarning)
 
                 if i > 0:
                     _ax.set_ylabel("")
@@ -384,10 +399,10 @@ def plot_error_front(errors, samples):
     """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
-        print("skipping multi-error plot")
+        warn("skipping multi-error plot")
         return
     else:
-        print("error fronts")
+        msg("error fronts")
 
     size = 2  # size in inches of each suplot here
     fig, ax = plt.subplots(
@@ -529,7 +544,8 @@ def name_to_sym(name, cap_sense=False):
     elif '_mag' in name:
         return name[:-4] + ' mag.'
     else:
-        raise KeyError(f'Unknown parameter name: {name}')
+        warn(f'Unknown parameter name: {name}', UserWarning)
+        return str(name)
 
 
 def get_param_value(param_name):

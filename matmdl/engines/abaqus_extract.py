@@ -79,7 +79,7 @@ def write2file():
     job = [f for f in os.listdir(os.getcwd()) if f.endswith('.odb')][0][:-4]
     Result_Fd = GetForceDisplacement(job)
     with open('temp_time_disp_force.csv','w') as f:
-        f.write('{0},{1},{2}\n'.format('Time','U2','RF2'))
+        f.write('Time, U2, RF2\n')
         for i in range(len(Result_Fd.Time)):
             f.write('%.5f,' % Result_Fd.Time[i])
             f.write('%.5f,' % Result_Fd.TopU2[i])

@@ -2,10 +2,9 @@
 Module for optimization state meta-indicators, like iteration number and time.
 """
 import time
-import warnings
 from collections import deque
+from matmdl.core.utilities import warn
 
-warnings.formatwarning = lambda msg, *args, **kwargs: f"{type(args[0]).__name__}: {msg}\n"
 
 class State:
     """
@@ -55,7 +54,7 @@ class State:
             def __exit__(innerself, exc_type, exc_value, exc_tb):
                 new_time_tell = time.time() - innerself.tic
                 if new_time_tell > self.run_time:
-                    warnings.warn(f"Taking longer to tell than to run: {new_time_tell:.1f} vs {self.run_time:.1f} seconds. Incrementing sequence length from {self.num_paramsets}.", RuntimeWarning)
+                    warn(f"Taking longer to tell than to run: {new_time_tell:.1f} vs {self.run_time:.1f} seconds. Incrementing sequence length from {self.num_paramsets}.", RuntimeWarning)
                     self.num_paramsets += 1
                 self.tell_time = new_time_tell
         return TimeTell

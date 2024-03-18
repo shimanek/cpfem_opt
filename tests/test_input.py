@@ -1,7 +1,20 @@
 import unittest
-from matmdl.parser import uset, UserSettings
+from matmdl.core.parser import uset, UserSettings
+import filecmp
 import numpy as np
 import os
+
+
+class TestWriter(unittest.TestCase):
+	def test_param_writer(self):
+		try:
+			os.remove("temp_mat_params.inp")
+		except FileNotFoundError:
+			pass
+		from matmdl.core.writer import write_input_params
+		params = {'Tau0': 2.22, 'TauS_shift': 3.33}
+		write_input_params("mat_params.inp", list(params.keys()), list(params.values()), debug=True)
+		self.assertTrue(filecmp.cmp("temp_mat_params.inp", "mat_params_out.inp"))
 
 
 class TestExp(unittest.TestCase):
@@ -12,7 +25,7 @@ class TestExp(unittest.TestCase):
 		self.assertTrue(equal_elements.all())
 
 	def test_data_limits(self):
-		from matmdl.experimental import ExpData
+		from matmdl.core.experimental import ExpData
 		exp = ExpData(uset.orientations)
 		self._by_orientation_name(exp, "test")
 		self._by_orientation_name(exp, "001")
@@ -68,7 +81,7 @@ class TestInput(unittest.TestCase):
 
 class TestCP(unittest.TestCase):
 	def test_rot(self):
-		from matmdl.crystalPlasticity import get_offset_angle
+		from matmdl.core.crystalPlasticity import get_offset_angle
 		dir_in_load = np.array([1,2,3])
 		dir_in_0deg = np.array([7,8,9])
 		angle_in = 8.64489
