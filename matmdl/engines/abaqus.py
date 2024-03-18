@@ -54,7 +54,7 @@ def extract(outname: str):
     extractions_script_path = os.path.join(src_dir, "abaqus_extract.py")
     run_string = f'abaqus python {extractions_script_path}'
     subprocess.run(run_string, shell=True)
-    os.rename('temp_time_disp_force.csv', 'temp_time_disp_force_{0}.csv'.format(outname))
+    os.rename('temp_time_disp_force.csv', f'temp_time_disp_force_{outname}.csv')
 
 
 def has_completed():
@@ -85,7 +85,7 @@ def write_strain(strain: float, jobname: str):
     # input file:
     max_bound = round(strain * uset.length, 4) #round to 4 digits
 
-    with open('{0}.inp'.format(uset.jobname), 'r') as f:
+    with open(f'{uset.jobname}.inp', 'r') as f:
         lines = f.readlines()
 
     # find last number after RP-TOP under *Boundary

@@ -62,7 +62,7 @@ def check_single():
             except shutil.SameFileError:
                 pass
         shutil.copy(f"mat_orient_{orient}.inp", 'mat_orient.inp')
-        shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
+        shutil.copy(f'{uset.jobname}_{orient}.inp', f'{uset.jobname}.inp')
 
         engine.run()
         if not engine.has_completed():
@@ -72,7 +72,7 @@ def check_single():
             print(f"DBG: not complete with {orient}, exiting...")
             sys.exit(1)
         else:
-            output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
+            output_fname = f'temp_time_disp_force_{orient}.csv'
             if os.path.isfile(output_fname): 
                 os.remove(output_fname)
             engine.extract(orient)  # extract data to temp_time_disp_force.csv

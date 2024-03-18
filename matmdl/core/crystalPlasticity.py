@@ -2,6 +2,7 @@
 This module contains functions relevant to the application of Huang's
 crystal plasticity subroutine.
 """
+import shutil
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import root
@@ -17,7 +18,7 @@ def do_orientation_inputs(next_params, orient, in_opt):
 
     If input file is in orientation structure, uses that.
     """
-    if not in_opt.has_orient_opt[orient] and not 'inp' in uset.orientations[orient]:
+    if not in_opt.has_orient_opt[orient] and 'inp' not in uset.orientations[orient]:
         return
 
     if in_opt.has_orient_opt[orient]:
@@ -72,16 +73,16 @@ def get_orient_info(
         dir_to = dir_to / norm(dir_to)
         dir_0deg = dir_0deg / norm(dir_0deg)
         with open('out_debug.txt', 'a+') as f:
-            f.write('orientation: {}'.format(orient))
-            f.write('\nbasis OG: \n{0}'.format(basis_og))
+            f.write(f'orientation: {orient}')
+            f.write(f'\nbasis OG: \n{basis_og}')
             f.write('\n')
-            f.write('\nrotation: \n{0}'.format(rotation))
+            f.write(f'\nrotation: \n{rotation}')
             f.write('\n')
-            f.write('\nbasis new: \n{0}'.format(basis_new))
+            f.write(f'\nbasis new: \n{basis_new}')
             f.write('\n\n')
-            f.write('dir_load: {0}\tdir_to: {1}\n'.format(dir_load, dir_to))
-            f.write('angle_deg_inp: {0}\n'.format(angle_deg))
-            f.write('all params: {}'.format(next_params))
+            f.write(f'dir_load: {dir_load}\tdir_to: {dir_to}\n')
+            f.write(f'angle_deg_inp: {angle_deg}\n')
+            f.write(f'all params: {next_params}')
 
     sol = get_offset_angle(dir_load, dir_to, angle_mag)
     dir_tot = dir_load + sol * dir_to
@@ -90,9 +91,9 @@ def get_orient_info(
     if __debug__: # write final loading orientation info
         angle_output = np.arccos(np.dot(dir_tot, dir_load)/(norm(dir_tot)*norm(dir_load)))*180./np.pi
         with open('out_debug.txt', 'a+') as f:
-            f.write('\ndir_tot: {0}'.format(dir_tot))
-            f.write('\ndir_ortho: {0}'.format(dir_ortho))
-            f.write('\nangle_mag_input: {}\tangle_mag_output: {}'.format(angle_mag, angle_output))
+            f.write(f'\ndir_tot: {dir_tot}')
+            f.write(f'\ndir_ortho: {dir_ortho}')
+            f.write(f'\nangle_mag_input: {angle_mag}\tangle_mag_output: {angle_output}')
             f.write('\n\n')
 
     component_names = ['x1', 'y1', 'z1', 'u1', 'v1', 'w1']
@@ -161,6 +162,11 @@ def param_check(param_list: list[str]):
     In theory, tau0 should always come before tauS, even though it doesn't make a difference
     mathematically/practically. Function checks for multiple systems if numbered in the form
     ``TauS``, ``TauS1``, ``TauS2`` and ``Tau0``, ``Tau01``, ``Tau02``.
+
+    Note:
+        Deprecated. Better to do this by mapping whatever hyper-rectangular input bounds
+        to your acceptable parameter space. E.g. optimizing on `tauS_shift` on [0,10] 
+        and adding a derived parameter in the Abaqus inputs: `tauS = tau0 + tauS_shift`.
     """
     # TODO: ck if it's possible to satisfy this based on mat_params and bounds, raise helpful error
     tau0_list, tauS_list = [], []

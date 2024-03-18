@@ -25,7 +25,7 @@ class ExpData():
         self.data = {}
         for orient in orientations.keys():
             expname = orientations[orient]['exp']
-            jobname = uset.jobname + '_{0}'.format(orient)
+            jobname = f"{uset.jobname}_{orient}"
             min_strain, max_strain = self._get_bounds(expname, orient)
             raw = self._get_SS(expname, min_strain, max_strain)
             sgn = -1 if uset.is_compression else 1

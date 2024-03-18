@@ -5,8 +5,6 @@ import time
 import warnings
 from collections import deque
 
-warnings.formatwarning = lambda msg, *args, **kwargs: f"{type(args[0]).__name__}: {msg}\n"
-
 class State:
     """
     Contains and updates iteration and timing for each optimization process.

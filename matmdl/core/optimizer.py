@@ -223,7 +223,7 @@ def load_previous(opt: object, search_local:bool=False) -> object:
     if __debug__:
         with open('out_debug.txt', 'a+') as f:
             f.write('loading previous results\n')
-            f.writelines(['x_in: {0}\ty_in: {1}\n'.format(x,y) for x,y in zip(x_in, y_in)])
+            f.writelines([f'x_in: {x}\ty_in: {y}\n' for x,y in zip(x_in, y_in)])
 
     tic = time.time()
     log("Starting to reload previous data")

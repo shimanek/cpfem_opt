@@ -32,7 +32,7 @@ with uset.unlock():
 
 @Checkout("out", local=True)
 def main():
-    if __debug__: print('\n# start plotting')
+    """Plots all available plot types"""
     msg('\n# start plotting')
     global in_opt
     in_opt = optimizer.InOpt(uset.orientations, uset.params)
@@ -177,7 +177,7 @@ def main():
 
 @Checkout("out", local=True)
 def plot_single():
-    if __debug__: print('\n# start plotting single')
+    """Plot results of single parameter run"""
     msg('\n# start plotting single')
     fig0, ax0 = plt.subplots()
     in_opt = optimizer.InOpt(uset.orientations, uset.params)
@@ -237,6 +237,13 @@ def get_rotation_ccw(degrees):
 
 
 def plot_error_front_fit(errors, samples):
+    """
+    Plots Pareto efficient pairwise errors with parabolic fits.
+
+    Args:
+        errors: matrix of error values (cols iterations, rows samples)
+        samples: names of each sample
+    """
     num_samples = np.shape(errors)[1] - 1
     if num_samples < 2:
         # print("skipping multi-error plot")
@@ -327,6 +334,9 @@ def plot_error_front_fit(errors, samples):
                         fit_data[:,1], 
                         p0=(0,10,100), 
                         bounds=((-10,-100,-500), (10,100,500)),
+                        # TODO: choose weighting method from below
+                        # sigma=1-np.abs(fit_data[:,0])/np.variance(fit_data[:,0]),
+                        # sigma=1/fit_data[:,0],  # sensitive to values near zero
                     )
                     y_rot = f(x_rot, *popt)
                     curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T

@@ -48,8 +48,8 @@ def combine_SS(zeros: bool, orientation: str) -> None:
             in place of real time-force-displacement data.
         orientation: Orientation nickname to keep temporary output files separate.
     """
-    filename = os.path.join(uset.main_path, 'out_time_disp_force_{0}.npy'.format(orientation))
-    sheet = np.loadtxt('temp_time_disp_force_{0}.csv'.format(orientation), delimiter=',', skiprows=1)
+    filename = os.path.join(uset.main_path, f'out_time_disp_force_{orientation}.npy')
+    sheet = np.loadtxt(f'temp_time_disp_force_{orientation}.csv', delimiter=',', skiprows=1)
     if zeros:
         sheet = np.zeros((np.shape(sheet)))
     if os.path.isfile(filename): 
