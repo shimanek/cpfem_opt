@@ -6,10 +6,12 @@ Everything here should be called within a Checkout guard.
 from matmdl.core.parser import uset
 from matmdl.core.state import state
 from matmdl.core.utilities import msg, warn
+from matmdl.engines import file_patterns
 import numpy as np
 from shutil import copy
 import random
 import os
+import re
 import time
 
 
@@ -22,7 +24,7 @@ def check_parallel():
 	"""
 	if uset.main_path not in [os.getcwd(), "."]:
 		msg("Starting as a parallel instance")
-		copy_files()
+		copy_files(file_patterns)
 
 
 def _get_num_newlines():
@@ -128,12 +130,11 @@ def _get_output_state():
 	return output_state
 
 
-def copy_files():
+def copy_files(file_patterns):
 	""" copy files from uset.main_path to runner dir"""
-	#TODO: add experimental files for non-orientation case?
 	
 	# exact filenames
-	flist = ["input.toml", uset.umat, uset.param_file, uset.jobname+".inp"]
+	flist = ["input.toml"]
 	for orient in uset.orientations.keys():  # no need for ordering here
 		flist.append(uset.orientations[orient]["exp"])
 		try:
@@ -142,11 +143,10 @@ def copy_files():
 			# orientation generated, no input file needed
 			pass
 	
-	# only start of filenames
-	fstarts = ["mesh", "mat"]
+	# file list defined in engines:
 	for f in os.listdir(uset.main_path):
-		for start in fstarts:
-			if f.startswith(start):
+		for pattern in file_patterns:
+			if re.search(pattern, f):
 				flist.append(f)
 
 	# copy files to current directory

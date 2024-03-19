@@ -95,6 +95,9 @@ def write_input_params(
             Shares order with ``param_values``.
         param_values: List of parameter values (or single value) to be written.
             Shares order with ``param_names``.
+
+    Note:
+        Finds first match in file, so put derived parameters at end of file.
     """
     match uset.format:
         case "huang":

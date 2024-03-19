@@ -7,6 +7,11 @@ import subprocess
 import os
 
 
+file_patterns = [
+    'simulation.cfg',
+    'simulation.msh',
+]
+
 def pre_run(next_params, orient, in_opt):
     """Things to do before each run."""
     pass
