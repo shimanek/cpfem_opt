@@ -6,6 +6,8 @@ import os
 
 
 class TestWriter(unittest.TestCase):
+	"""Test input writer for both huang and fepx format"""
+
 	def test_param_writer(self):
 		try:
 			os.remove("temp_mat_params.inp")
@@ -32,6 +34,8 @@ class TestWriter(unittest.TestCase):
 
 
 class TestExp(unittest.TestCase):
+	"""Test setting of experimental data limits and storage."""
+
 	def _by_orientation_name(self, exp, orient_name):
 		data_out = np.loadtxt(f"exp_{orient_name}.csv", delimiter=",")
 		parsed_data = exp.data[orient_name]['raw']
@@ -47,6 +51,8 @@ class TestExp(unittest.TestCase):
 
 
 class TestError(unittest.TestCase):
+	"""Test error metrics."""
+
 	def diff_test_linear(self, b1, m1, b2, m2, err_stress=None, err_slope=None, tol_stress=None, tol_slope=None):
 		# tolerances are RMSE in respective units
 		from matmdl.objectives.rmse import _stress_diff, _slope_diff
@@ -84,6 +90,8 @@ class TestError(unittest.TestCase):
 
 
 class TestInput(unittest.TestCase):
+	"""Test input parsing"""
+
 	def test_input(self):
 		self.assertTrue(uset.params['Tau0'] == [100,200])
 		self.assertTrue(uset.orientations['001']['inp'] == 'mat_orient_100.inp')
@@ -94,6 +102,8 @@ class TestInput(unittest.TestCase):
 
 
 class TestCP(unittest.TestCase):
+	"""Test crystal plasticity functions"""
+
 	def test_rot(self):
 		from matmdl.core.crystalPlasticity import get_offset_angle
 		dir_in_load = np.array([1,2,3])

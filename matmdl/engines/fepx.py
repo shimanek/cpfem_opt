@@ -12,13 +12,17 @@ file_patterns = [
     'simulation.msh',
 ]
 
+
 def pre_run(next_params, orient, in_opt):
     """Things to do before each run."""
     pass
 
 
 def run():
-    """Starts FEPX, assuming `fepx` and `mpirun` are on system's path."""
+    """
+    Starts FEPX, assuming `fepx` and `mpirun` are on system's path.
+    Otherwise, give path to `fepx` as executable_path in input file.
+    """
     runlog = "temp_run_log"
     if uset.executable_path:
         fepx = uset.executable_path
