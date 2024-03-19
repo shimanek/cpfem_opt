@@ -59,7 +59,6 @@ def extract(outname: str):
         length_og = uset.length
     else:
         area = data[0,5]
-        print("DBG: this should be 1.0:", area)
         length_og = area**(0.5)
 
     displacement = time * strain * length_og
@@ -67,6 +66,10 @@ def extract(outname: str):
 
     time_disp_force = np.stack((time.transpose(), displacement.transpose(), force.transpose()), axis=1)
     header = "time, displacement, force"
+    try:
+        os.remove(f"temp_time_disp_force_{outname}.csv")
+    except FileNotFoundError:
+        pass  # fine for first run
     np.savetxt(f"temp_time_disp_force_{outname}.csv", time_disp_force, header=header, delimiter=",")
 
 
