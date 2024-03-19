@@ -109,16 +109,17 @@ def write_input_params(
 
     with open(fname, 'r') as f1:
         lines = f1.readlines()
+
+    newlines = lines.copy()
+    for param_name, param_value in zip(param_names, param_values):
+        for i, line in enumerate(lines):
+            match = re.search(r"\b" + param_name + r"[ |=]", line)
+            if match:
+                newlines[i] = line[0:match.start()] + param_name + separator + str(param_value) + '\n'
+                break  # go on to next param set
+
     with open('temp_' + fname, 'w+') as f2:
-        for line in lines:
-            skip = False
-            for param_name, param_value in zip(param_names, param_values):
-                # TODO find loc for case of fepx
-                if re.match(r"\b"+param_name+"(?!\w)", line):
-                    f2.write(param_name + separator + str(param_value) + '\n')
-                    skip = True
-            if not skip:
-                f2.write(line)
+        f2.writelines(newlines)
 
     if not debug:
         os.remove(fname)

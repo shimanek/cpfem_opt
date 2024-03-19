@@ -12,9 +12,23 @@ class TestWriter(unittest.TestCase):
 		except FileNotFoundError:
 			pass
 		from matmdl.core.writer import write_input_params
+		with uset.unlock():
+			uset.format = "huang"
 		params = {'Tau0': 2.22, 'TauS_shift': 3.33}
 		write_input_params("mat_params.inp", list(params.keys()), list(params.values()), debug=True)
 		self.assertTrue(filecmp.cmp("temp_mat_params.inp", "mat_params_out.inp"))
+
+	def test_fepx_writer(self):
+		try:
+			os.remove("temp_simulation.cfg")
+		except FileNotFoundError:
+			pass
+		from matmdl.core.writer import write_input_params
+		with uset.unlock():
+			uset.format = "fepx"
+		params = {'h_0': 2.22, 'g_s0': 3.33}
+		write_input_params("simulation.cfg", list(params.keys()), list(params.values()), debug=True)
+		self.assertTrue(filecmp.cmp("temp_simulation.cfg", "simulation_out.cfg"))
 
 
 class TestExp(unittest.TestCase):
