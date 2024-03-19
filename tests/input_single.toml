@@ -26,15 +26,6 @@ dir_0deg = [0,1,1]
 mag_bounds = 1
 deg_bounds = 0
 
-[[orientations]]
-name = '111'
-exp = 'exp_in.csv'
-[orientations.offset]
-dir_load = [1,1,1]
-dir_0deg = [0,1,1]
-mag_bounds = 1
-deg_bounds = 0
-
 
 [run]
 loop_len = 15
