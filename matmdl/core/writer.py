@@ -60,7 +60,7 @@ def combine_SS(zeros: bool, orientation: str) -> None:
     np.save(filename, dat)
 
 
-def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None:
+def write_error_to_file(error_list: list[float], orient_list: list[str], combination_function) -> None:
     """
     Write error values separated by orientation, if applicable.
 
@@ -72,10 +72,10 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
     error_fpath = os.path.join(uset.main_path, 'out_errors.txt')
     if not os.path.isfile(error_fpath):
         with open(error_fpath, 'w+') as f:
-            f.write(f'# errors for {orient_list} and mean error\n')
+            f.write(f'# errors for {orient_list} and combined error\n')
 
     with open(error_fpath, 'a+') as f:
-        f.write(','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]) + '\n')
+        f.write(','.join([f"{err:.8e}" for err in error_list + [combination_function(error_list)]]) + '\n')
 
 
 def write_input_params(
