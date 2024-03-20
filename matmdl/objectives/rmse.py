@@ -5,7 +5,6 @@ from scipy.optimize import curve_fit
 import warnings
 
 from matmdl.core.parser import uset
-# from matmdl.optimizer import update_progress
 
 
 def calc_error(
@@ -77,7 +76,7 @@ def calc_error(
     slope_error = _slope_diff(x_error_eval_pts, interpSim, interpExp)
     w = uset.slope_weight
     error = (1-w)*stress_error + w*slope_error
-    # print(f"DBG:err: stress, slope, mean: {stress_error}, {slope_error}, {error}")
+
     return error
 
 

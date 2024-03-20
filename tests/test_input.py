@@ -1,28 +1,50 @@
 import unittest
 from matmdl.core.parser import uset, UserSettings
+from matmdl.core.utilities import warn
 import filecmp
 import numpy as np
 import os
 
 
 class TestWriter(unittest.TestCase):
+	"""Test input writer for both huang and fepx format"""
+
 	def test_param_writer(self):
 		try:
 			os.remove("temp_mat_params.inp")
 		except FileNotFoundError:
 			pass
 		from matmdl.core.writer import write_input_params
+		with uset.unlock():
+			uset.format = "huang"
 		params = {'Tau0': 2.22, 'TauS_shift': 3.33}
 		write_input_params("mat_params.inp", list(params.keys()), list(params.values()), debug=True)
 		self.assertTrue(filecmp.cmp("temp_mat_params.inp", "mat_params_out.inp"))
+		os.remove("temp_mat_params.inp")
+
+	def test_fepx_writer(self):
+		try:
+			os.remove("temp_simulation.cfg")
+		except FileNotFoundError:
+			pass
+		from matmdl.core.writer import write_input_params
+		with uset.unlock():
+			uset.format = "fepx"
+		params = {'h_0': 2.22, 'g_s0': 3.33}
+		write_input_params("simulation.cfg", list(params.keys()), list(params.values()), debug=True)
+		self.assertTrue(filecmp.cmp("temp_simulation.cfg", "simulation_out.cfg"))
+		os.remove("temp_simulation.cfg")
 
 
 class TestExp(unittest.TestCase):
+	"""Test setting of experimental data limits and storage."""
+
 	def _by_orientation_name(self, exp, orient_name):
 		data_out = np.loadtxt(f"exp_{orient_name}.csv", delimiter=",")
 		parsed_data = exp.data[orient_name]['raw']
-		equal_elements = np.equal(data_out,parsed_data)
+		equal_elements = np.equal(data_out, parsed_data)
 		self.assertTrue(equal_elements.all())
+		os.remove(f"{uset.jobname}_{orient_name}")
 
 	def test_data_limits(self):
 		from matmdl.core.experimental import ExpData
@@ -33,6 +55,8 @@ class TestExp(unittest.TestCase):
 
 
 class TestError(unittest.TestCase):
+	"""Test error metrics."""
+
 	def diff_test_linear(self, b1, m1, b2, m2, err_stress=None, err_slope=None, tol_stress=None, tol_slope=None):
 		# tolerances are RMSE in respective units
 		from matmdl.objectives.rmse import _stress_diff, _slope_diff
@@ -70,6 +94,8 @@ class TestError(unittest.TestCase):
 
 
 class TestInput(unittest.TestCase):
+	"""Test input parsing"""
+
 	def test_input(self):
 		self.assertTrue(uset.params['Tau0'] == [100,200])
 		self.assertTrue(uset.orientations['001']['inp'] == 'mat_orient_100.inp')
@@ -77,9 +103,12 @@ class TestInput(unittest.TestCase):
 	def test_input_single(self):
 		uset_single = UserSettings("input_single.toml")
 		self.assertTrue(uset_single.do_single is True)
+		os.remove("out_log.txt")
 
 
 class TestCP(unittest.TestCase):
+	"""Test crystal plasticity functions"""
+
 	def test_rot(self):
 		from matmdl.core.crystalPlasticity import get_offset_angle
 		dir_in_load = np.array([1,2,3])

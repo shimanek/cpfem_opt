@@ -8,6 +8,14 @@ import subprocess
 import os
 
 
+file_patterns = [
+    "mesh",
+    "mat",
+    uset.umat,
+    uset.param_file,
+    uset.jobname,
+]
+
 def pre_run(next_params, orient, in_opt):
     """Things to do before each run."""
     do_orientation_inputs(next_params, orient, in_opt)

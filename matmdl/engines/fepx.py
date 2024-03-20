@@ -7,13 +7,22 @@ import subprocess
 import os
 
 
+file_patterns = [
+    'simulation.cfg',
+    'simulation.msh',
+]
+
+
 def pre_run(next_params, orient, in_opt):
     """Things to do before each run."""
     pass
 
 
 def run():
-    """Starts FEPX, assuming `fepx` and `mpirun` are on system's path."""
+    """
+    Starts FEPX, assuming `fepx` and `mpirun` are on system's path.
+    Otherwise, give path to `fepx` as executable_path in input file.
+    """
     runlog = "temp_run_log"
     if uset.executable_path:
         fepx = uset.executable_path
@@ -54,7 +63,6 @@ def extract(outname: str):
         length_og = uset.length
     else:
         area = data[0,5]
-        print("DBG: this should be 1.0:", area)
         length_og = area**(0.5)
 
     displacement = time * strain * length_og
@@ -62,7 +70,11 @@ def extract(outname: str):
 
     time_disp_force = np.stack((time.transpose(), displacement.transpose(), force.transpose()), axis=1)
     header = "time, displacement, force"
-    np.savetxt(f"temp_time_disp_force{outname}.csv", time_disp_force, header=header, delimiter=",")
+    try:
+        os.remove(f"temp_time_disp_force_{outname}.csv")
+    except FileNotFoundError:
+        pass  # fine for first run
+    np.savetxt(f"temp_time_disp_force_{outname}.csv", time_disp_force, header=header, delimiter=",")
 
 
 def _parse_config(key=None):

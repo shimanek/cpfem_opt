@@ -60,7 +60,7 @@ def combine_SS(zeros: bool, orientation: str) -> None:
     np.save(filename, dat)
 
 
-def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None:
+def write_error_to_file(error_list: list[float], orient_list: list[str], combination_function) -> None:
     """
     Write error values separated by orientation, if applicable.
 
@@ -72,10 +72,10 @@ def write_error_to_file(error_list: list[float], orient_list: list[str]) -> None
     error_fpath = os.path.join(uset.main_path, 'out_errors.txt')
     if not os.path.isfile(error_fpath):
         with open(error_fpath, 'w+') as f:
-            f.write(f'# errors for {orient_list} and mean error\n')
+            f.write(f'# errors for {orient_list} and combined error\n')
 
     with open(error_fpath, 'a+') as f:
-        f.write(','.join([f"{err:.8e}" for err in error_list + [np.mean(error_list)]]) + '\n')
+        f.write(','.join([f"{err:.8e}" for err in error_list + [combination_function(error_list)]]) + '\n')
 
 
 def write_input_params(
@@ -95,6 +95,9 @@ def write_input_params(
             Shares order with ``param_values``.
         param_values: List of parameter values (or single value) to be written.
             Shares order with ``param_names``.
+
+    Note:
+        Finds first match in file, so put derived parameters at end of file.
     """
     match uset.format:
         case "huang":
@@ -109,16 +112,17 @@ def write_input_params(
 
     with open(fname, 'r') as f1:
         lines = f1.readlines()
+
+    newlines = lines.copy()
+    for param_name, param_value in zip(param_names, param_values):
+        for i, line in enumerate(lines):
+            match = re.search(r"\b" + param_name + r"[ |=]", line)
+            if match:
+                newlines[i] = line[0:match.start()] + param_name + separator + str(param_value) + '\n'
+                break  # go on to next param set
+
     with open('temp_' + fname, 'w+') as f2:
-        for line in lines:
-            skip = False
-            for param_name, param_value in zip(param_names, param_values):
-                # TODO find loc for case of fepx
-                if re.match(r"\b"+param_name+"(?!\w)", line):
-                    f2.write(param_name + separator + str(param_value) + '\n')
-                    skip = True
-            if not skip:
-                f2.write(line)
+        f2.writelines(newlines)
 
     if not debug:
         os.remove(fname)
