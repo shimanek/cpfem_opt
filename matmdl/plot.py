@@ -348,7 +348,7 @@ def plot_error_front_fit(errors, samples):
                         bounds=((-10,-100,-500), (10,100,500)),
                         # TODO: choose weighting method from below
                         sigma=sigma,
-                        # sigma=1-np.abs(fit_data[:,0])/np.variance(fit_data[:,0]),
+                        # sigma=np.abs(fit_data[:,0])/np.std(fit_data[:,0], ddof=1),
                         # sigma=1/fit_data[:,0],  # sensitive to values near zero
                     )
                     y_rot = f(x_rot, *popt)
