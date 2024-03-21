@@ -328,6 +328,18 @@ def plot_error_front_fit(errors, samples):
                 def f(x,b,h,k):
                     return b*(x - h)**2 + k
                 try:
+                    sigma = []
+                    for ii in range(len(fit_data[:,0])):
+                        sum_j = 0.0
+                        for jj in range(len(fit_data[:,0])):
+                            if jj == ii:
+                                continue
+                            dist = np.abs(fit_data[jj,0] - fit_data[ii,0])
+                            if dist != 0:
+                                sum_j += 1 / dist
+                        sigma.append(sum_j * fit_data[ii,0])
+                    sigma = np.asarray(sigma) / float(len(sigma))
+
                     popt, _ = curve_fit(
                         f, 
                         fit_data[:,0], 
@@ -335,6 +347,7 @@ def plot_error_front_fit(errors, samples):
                         p0=(0,10,100), 
                         bounds=((-10,-100,-500), (10,100,500)),
                         # TODO: choose weighting method from below
+                        sigma=sigma,
                         # sigma=1-np.abs(fit_data[:,0])/np.variance(fit_data[:,0]),
                         # sigma=1/fit_data[:,0],  # sensitive to values near zero
                     )
