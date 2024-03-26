@@ -16,6 +16,9 @@ doc = [
 	"mkdocs-material",
 ]
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.lint]
 ignore = ["E501", "F722", "E701"]
 

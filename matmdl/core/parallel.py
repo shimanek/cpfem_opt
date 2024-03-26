@@ -123,13 +123,9 @@ def assert_db_lengths_match():
 		dat = np.load(os.path.join(uset.main_path, npyfile))
 		lengths.append(np.shape(dat)[2])
 	for outfile in [
-		f
-		for f in os.listdir(uset.main_path)
-		if f.startswith("out_") and f.endswith(".txt")
+		f for f in os.listdir(uset.main_path) if f.startswith("out_") and f.endswith(".txt")
 	]:
-		dat = np.loadtxt(
-			os.path.join(uset.main_path, outfile), delimiter=",", skiprows=1
-		)
+		dat = np.loadtxt(os.path.join(uset.main_path, outfile), delimiter=",", skiprows=1)
 		lengths.append(np.shape(dat)[0])
 
 	if len(set(lengths)) > 1:
@@ -211,9 +207,7 @@ class Checkout:
 				except FileNotFoundError:
 					lines = []
 				if len(lines) != 1:
-					warn(
-						"Warning: collision detected between processes:", RuntimeWarning
-					)
+					warn("Warning: collision detected between processes:", RuntimeWarning)
 					for line in lines:
 						print(f"\t{line}", flush=True)
 					warn("Reattempting to checkout resource", RuntimeWarning)
@@ -221,9 +215,7 @@ class Checkout:
 						os.remove(self.fpath + ".lck")
 					except FileNotFoundError:
 						pass  # only one process will successfully remove file
-					time.sleep(
-						4.0 * random.random()
-					)  # wait for a sec before restarting
+					time.sleep(4.0 * random.random())  # wait for a sec before restarting
 					self.__enter__()  # try again
 
 				msg(f"Unlocked after {time.time()-self.start:.3f} seconds")

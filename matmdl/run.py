@@ -81,12 +81,7 @@ def loop(opt, loop_len):
 					if os.path.isfile(output_fname):
 						os.remove(output_fname)
 					engine.extract(orient)  # extract data to temp_time_disp_force.csv
-					if (
-						np.sum(
-							np.loadtxt(output_fname, delimiter=",", skiprows=1)[:, 1:2]
-						)
-						== 0
-					):
+					if np.sum(np.loadtxt(output_fname, delimiter=",", skiprows=1)[:, 1:2]) == 0:
 						opt.tell(next_params, uset.large_error)
 						warn(
 							f"Warning: early incomplete run for {orient}, skipping to next paramter set",
@@ -106,12 +101,8 @@ def loop(opt, loop_len):
 			# this instance:
 			errors = []
 			for orient in in_opt.orients:
-				errors.append(
-					objective.calc_error(exp_data.data[orient]["raw"], orient)
-				)
-				writer.combine_SS(
-					zeros=False, orientation=orient
-				)  # save stress-strain data
+				errors.append(objective.calc_error(exp_data.data[orient]["raw"], orient))
+				writer.combine_SS(zeros=False, orientation=orient)  # save stress-strain data
 
 			combined_error = np.mean(errors)
 			combined_error = objective.combine_error(errors)

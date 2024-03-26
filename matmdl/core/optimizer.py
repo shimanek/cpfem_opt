@@ -94,9 +94,7 @@ class InOpt:
 				# ^ saves all info (TODO: check if still needed)
 
 				# deg rotation *about* loading orientation:
-				if isinstance(
-					orientations[orient]["offset"]["deg_bounds"], (tuple, list)
-				):
+				if isinstance(orientations[orient]["offset"]["deg_bounds"], (tuple, list)):
 					self.orient_params.append(orient + "_deg")
 					self.orient_bounds.append(
 						[float(f) for f in orientations[orient]["offset"]["deg_bounds"]]
@@ -107,9 +105,7 @@ class InOpt:
 					]
 
 				# mag rotation *away from* loading:
-				if isinstance(
-					orientations[orient]["offset"]["mag_bounds"], (tuple, list)
-				):
+				if isinstance(orientations[orient]["offset"]["mag_bounds"], (tuple, list)):
 					self.orient_params.append(orient + "_mag")
 					self.orient_bounds.append(
 						[float(f) for f in orientations[orient]["offset"]["mag_bounds"]]

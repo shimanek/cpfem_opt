@@ -105,9 +105,7 @@ class ExpData:
 			else:
 				max_strain = max(np.loadtxt(fname, skiprows=1, delimiter=",")[:, 0])
 		else:
-			max_strain = (
-				uset.max_strain if not uset.is_compression else (-1 * uset.max_strain)
-			)
+			max_strain = uset.max_strain if not uset.is_compression else (-1 * uset.max_strain)
 		return max_strain
 
 	def _get_min_strain(self, fname: str):
@@ -123,9 +121,7 @@ class ExpData:
 			else:
 				min_strain = min(np.loadtxt(fname, skiprows=1, delimiter=",")[:, 0])
 		else:
-			min_strain = (
-				uset.min_strain if not uset.is_compression else (-1 * uset.min_strain)
-			)
+			min_strain = uset.min_strain if not uset.is_compression else (-1 * uset.min_strain)
 		return min_strain
 
 	def _get_SS(self, fname: str, _min_strain: float, _max_strain: float):

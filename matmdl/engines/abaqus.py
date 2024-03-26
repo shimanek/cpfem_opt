@@ -104,9 +104,7 @@ def write_strain(strain: float, jobname: str):
 		lines = f.readlines()
 
 	# find last number after RP-TOP under *Boundary
-	bound_line_ind = [
-		i for i, line in enumerate(lines) if line.lower().startswith("*boundary")
-	][0]
+	bound_line_ind = [i for i, line in enumerate(lines) if line.lower().startswith("*boundary")][0]
 	bound_line_ind += [
 		i
 		for i, line in enumerate(lines[bound_line_ind:])

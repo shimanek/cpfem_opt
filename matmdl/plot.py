@@ -61,9 +61,7 @@ def main():
 
 		# plot experimental results:
 		exp_filename = uset.orientations[orient]["exp"]
-		exp_SS = np.loadtxt(
-			os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=","
-		)
+		exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=",")
 		ax.plot(
 			exp_SS[:, 0],
 			exp_SS[:, 1],
@@ -83,9 +81,9 @@ def main():
 		labels0.append(f"Exp. [{orient}]")
 
 		# plot best guess:
-		errors = np.loadtxt(
-			os.path.join(os.getcwd(), "out_errors.txt"), skiprows=1, delimiter=","
-		)[:, -1]
+		errors = np.loadtxt(os.path.join(os.getcwd(), "out_errors.txt"), skiprows=1, delimiter=",")[
+			:, -1
+		]
 		loc_min_error = np.argmin(errors)
 		eng_strain_best = data[:, 1, loc_min_error] / uset.length
 		eng_stress_best = data[:, 2, loc_min_error] / uset.area
@@ -129,20 +127,12 @@ def main():
 			f.write("\nBest iteration:   " + str(int(loc_min_error)))
 			f.write("\nLowest error:     " + str(errors[loc_min_error]) + "\n")
 			f.write("\nParameter names:\n" + ", ".join(in_opt.params) + "\n")
-			f.write(
-				"Best parameters:\n" + ", ".join([str(f) for f in best_params]) + "\n\n"
-			)
+			f.write("Best parameters:\n" + ", ".join([str(f) for f in best_params]) + "\n\n")
 			if len(uset.param_additional_legend) > 0:
-				f.write(
-					"Fixed parameters:\n"
-					+ ", ".join(uset.param_additional_legend)
-					+ "\n"
-				)
+				f.write("Fixed parameters:\n" + ", ".join(uset.param_additional_legend) + "\n")
 				f.write(
 					"Fixed parameter values:\n"
-					+ ", ".join(
-						[str(get_param_value(f)) for f in uset.param_additional_legend]
-					)
+					+ ", ".join([str(get_param_value(f)) for f in uset.param_additional_legend])
 					+ "\n\n"
 				)
 		# -----------------------------------------------------------------------------------------------
@@ -152,9 +142,7 @@ def main():
 			legend_info.append(f"{name_to_sym(param)}={best_params[i]:.1f}")
 		# also add additional parameters to legend:
 		for param_name in uset.param_additional_legend:
-			legend_info.append(
-				name_to_sym(param_name) + "=" + str(get_param_value(param_name))
-			)
+			legend_info.append(name_to_sym(param_name) + "=" + str(get_param_value(param_name)))
 		# add error value
 		legend_info.append("Error: " + str(errors[loc_min_error]))
 		legend_info = "\n".join(legend_info)
@@ -191,14 +179,10 @@ def main():
 	if len(orients) > 1:
 		msg("all stress-strain")
 		plot_settings(ax0, legend=False)
-		ax0.legend(
-			loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False
-		)
+		ax0.legend(loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False)
 		if uset.max_strain > 0:
 			ax0.set_xlim(right=uset.max_strain)
-		fig0.savefig(
-			os.path.join(os.getcwd(), "res_all.png"), bbox_inches="tight", dpi=400
-		)
+		fig0.savefig(os.path.join(os.getcwd(), "res_all.png"), bbox_inches="tight", dpi=400)
 	else:
 		plt.close(fig0)
 
@@ -220,9 +204,7 @@ def main():
 	fig.savefig("res_convergence.png", dpi=400, bbox_inches="tight")
 	plt.close()
 	# -----------------------------------------------------------------------------------------------
-	all_errors = np.loadtxt(
-		os.path.join(os.getcwd(), "out_errors.txt"), skiprows=1, delimiter=","
-	)
+	all_errors = np.loadtxt(os.path.join(os.getcwd(), "out_errors.txt"), skiprows=1, delimiter=",")
 	plot_error_front(errors=all_errors, samples=in_opt.orients)
 	plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
 	# -----------------------------------------------------------------------------------------------
@@ -243,16 +225,12 @@ def main():
 	# plot parameter distribution
 	msg("parameter evaluations")
 	apply_param_labels(plot_evaluations(opt.get_result()), diag_label="Freq.")
-	plt.savefig(
-		fname="res_evaluations.png", bbox_inches="tight", dpi=600, transparent=False
-	)
+	plt.savefig(fname="res_evaluations.png", bbox_inches="tight", dpi=600, transparent=False)
 	plt.close()
 	# plot partial dependence
 	msg("partial dependencies")
 	apply_param_labels(plot_objective(opt.get_result()), diag_label="Objective")
-	plt.savefig(
-		fname="res_objective.png", bbox_inches="tight", dpi=600, transparent=False
-	)
+	plt.savefig(fname="res_objective.png", bbox_inches="tight", dpi=600, transparent=False)
 	plt.close()
 
 	msg("# stop plotting\n")
@@ -273,9 +251,7 @@ def plot_single():
 
 		# experimental:
 		exp_filename = uset.orientations[orient]["exp"]
-		exp_SS = np.loadtxt(
-			os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=","
-		)
+		exp_SS = np.loadtxt(os.path.join(os.getcwd(), exp_filename), skiprows=1, delimiter=",")
 		ax.plot(
 			exp_SS[:, 0],
 			exp_SS[:, 1],
@@ -295,9 +271,7 @@ def plot_single():
 		labels0.append(f"Exp. [{orient}]")
 
 		# simulation:
-		data = np.loadtxt(
-			f"temp_time_disp_force_{orient}.csv", delimiter=",", skiprows=1
-		)
+		data = np.loadtxt(f"temp_time_disp_force_{orient}.csv", delimiter=",", skiprows=1)
 		eng_strain = data[:, 1] / uset.length
 		eng_stress = data[:, 2] / uset.area
 		ax.plot(
@@ -336,9 +310,7 @@ def plot_single():
 		ax0.legend(loc="best", labels=labels0, fancybox=False, bbox_to_anchor=(1.02, 1))
 		if uset.max_strain > 0:
 			ax0.set_xlim(right=uset.max_strain)
-		fig0.savefig(
-			os.path.join(os.getcwd(), "res_all.png"), bbox_inches="tight", dpi=400
-		)
+		fig0.savefig(os.path.join(os.getcwd(), "res_all.png"), bbox_inches="tight", dpi=400)
 	else:
 		plt.close(fig0)
 
@@ -348,9 +320,7 @@ def plot_single():
 def get_rotation_ccw(degrees):
 	"""Takes data, rotates ccw"""
 	radians = degrees / 180.0 * np.pi
-	rot = np.array(
-		[[np.cos(radians), np.sin(radians)], [-np.sin(radians), np.cos(radians)]]
-	)
+	rot = np.array([[np.cos(radians), np.sin(radians)], [-np.sin(radians), np.cos(radians)]])
 	return rot
 
 
@@ -384,9 +354,7 @@ def plot_error_front_fit(errors, samples):
 	diff_xs = {
 		sample: 0.0 for sample in samples
 	}  # x-shift between parabola center and y=x (equal error)
-	diff_ys = {
-		sample: 0.0 for sample in samples
-	}  # y-shift between parabola center and global min
+	diff_ys = {sample: 0.0 for sample in samples}  # y-shift between parabola center and global min
 	diff_rs = {
 		sample: 0.0 for sample in samples
 	}  # height of parabola from line where equal error is 0
@@ -427,12 +395,8 @@ def plot_error_front_fit(errors, samples):
 					markerfacecolor="none",
 					zorder=2.0,
 				)
-				max_boundary_error = max(
-					max(boundary_errors[:, 0]), max(boundary_errors[:, 1])
-				)
-				min_boundary_error = min(
-					min(boundary_errors[:, 0]), min(boundary_errors[:, 1])
-				)
+				max_boundary_error = max(max(boundary_errors[:, 0]), max(boundary_errors[:, 1]))
+				min_boundary_error = min(min(boundary_errors[:, 0]), min(boundary_errors[:, 1]))
 				span = max_boundary_error - min_boundary_error
 				pad = 0.05  # fraction of data span to add to window span
 				_ax.set_xlim(
@@ -513,12 +477,8 @@ def plot_error_front_fit(errors, samples):
 					curvatures[samples[j + 1]] = curvatures[samples[j + 1]] + popt[0]
 
 					# also want difference from global best error:
-					diff_ys[samples[i]] = (
-						diff_ys[samples[i]] + global_best_loc[1] + popt[2]
-					)
-					diff_ys[samples[j + 1]] = (
-						diff_ys[samples[j + 1]] + global_best_loc[1] + popt[2]
-					)
+					diff_ys[samples[i]] = diff_ys[samples[i]] + global_best_loc[1] + popt[2]
+					diff_ys[samples[j + 1]] = diff_ys[samples[j + 1]] + global_best_loc[1] + popt[2]
 					# and x-shift from equal error (let positive favor lower error for that sample):
 					diff_xs[samples[i]] = diff_xs[samples[i]] + popt[1]
 					diff_xs[samples[j + 1]] = diff_xs[samples[j + 1]] - popt[1]
@@ -541,37 +501,27 @@ def plot_error_front_fit(errors, samples):
 		f.write("Mean pairwise error curvatures:\n")
 		for sample in samples:
 			f.write(f"    {sample}: {curvatures[sample]/num_samples}\n")
-		f.write(
-			f"Mean overall pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n"
-		)
+		f.write(f"Mean overall pairwise error curvature:\n{np.mean(list(curvatures.values()))}\n\n")
 
 		# x-shifts between global min and parabola center:
 		f.write("Mean pairwise x-shifts:\n")
 		for sample in samples:
 			f.write(f"    {sample}: {diff_xs[sample]/num_samples}\n")
-		f.write(
-			f"Mean overall pairwise x-shifts:\n{np.mean(list(diff_xs.values()))}\n\n"
-		)
+		f.write(f"Mean overall pairwise x-shifts:\n{np.mean(list(diff_xs.values()))}\n\n")
 
 		# y-shifts between global min and parabola center:
 		f.write("Mean pairwise y-shifts:\n")
 		for sample in samples:
 			f.write(f"    {sample}: {diff_ys[sample]/num_samples}\n")
-		f.write(
-			f"Mean overall pairwise y-shifts:\n{np.mean(list(diff_ys.values()))}\n\n"
-		)
+		f.write(f"Mean overall pairwise y-shifts:\n{np.mean(list(diff_ys.values()))}\n\n")
 
 		# distance from parabola to line of y=-x (so no rotated x-shift included):
 		f.write("Mean pairwise heights above 0 error:\n")
 		for sample in samples:
 			f.write(f"    {sample}: {diff_rs[sample]/num_samples}\n")
-		f.write(
-			f"Mean overall pairwise heights:\n{np.mean(list(diff_rs.values()))}\n\n"
-		)
+		f.write(f"Mean overall pairwise heights:\n{np.mean(list(diff_rs.values()))}\n\n")
 
-	fig.savefig(
-		os.path.join(os.getcwd(), "res_errors_fit.png"), bbox_inches="tight", dpi=600
-	)
+	fig.savefig(os.path.join(os.getcwd(), "res_errors_fit.png"), bbox_inches="tight", dpi=600)
 	plt.close(fig)
 
 
@@ -607,9 +557,7 @@ def plot_error_front(errors, samples):
 			if i > j:
 				_ax.axis("off")
 			else:
-				_ax.scatter(
-					errors[:, i], errors[:, j + 1], c=errors[:, -1], cmap="viridis"
-				)
+				_ax.scatter(errors[:, i], errors[:, j + 1], c=errors[:, -1], cmap="viridis")
 				_ax.set_xlabel(f"{samples[i]} Error")
 				_ax.set_ylabel(f"{samples[j+1]} Error")
 
@@ -642,9 +590,7 @@ def plot_error_front(errors, samples):
 		pad=0.05 if num_samples == 2 else -1,
 		aspect=15,
 	)
-	fig.savefig(
-		os.path.join(os.getcwd(), "res_errors.png"), bbox_inches="tight", dpi=400
-	)
+	fig.savefig(os.path.join(os.getcwd(), "res_errors.png"), bbox_inches="tight", dpi=400)
 	plt.close(fig)
 
 
@@ -677,9 +623,7 @@ def apply_param_labels(ax_array, diag_label):
 					rotation_mode="anchor",
 				)
 				ax_array[i, j].set_ylabel(diag_label)
-				ax_array[i, j].tick_params(
-					axis="y", labelleft=False, labelright=True, left=False
-				)
+				ax_array[i, j].tick_params(axis="y", labelleft=False, labelright=True, left=False)
 
 			if (j > 0) and not (i == j) and not (i == shape[0] - 1):  # middle section
 				ax_array[i, j].tick_params(axis="y", left=False)
@@ -697,9 +641,7 @@ def apply_param_labels(ax_array, diag_label):
 					rotation_mode="anchor",
 				)
 
-			if (
-				(i == shape[0] - 1) and not (i == j) and not (j == 0)
-			):  # middle bottom row
+			if (i == shape[0] - 1) and not (i == j) and not (j == 0):  # middle bottom row
 				ax_array[i, j].tick_params(axis="y", left=False)
 				ax_array[i, j].set_ylabel(None)
 
@@ -746,9 +688,7 @@ def name_to_sym(name, cap_sense=False):
 		have_key = name in name_to_sym_dict.keys()
 	else:
 		have_key = name.lower() in [key.lower() for key in name_to_sym_dict.keys()]
-		name_to_sym_dict = {
-			key.lower(): value for key, value in name_to_sym_dict.items()
-		}
+		name_to_sym_dict = {key.lower(): value for key, value in name_to_sym_dict.items()}
 		name = name.lower()
 
 	if have_key:

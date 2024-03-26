@@ -49,9 +49,7 @@ def combine_SS(zeros: bool, orientation: str) -> None:
 	    orientation: Orientation nickname to keep temporary output files separate.
 	"""
 	filename = os.path.join(uset.main_path, f"out_time_disp_force_{orientation}.npy")
-	sheet = np.loadtxt(
-		f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1
-	)
+	sheet = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)
 	if zeros:
 		sheet = np.zeros((np.shape(sheet)))
 	if os.path.isfile(filename):
@@ -80,12 +78,7 @@ def write_error_to_file(
 
 	with open(error_fpath, "a+") as f:
 		f.write(
-			",".join(
-				[
-					f"{err:.8e}"
-					for err in error_list + [combination_function(error_list)]
-				]
-			)
+			",".join([f"{err:.8e}" for err in error_list + [combination_function(error_list)]])
 			+ "\n"
 		)
 
@@ -134,11 +127,7 @@ def write_input_params(
 			match = re.search(r"\b" + param_name + r"[ |=]", line)
 			if match:
 				newlines[i] = (
-					line[0 : match.start()]
-					+ param_name
-					+ separator
-					+ str(param_value)
-					+ "\n"
+					line[0 : match.start()] + param_name + separator + str(param_value) + "\n"
 				)
 				break  # go on to next param set
 

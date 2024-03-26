@@ -32,9 +32,7 @@ def get_first(opt, in_opt, exp_data) -> None:
 	engine.extract("initial")
 	# reset to first max_strain; if multiple samples, will be overwritten anyway
 	first_sample = list(exp_data.data.keys())[0]
-	engine.write_strain(
-		exp_data.data[first_sample]["max_strain"], f"{uset.jobname}.inp"
-	)
+	engine.write_strain(exp_data.data[first_sample]["max_strain"], f"{uset.jobname}.inp")
 
 
 def check_single():
@@ -69,9 +67,7 @@ def check_single():
 			shutil.copy("mat_orient.inp", f"mat_orient_{orient}.inp")
 		else:
 			try:
-				shutil.copy(
-					uset.orientations[orient]["inp"], f"mat_orient_{orient}.inp"
-				)
+				shutil.copy(uset.orientations[orient]["inp"], f"mat_orient_{orient}.inp")
 			except shutil.SameFileError:
 				pass
 		shutil.copy(f"mat_orient_{orient}.inp", "mat_orient.inp")
@@ -158,9 +154,7 @@ def refine_run(ct: int = 0):
 			f.writelines(lines)
 
 	# find line after step line:
-	step_line_ind = [
-		i for i, line in enumerate(lines) if line.lower().startswith("*static")
-	][0] + 1
+	step_line_ind = [i for i, line in enumerate(lines) if line.lower().startswith("*static")][0] + 1
 	step_line = [number.strip() for number in lines[step_line_ind].strip().split(",")]
 	original_increment = float(step_line[-1])
 

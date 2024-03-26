@@ -94,9 +94,7 @@ def get_orient_info(
 
 	if __debug__:  # write final loading orientation info
 		angle_output = (
-			np.arccos(np.dot(dir_tot, dir_load) / (norm(dir_tot) * norm(dir_load)))
-			* 180.0
-			/ np.pi
+			np.arccos(np.dot(dir_tot, dir_load) / (norm(dir_tot) * norm(dir_load))) * 180.0 / np.pi
 		)
 		with open("out_debug.txt", "a+") as f:
 			f.write(f"\ndir_tot: {dir_tot}")
@@ -125,9 +123,7 @@ def _mk_x_rot(theta: float) -> "vector":
 	return rot
 
 
-def get_offset_angle(
-	direction_og: "vector", direction_to: "vector", angle: float
-) -> float:
+def get_offset_angle(direction_og: "vector", direction_to: "vector", angle: float) -> float:
 	"""
 	Iterative solution for finding vectors tilted toward other vectors.
 
@@ -145,9 +141,7 @@ def get_offset_angle(
 
 	"""
 
-	def _opt_angle(
-		offset_amt: float, direction_og: "vector", direction_to: "vector", angle: float
-	):
+	def _opt_angle(offset_amt: float, direction_og: "vector", direction_to: "vector", angle: float):
 		"""
 		Angle difference between original vector and new vector, which is
 		made by small offset toward new direction.  Returns zero when offset_amt
@@ -160,9 +154,7 @@ def get_offset_angle(
 		) - np.cos(np.deg2rad(angle))
 		return angle_difference
 
-	sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x[
-		0
-	]
+	sol = root(_opt_angle, 0.01, args=(direction_og, direction_to, angle), tol=1e-10).x[0]
 	return sol
 
 

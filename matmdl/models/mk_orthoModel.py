@@ -24,9 +24,7 @@ def ask_dimensions():
 
 	"""
 	dim.edge_x = int(input("Enter edge length of cubic model (integer): "))
-	dim.edge_y = input(
-		"If cubic model, hit enter now. Else, enter second edge length (y): "
-	)
+	dim.edge_y = input("If cubic model, hit enter now. Else, enter second edge length (y): ")
 	if dim.edge_y == "":
 		dim.edge_y = dim.edge_x
 		dim.edge_z = dim.edge_x
@@ -35,18 +33,14 @@ def ask_dimensions():
 		dim.edge_z = int(input("Enter third edge length (z): "))
 
 	dim.grain_x = int(input("Enter the size of the grains in elements (x): "))
-	dim.grain_y = input(
-		"If cubic model, hit enter now. Else, enter second grain dimension (y): "
-	)
+	dim.grain_y = input("If cubic model, hit enter now. Else, enter second grain dimension (y): ")
 	if dim.grain_y == "":
 		dim.grain_y = dim.grain_x
 		dim.grain_z = dim.grain_x
 	else:
 		dim.grain_y = int(dim.grain_y)
 		dim.grain_z = int(input("Enter third grain dimension (z): "))
-	dim.eng_strain = float(
-		input("Input Engineering strain [default = 0.2]:  ") or "0.2"
-	)
+	dim.eng_strain = float(input("Input Engineering strain [default = 0.2]:  ") or "0.2")
 	dim.disp = dim.edge_y * dim.eng_strain
 
 	return dim
@@ -146,9 +140,7 @@ def mk_orthoModel(dim):
 	for z in range(0, dim.edge_z - dim.grain_z + 1, dim.grain_z):
 		for y in range(0, dim.edge_y - dim.grain_y + 1, dim.grain_y):
 			for x in range(0, dim.edge_x - dim.grain_x + 1, dim.grain_x):
-				mesh.grain_seeds.append(
-					z * dim.edge_x * dim.edge_y + y * dim.edge_x + x + 1
-				)
+				mesh.grain_seeds.append(z * dim.edge_x * dim.edge_y + y * dim.edge_x + x + 1)
 				# TODO check above line for generality
 	dim.num_grains = len(mesh.grain_seeds)
 	mesh.grain_els = {}
@@ -208,9 +200,7 @@ def mk_orthoModel(dim):
 		f.write("*ELEMENT, TYPE=C3D8, ELSET=ALLELEMENTS\n")
 		for i in range(dim.num_elements - 1):
 			f.write(str(i + 1) + ", " + ", ".join(separate(mesh.elements[i, :])) + "\n")
-		f.write(
-			str(dim.num_elements) + ", " + ", ".join(separate(mesh.elements[-1, :]))
-		)
+		f.write(str(dim.num_elements) + ", " + ", ".join(separate(mesh.elements[-1, :])))
 	# --------------------------------------------------------------------------------------------------
 	# nodesets
 	# --------------------------------------------------------------------------------------------------
@@ -251,9 +241,7 @@ def mk_orthoModel(dim):
 		def random_miller(n):
 			vector = []
 			for _ in range(n):
-				vector.append(
-					randrange(-(orient_obj.max_index + 1), orient_obj.max_index + 1)
-				)
+				vector.append(randrange(-(orient_obj.max_index + 1), orient_obj.max_index + 1))
 			return vector
 
 		x = y = 3 * [0]

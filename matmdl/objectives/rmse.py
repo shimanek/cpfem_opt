@@ -20,9 +20,7 @@ def calc_error(exp_data: "Nx2 matrix", orientation: str) -> float:
 	        ``exp_data.data[orientation]['raw']``.
 	    orientation: Orientation nickname.
 	"""
-	simSS = np.loadtxt(
-		f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1
-	)[1:, 1:]
+	simSS = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)[1:, 1:]
 	# TODO get simulation dimensions at beginning of running this file, pass to this function
 	simSS[:, 0] = simSS[:, 0] / uset.length  # disp to strain
 	simSS[:, 1] = simSS[:, 1] / uset.area  # force to stress

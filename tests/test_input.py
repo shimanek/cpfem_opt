@@ -21,9 +21,7 @@ class TestWriter(unittest.TestCase):
 		with uset.unlock():
 			uset.format = "huang"
 		params = {"Tau0": 2.22, "TauS_shift": 3.33}
-		write_input_params(
-			"mat_params.inp", list(params.keys()), list(params.values()), debug=True
-		)
+		write_input_params("mat_params.inp", list(params.keys()), list(params.values()), debug=True)
 		self.assertTrue(filecmp.cmp("temp_mat_params.inp", "mat_params_out.inp"))
 		os.remove("temp_mat_params.inp")
 
@@ -37,9 +35,7 @@ class TestWriter(unittest.TestCase):
 		with uset.unlock():
 			uset.format = "fepx"
 		params = {"h_0": 2.22, "g_s0": 3.33}
-		write_input_params(
-			"simulation.cfg", list(params.keys()), list(params.values()), debug=True
-		)
+		write_input_params("simulation.cfg", list(params.keys()), list(params.values()), debug=True)
 		self.assertTrue(filecmp.cmp("temp_simulation.cfg", "simulation_out.cfg"))
 		os.remove("temp_simulation.cfg")
 

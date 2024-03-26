@@ -105,9 +105,7 @@ class UserSettings:
 							)
 							self.__dict__[key] = value.default
 						except AttributeError:
-							raise AttributeError(
-								f"\nInput: no default found for option {key}\n"
-							)
+							raise AttributeError(f"\nInput: no default found for option {key}\n")
 
 		# general checks:
 		for key, req in self.input_reqs["run"].items():
@@ -120,9 +118,7 @@ class UserSettings:
 			if req.types:
 				input_type = type(value)
 				if input_type not in req.types:
-					raise AttributeError(
-						f"Input type of {input_type} not one of {req.types}"
-					)
+					raise AttributeError(f"Input type of {input_type} not one of {req.types}")
 			if req.lower:
 				if value < req.lower:
 					raise ValueError(
@@ -143,17 +139,13 @@ class UserSettings:
 		with self.unlock():
 			if not any_bounds:
 				self.do_single = True
-				log(
-					"Warning: parser: no bounded parameters in input file, running single."
-				)
+				log("Warning: parser: no bounded parameters in input file, running single.")
 			else:
 				self.do_single = False
 
 		# individual checks:
 		if self.i_powerlaw not in [0, 1]:
-			raise NotImplementedError(
-				f"No known option for i_powerlaw: {self.i_powerlaw}"
-			)
+			raise NotImplementedError(f"No known option for i_powerlaw: {self.i_powerlaw}")
 		if self.n_initial_points > self.loop_len:
 			raise ValueError(
 				f"Input initial points ({self.n_initial_points}) greater than total iterations ({self.loop_len})"
