@@ -4,6 +4,7 @@ where each grain and the whole RVE are orthorhombic.
 """
 
 from random import randrange
+
 import numpy as np
 
 

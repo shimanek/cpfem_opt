@@ -3,9 +3,10 @@ Contains the class for extracting and storing experimental data
 from plain text inputs for comparison to iterative solution attempts.
 """
 
-from matmdl.core.parser import uset
-from matmdl import engines as engine
 import numpy as np
+
+from matmdl import engines as engine
+from matmdl.core.parser import uset
 
 
 class ExpData:

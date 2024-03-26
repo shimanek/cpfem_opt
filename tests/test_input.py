@@ -1,9 +1,11 @@
-import unittest
-from matmdl.core.parser import uset, UserSettings
-from matmdl.core.utilities import warn
 import filecmp
-import numpy as np
 import os
+import unittest
+
+import numpy as np
+
+from matmdl.core.parser import UserSettings, uset
+from matmdl.core.utilities import warn
 
 
 class TestWriter(unittest.TestCase):
@@ -76,7 +78,7 @@ class TestError(unittest.TestCase):
 		tol_slope=None,
 	):
 		# tolerances are RMSE in respective units
-		from matmdl.objectives.rmse import _stress_diff, _slope_diff
+		from matmdl.objectives.rmse import _slope_diff, _stress_diff
 
 		x = np.linspace(0.0, 1.0, 100)
 

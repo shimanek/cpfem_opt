@@ -2,14 +2,16 @@
 Module for instantiating and updating the optimizer object.
 """
 
-from matmdl.core.writer import write_input_params
-from matmdl.core.utilities import as_float_tuples, round_sig, log
+import os
+import time
+
+import numpy as np
+from skopt import Optimizer
+
 from matmdl.core.parser import uset
 from matmdl.core.state import state
-from skopt import Optimizer
-import numpy as np
-import time
-import os
+from matmdl.core.utilities import as_float_tuples, log, round_sig
+from matmdl.core.writer import write_input_params
 
 
 class InOpt:

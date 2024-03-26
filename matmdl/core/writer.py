@@ -2,12 +2,14 @@
 Module for writing to files.
 """
 
-from matmdl.core.parser import uset
-from matmdl.core.state import state
-from typing import Union
-import numpy as np
 import os
 import re
+from typing import Union
+
+import numpy as np
+
+from matmdl.core.parser import uset
+from matmdl.core.state import state
 
 
 def write_params_to_file(param_values: list[float], param_names: list[str]) -> None:

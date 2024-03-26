@@ -3,11 +3,12 @@ Utility functions that fit nowhere else.
 These should have no `matmdl` dependencies.
 """
 
-import numpy as np
-from numpy.linalg import norm
+import time
 import warnings
 from typing import Union
-import time
+
+import numpy as np
+from numpy.linalg import norm
 
 
 def log(message: str):

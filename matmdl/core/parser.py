@@ -2,12 +2,14 @@
 Module that loads and checks input file.
 """
 
+import datetime
+import os
 from contextlib import contextmanager
 from pprint import pprint
-from matmdl.core.utilities import log
-import datetime
+
 import tomllib
-import os
+
+from matmdl.core.utilities import log
 
 
 class UserSettings:

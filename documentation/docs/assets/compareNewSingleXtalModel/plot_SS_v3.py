@@ -4,12 +4,12 @@ Compare the full geometry model to the 100-element chain model for the PAN model
 2. Change in chain model as a function of length?
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import subprocess
-from matplotlib.ticker import AutoMinorLocator
 
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.ticker import AutoMinorLocator
 
 ## i/o folders
 data_dir = os.path.join(os.getcwd(), "data")

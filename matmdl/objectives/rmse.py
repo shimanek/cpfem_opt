@@ -1,8 +1,9 @@
-import numpy as np
+import warnings
 from copy import deepcopy
+
+import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
-import warnings
 
 from matmdl.core.parser import uset
 

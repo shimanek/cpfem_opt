@@ -4,13 +4,14 @@ crystal plasticity subroutine.
 """
 
 import shutil
+
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import root
 
-from matmdl.core.utilities import unit_vector
-from matmdl.core.parser import uset
 from matmdl.core import writer as writer
+from matmdl.core.parser import uset
+from matmdl.core.utilities import unit_vector
 
 
 def do_orientation_inputs(next_params, orient, in_opt):

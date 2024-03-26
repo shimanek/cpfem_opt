@@ -8,21 +8,21 @@ from matmdl.core.parser import uset
 match uset.format:
 	case "huang":
 		from .abaqus import (
-			run,
 			extract,
-			has_completed,
-			prepare,
-			write_strain,
-			pre_run,
 			file_patterns,
+			has_completed,
+			pre_run,
+			prepare,
+			run,
+			write_strain,
 		)
 	case "fepx":
 		from .fepx import (
-			run,
 			extract,
-			has_completed,
-			prepare,
-			write_strain,
-			pre_run,
 			file_patterns,
+			has_completed,
+			pre_run,
+			prepare,
+			run,
+			write_strain,
 		)

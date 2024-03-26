@@ -13,20 +13,19 @@ TODO: refactor overlap between main() and plot_single()
 """
 
 import os
-import numpy as np
-from skopt.plots import plot_evaluations, plot_objective
-from scipy.optimize import curve_fit
-
-from .core.parser import uset
-from .core.parallel import Checkout
-from .core.utilities import msg, warn
-from .core import optimizer as optimizer
 
 import matplotlib
+import numpy as np
+from scipy.optimize import curve_fit
+from skopt.plots import plot_evaluations, plot_objective
+
+from .core import optimizer as optimizer
+from .core.parallel import Checkout
+from .core.parser import uset
+from .core.utilities import msg, warn
 
 matplotlib.use("Agg")  # backend selected for cluster compatibility
 import matplotlib.pyplot as plt  # noqa: E402
-
 
 # use local path for plots
 with uset.unlock():

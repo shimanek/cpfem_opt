@@ -3,11 +3,11 @@ This module contains helper functions for dealing with Abaqus but
 has no Abaqus-specific imports.
 """
 
-from matmdl.core.parser import uset
-from matmdl.core.crystalPlasticity import do_orientation_inputs
-import subprocess
 import os
+import subprocess
 
+from matmdl.core.crystalPlasticity import do_orientation_inputs
+from matmdl.core.parser import uset
 
 file_patterns = [
 	"mesh",

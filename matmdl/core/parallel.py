@@ -4,16 +4,18 @@ This is presumed to be the case when the setting `main_path` has a value.
 Everything here should be called within a Checkout guard.
 """
 
+import os
+import random
+import re
+import time
+from shutil import copy
+
+import numpy as np
+
 from matmdl.core.parser import uset
 from matmdl.core.state import state
 from matmdl.core.utilities import msg, warn
 from matmdl.engines import file_patterns
-import numpy as np
-from shutil import copy
-import random
-import os
-import re
-import time
 
 
 def check_parallel():

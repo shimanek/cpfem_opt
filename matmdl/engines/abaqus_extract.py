@@ -7,8 +7,8 @@ parameters to reference data.
 
 import os
 
-from odbAccess import *
 from abaqusConstants import *
+from odbAccess import *
 from odbMaterial import *
 from odbSection import *
 

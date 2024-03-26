@@ -4,6 +4,7 @@ Module for optimization state meta-indicators, like iteration number and time.
 
 import time
 from collections import deque
+
 from matmdl.core.utilities import warn
 
 

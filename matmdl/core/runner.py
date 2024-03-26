@@ -2,6 +2,14 @@
 Helper module for some abstracted commands used in [run][matmdl.run].
 """
 
+import os
+import shutil
+import subprocess
+import sys
+from typing import Union
+
+import numpy as np
+
 from matmdl import engines as engine
 from matmdl.core import optimizer as optimizer
 from matmdl.core import writer as writer
@@ -9,12 +17,6 @@ from matmdl.core.crystalPlasticity import get_orient_info
 from matmdl.core.experimental import ExpData
 from matmdl.core.parser import uset
 from matmdl.core.state import state
-from typing import Union
-import numpy as np
-import subprocess
-import shutil
-import sys
-import os
 
 
 def get_first(opt, in_opt, exp_data) -> None:

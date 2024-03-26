@@ -2,11 +2,12 @@
 Functions for dealing with FEPX.
 """
 
-from matmdl.core.parser import uset
-import numpy as np
-import subprocess
 import os
+import subprocess
 
+import numpy as np
+
+from matmdl.core.parser import uset
 
 file_patterns = [
 	"simulation.cfg",
