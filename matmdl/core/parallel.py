@@ -3,6 +3,7 @@ Module for dealing with the present optimization being one of many simultaneous 
 This is presumed to be the case when the setting `main_path` has a value.
 Everything here should be called within a Checkout guard.
 """
+
 from matmdl.core.parser import uset
 from matmdl.core.state import state
 from matmdl.core.utilities import msg, warn
@@ -76,26 +77,35 @@ def update_parallel():
 	# update state:
 	num_lines = _get_totlines()
 	start_line = num_lines - num_newlines + 1
-	update_params = np.loadtxt(os.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)
-	update_errors = np.loadtxt(os.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
+	update_params = np.loadtxt(
+		os.path.join(uset.main_path, "out_progress.txt"),
+		delimiter=",",
+		skiprows=start_line,
+	)
+	update_errors = np.loadtxt(
+		os.path.join(uset.main_path, "out_errors.txt"),
+		delimiter=",",
+		skiprows=start_line,
+	)
 
 	# strict output database assertion:
 	# assert_db_lengths_match()
 
 	# quick assertion for params and errors only:
-	has_multiple = len(np.shape(update_params))==2
+	has_multiple = len(np.shape(update_params)) == 2
 	len_params = np.shape(update_params)[0] if has_multiple else 1
 	len_errors = np.shape(update_errors)[0] if has_multiple else 1
 	# ^ (if shape is 1D then there is only one entry)
-	assert len_params == len_errors, \
-		f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
+	assert (
+		len_params == len_errors
+	), f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
 
 	update_params_pass = []
 	update_errors_pass = []
 	if has_multiple:
 		for i in range(np.shape(update_params)[0]):
-			update_params_pass.append(list(update_params[i,1:]))  # first value is time
-			update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
+			update_params_pass.append(list(update_params[i, 1:]))  # first value is time
+			update_errors_pass.append(float(update_errors[i, -1]))  # last value is mean
 	else:
 		update_params_pass.append(list(update_params[1:]))
 		update_errors_pass.append(float(update_errors[-1]))
@@ -110,8 +120,14 @@ def assert_db_lengths_match():
 	for npyfile in [f for f in os.listdir(uset.main_path) if f.endswith("npy")]:
 		dat = np.load(os.path.join(uset.main_path, npyfile))
 		lengths.append(np.shape(dat)[2])
-	for outfile in [f for f in os.listdir(uset.main_path) if f.startswith("out_") and f.endswith(".txt")]:
-		dat = np.loadtxt(os.path.join(uset.main_path, outfile), delimiter=',', skiprows=1)
+	for outfile in [
+		f
+		for f in os.listdir(uset.main_path)
+		if f.startswith("out_") and f.endswith(".txt")
+	]:
+		dat = np.loadtxt(
+			os.path.join(uset.main_path, outfile), delimiter=",", skiprows=1
+		)
 		lengths.append(np.shape(dat)[0])
 
 	if len(set(lengths)) > 1:
@@ -131,8 +147,8 @@ def _get_output_state():
 
 
 def copy_files(file_patterns):
-	""" copy files from uset.main_path to runner dir"""
-	
+	"""copy files from uset.main_path to runner dir"""
+
 	# exact filenames
 	flist = ["input.toml"]
 	for orient in uset.orientations.keys():  # no need for ordering here
@@ -142,7 +158,7 @@ def copy_files(file_patterns):
 		except KeyError:
 			# orientation generated, no input file needed
 			pass
-	
+
 	# file list defined in engines:
 	for f in os.listdir(uset.main_path):
 		for pattern in file_patterns:
@@ -156,6 +172,7 @@ def copy_files(file_patterns):
 
 class Checkout:
 	"""Checkout shared resource without write collisions."""
+
 	def __init__(self, fname, local=False):
 		self.start = time.time()
 		self.fname = fname
@@ -174,7 +191,9 @@ class Checkout:
 				try:
 					with open(self.fpath + ".lck", "r") as f:
 						source = f.read()
-					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}")
+					msg(
+						f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}"
+					)
 				except FileNotFoundError:
 					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds")
 				time.sleep(1)
@@ -190,7 +209,9 @@ class Checkout:
 				except FileNotFoundError:
 					lines = []
 				if len(lines) != 1:
-					warn("Warning: collision detected between processes:", RuntimeWarning)
+					warn(
+						"Warning: collision detected between processes:", RuntimeWarning
+					)
 					for line in lines:
 						print(f"\t{line}", flush=True)
 					warn("Reattempting to checkout resource", RuntimeWarning)
@@ -198,13 +219,17 @@ class Checkout:
 						os.remove(self.fpath + ".lck")
 					except FileNotFoundError:
 						pass  # only one process will successfully remove file
-					time.sleep(4.0*random.random())  # wait for a sec before restarting
+					time.sleep(
+						4.0 * random.random()
+					)  # wait for a sec before restarting
 					self.__enter__()  # try again
 
 				msg(f"Unlocked after {time.time()-self.start:.3f} seconds")
 				break
 		if time.time() - self.start > cutoff_seconds:
-			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
+			raise RuntimeError(
+				f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting."
+			)
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		if False:  # debugging
@@ -218,7 +243,9 @@ class Checkout:
 		"""
 		Decorator to use if whole function needs resource checked out.
 		"""
+
 		def decorator():
 			with self:
 				return fn()
+
 		return decorator
