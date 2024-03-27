@@ -100,7 +100,12 @@ def write_strain(strain: float, jobname: str):
 	# input file:
 	max_bound = round(strain * uset.length, 4)  # round to 4 digits
 
-	with open(f"{uset.jobname}.inp", "r") as f:
+	if jobname[-4:] == ".inp":
+		local_jobname = jobname
+	else:
+		local_jobname = jobname + ".inp"
+
+	with open(local_jobname, "r") as f:
 		lines = f.readlines()
 
 	# find last number after RP-TOP under *Boundary
@@ -120,8 +125,8 @@ def write_strain(strain: float, jobname: str):
 		new_bound_line_str = new_bound_line_str + str(new_bound_line[i])
 	new_bound_line_str = new_bound_line_str + "\n"
 
-	# write to uset.jobname file
-	with open(jobname, "w") as f:
+	# write out
+	with open(local_jobname, "w") as f:
 		f.writelines(lines[:bound_line_ind])
 		f.writelines(new_bound_line_str)
 		f.writelines(lines[bound_line_ind + 1 :])

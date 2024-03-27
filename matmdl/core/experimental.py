@@ -28,16 +28,19 @@ class ExpData:
 		self.data = {}
 		for orient in orientations.keys():
 			expname = orientations[orient]["exp"]
-			jobname = f"{uset.jobname}_{orient}"
 			min_strain, max_strain = self._get_bounds(expname, orient)
 			raw = self._get_SS(expname, min_strain, max_strain)
-			sgn = -1 if uset.is_compression else 1
-			engine.write_strain(sgn * max_strain, jobname)
 			self.data[orient] = {
 				"max_strain": max_strain,
 				"min_strain": min_strain,
 				"raw": raw,
 			}
+
+
+	def tell_max_strain(self, orient: str):
+		"""Convience method to forget how data is laid out"""
+		return self.data[orient]["max_strain"]
+
 
 	def _load(self, fname: str):
 		"""

@@ -6,7 +6,6 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Union
 
 import numpy as np
 
@@ -17,6 +16,14 @@ from matmdl.core.crystalPlasticity import get_orient_info
 from matmdl.core.experimental import ExpData
 from matmdl.core.parser import uset
 from matmdl.core.state import state
+
+
+def run(max_strain=None):
+	# TODO: write correct max strain here
+	if max_strain is not None:
+		engine.write_strain(max_strain, uset.jobname)
+	# TODO: call this from run.py ... what info to pass here from there?
+	engine.run()
 
 
 def get_first(opt, in_opt, exp_data) -> None:
