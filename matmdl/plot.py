@@ -33,7 +33,7 @@ with uset.unlock():
 
 
 @Checkout("out", local=True)
-def main():
+def run_fast_plots():
 	"""Plots all available plot types"""
 	msg("\n# start plotting")
 	global in_opt
@@ -207,21 +207,32 @@ def main():
 	all_errors = np.loadtxt(os.path.join(os.getcwd(), "out_errors.txt"), skiprows=1, delimiter=",")
 	plot_error_front(errors=all_errors, samples=in_opt.orients)
 	plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
-	# -----------------------------------------------------------------------------------------------
-	# reload parameter guesses to use default plots
-	msg("retraining surrogate model")
+	msg("Finished fast plots")
+
+
+def run_slow_plots():
+	"""
+	These require retraining and sampling the surrogate model, and can be quite slow.
+
+	They are separated so that the time spent within the Checkout context can be shortened,
+	allowing easier plotting while simulations are still running.
+	"""
+	msg("Starting slow plots")
+	in_opt = optimizer.InOpt(uset.orientations, uset.params)
 	opt = optimizer.instantiate(in_opt, uset)
-	opt = optimizer.load_previous(opt, search_local=True)
-	if opt._n_initial_points > 0:
-		msg(
-			f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points..."
-		)
-		opt._n_initial_points = 0
-		fake_x = opt.Xi[-1]
-		fake_y = opt.yi[-1]
-		opt.Xi = opt.Xi[:-1]
-		opt.yi = opt.yi[:-1]
-		opt.tell(fake_x, fake_y)
+	with Checkout("out", local=True):
+		msg("retraining surrogate model")
+		opt = optimizer.load_previous(opt, search_local=True)
+		if opt._n_initial_points > 0:
+			msg(
+				f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points..."
+			)
+			opt._n_initial_points = 0
+			fake_x = opt.Xi[-1]
+			fake_y = opt.yi[-1]
+			opt.Xi = opt.Xi[:-1]
+			opt.yi = opt.yi[:-1]
+			opt.tell(fake_x, fake_y)
 	# plot parameter distribution
 	msg("parameter evaluations")
 	apply_param_labels(plot_evaluations(opt.get_result()), diag_label="Freq.")
@@ -724,4 +735,5 @@ if __name__ == "__main__":
 	if uset.do_single:
 		plot_single()
 	else:
-		main()
+		run_fast_plots()
+		run_slow_plots()
