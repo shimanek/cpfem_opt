@@ -453,15 +453,25 @@ def plot_error_front_fit(errors, samples):
 					return b * (x - h) ** 2 + k
 
 				try:
+					sigma = []
+					for ii in range(len(fit_data[:,0])):
+						sum_j = 0.0
+						for jj in range(len(fit_data[:,0])):
+							if jj == ii:
+								continue
+							dist = np.abs(fit_data[jj,0] - fit_data[ii,0])
+							if dist != 0:
+								sum_j += dist
+						sigma.append(np.abs(fit_data[ii,0]) / sum_j)
+					sigma = np.asarray(sigma)
+
 					popt, _ = curve_fit(
 						f,
 						fit_data[:, 0],
 						fit_data[:, 1],
 						p0=(0, 10, 100),
 						bounds=((-10, -100, -500), (10, 100, 500)),
-						# TODO: choose weighting method from below
-						# sigma=1-np.abs(fit_data[:,0])/np.variance(fit_data[:,0]),
-						# sigma=1/fit_data[:,0],  # sensitive to values near zero
+						sigma=sigma,
 					)
 					y_rot = f(x_rot, *popt)
 					curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
@@ -529,8 +539,8 @@ def plot_error_front(errors, samples):
 	"""plot Pareto frontiers of error from each pair of samples
 
 	TODO:
-	    - focus on minimal front?
-	    - check for convexity of each pairwise cases? e.g. area between hull and front
+		- focus on minimal front?
+		- check for convexity of each pairwise cases? e.g. area between hull and front
 	"""
 	num_samples = np.shape(errors)[1] - 1
 	if num_samples < 2:
