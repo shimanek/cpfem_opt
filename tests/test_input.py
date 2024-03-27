@@ -48,7 +48,6 @@ class TestExp(unittest.TestCase):
 		parsed_data = exp.data[orient_name]["raw"]
 		equal_elements = np.equal(data_out, parsed_data)
 		self.assertTrue(equal_elements.all())
-		os.remove(f"{uset.jobname}_{orient_name}")
 
 	def test_data_limits(self):
 		from matmdl.core.experimental import ExpData
