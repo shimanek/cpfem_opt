@@ -123,18 +123,20 @@ def run_fast_plots():
 		# ^ full list: time, then one param per column
 		best_params = params[loc_min_error, :]
 		with open("out_best_params.txt", "w") as f:
-			f.write("\nTotal iterations: " + str(num_iter))
+			f.write("Total iterations: " + str(num_iter))
 			f.write("\nBest iteration:   " + str(int(loc_min_error)))
-			f.write("\nLowest error:     " + str(errors[loc_min_error]) + "\n")
-			f.write("\nParameter names:\n" + ", ".join(in_opt.params) + "\n")
-			f.write("Best parameters:\n" + ", ".join([str(f) for f in best_params]) + "\n\n")
+			f.write("\nLowest error:     " + str(errors[loc_min_error]) + "\n\n")
+			f.write("Best parameters:\n")  # + ", ".join([str(f) for f in best_params]) + "\n\n")
+			for name, value in zip(in_opt.params, best_params):
+				f.write(f"{name:<10}: {value:>0.2E}\n")
 			if len(uset.param_additional_legend) > 0:
-				f.write("Fixed parameters:\n" + ", ".join(uset.param_additional_legend) + "\n")
+				f.write("\nFixed parameters:\n" + ", ".join(uset.param_additional_legend) + "\n")
 				f.write(
 					"Fixed parameter values:\n"
 					+ ", ".join([str(get_param_value(f)) for f in uset.param_additional_legend])
 					+ "\n\n"
 				)
+			f.write("\n")
 		# -----------------------------------------------------------------------------------------------
 		# plot best paramters
 		legend_info = []
