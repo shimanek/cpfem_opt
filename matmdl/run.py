@@ -63,7 +63,7 @@ def loop(opt, loop_len):
 			for orient in in_opt.orients:
 				engine.pre_run(next_params, orient, in_opt)
 
-				engine.run()
+				runner.run(max_strain=exp_data.tell_max_strain(orient))
 
 				if not engine.has_completed():  # try decreasing max increment size
 					runner.refine_run()

@@ -33,7 +33,7 @@ with uset.unlock():
 
 
 @Checkout("out", local=True)
-def main():
+def run_fast_plots():
 	"""Plots all available plot types"""
 	msg("\n# start plotting")
 	global in_opt
@@ -123,18 +123,20 @@ def main():
 		# ^ full list: time, then one param per column
 		best_params = params[loc_min_error, :]
 		with open("out_best_params.txt", "w") as f:
-			f.write("\nTotal iterations: " + str(num_iter))
+			f.write("Total iterations: " + str(num_iter))
 			f.write("\nBest iteration:   " + str(int(loc_min_error)))
-			f.write("\nLowest error:     " + str(errors[loc_min_error]) + "\n")
-			f.write("\nParameter names:\n" + ", ".join(in_opt.params) + "\n")
-			f.write("Best parameters:\n" + ", ".join([str(f) for f in best_params]) + "\n\n")
+			f.write("\nLowest error:     " + str(errors[loc_min_error]) + "\n\n")
+			f.write("Best parameters:\n")  # + ", ".join([str(f) for f in best_params]) + "\n\n")
+			for name, value in zip(in_opt.params, best_params):
+				f.write(f"{name:<10}: {value:>0.2E}\n")
 			if len(uset.param_additional_legend) > 0:
-				f.write("Fixed parameters:\n" + ", ".join(uset.param_additional_legend) + "\n")
+				f.write("\nFixed parameters:\n" + ", ".join(uset.param_additional_legend) + "\n")
 				f.write(
 					"Fixed parameter values:\n"
 					+ ", ".join([str(get_param_value(f)) for f in uset.param_additional_legend])
 					+ "\n\n"
 				)
+			f.write("\n")
 		# -----------------------------------------------------------------------------------------------
 		# plot best paramters
 		legend_info = []
@@ -207,21 +209,32 @@ def main():
 	all_errors = np.loadtxt(os.path.join(os.getcwd(), "out_errors.txt"), skiprows=1, delimiter=",")
 	plot_error_front(errors=all_errors, samples=in_opt.orients)
 	plot_error_front_fit(errors=all_errors, samples=in_opt.orients)
-	# -----------------------------------------------------------------------------------------------
-	# reload parameter guesses to use default plots
-	msg("retraining surrogate model")
+	msg("Finished fast plots")
+
+
+def run_slow_plots():
+	"""
+	These require retraining and sampling the surrogate model, and can be quite slow.
+
+	They are separated so that the time spent within the Checkout context can be shortened,
+	allowing easier plotting while simulations are still running.
+	"""
+	msg("Starting slow plots")
+	in_opt = optimizer.InOpt(uset.orientations, uset.params)
 	opt = optimizer.instantiate(in_opt, uset)
-	opt = optimizer.load_previous(opt, search_local=True)
-	if opt._n_initial_points > 0:
-		msg(
-			f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points..."
-		)
-		opt._n_initial_points = 0
-		fake_x = opt.Xi[-1]
-		fake_y = opt.yi[-1]
-		opt.Xi = opt.Xi[:-1]
-		opt.yi = opt.yi[:-1]
-		opt.tell(fake_x, fake_y)
+	with Checkout("out", local=True):
+		msg("retraining surrogate model")
+		opt = optimizer.load_previous(opt, search_local=True)
+		if opt._n_initial_points > 0:
+			msg(
+				f"warning, found only {opt.n_initial_points_ - opt._n_initial_points} points; training on random points..."
+			)
+			opt._n_initial_points = 0
+			fake_x = opt.Xi[-1]
+			fake_y = opt.yi[-1]
+			opt.Xi = opt.Xi[:-1]
+			opt.yi = opt.yi[:-1]
+			opt.tell(fake_x, fake_y)
 	# plot parameter distribution
 	msg("parameter evaluations")
 	apply_param_labels(plot_evaluations(opt.get_result()), diag_label="Freq.")
@@ -453,15 +466,25 @@ def plot_error_front_fit(errors, samples):
 					return b * (x - h) ** 2 + k
 
 				try:
+					sigma = []
+					for ii in range(len(fit_data[:,0])):
+						sum_j = 0.0
+						for jj in range(len(fit_data[:,0])):
+							if jj == ii:
+								continue
+							dist = np.abs(fit_data[jj,0] - fit_data[ii,0])
+							if dist != 0:
+								sum_j += dist
+						sigma.append(np.abs(fit_data[ii,0]) / sum_j)
+					sigma = np.asarray(sigma)
+
 					popt, _ = curve_fit(
 						f,
 						fit_data[:, 0],
 						fit_data[:, 1],
 						p0=(0, 10, 100),
 						bounds=((-10, -100, -500), (10, 100, 500)),
-						# TODO: choose weighting method from below
-						# sigma=1-np.abs(fit_data[:,0])/np.variance(fit_data[:,0]),
-						# sigma=1/fit_data[:,0],  # sensitive to values near zero
+						sigma=sigma,
 					)
 					y_rot = f(x_rot, *popt)
 					curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
@@ -529,8 +552,8 @@ def plot_error_front(errors, samples):
 	"""plot Pareto frontiers of error from each pair of samples
 
 	TODO:
-	    - focus on minimal front?
-	    - check for convexity of each pairwise cases? e.g. area between hull and front
+		- focus on minimal front?
+		- check for convexity of each pairwise cases? e.g. area between hull and front
 	"""
 	num_samples = np.shape(errors)[1] - 1
 	if num_samples < 2:
@@ -714,4 +737,5 @@ if __name__ == "__main__":
 	if uset.do_single:
 		plot_single()
 	else:
-		main()
+		run_fast_plots()
+		run_slow_plots()
