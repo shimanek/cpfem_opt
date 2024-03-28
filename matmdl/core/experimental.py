@@ -36,11 +36,9 @@ class ExpData:
 				"raw": raw,
 			}
 
-
 	def tell_max_strain(self, orient: str):
 		"""Convience method to forget how data is laid out"""
 		return self.data[orient]["max_strain"]
-
 
 	def _load(self, fname: str):
 		"""
