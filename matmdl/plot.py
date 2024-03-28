@@ -467,15 +467,15 @@ def plot_error_front_fit(errors, samples):
 
 				try:
 					sigma = []
-					for ii in range(len(fit_data[:,0])):
+					for ii in range(len(fit_data[:, 0])):
 						sum_j = 0.0
-						for jj in range(len(fit_data[:,0])):
+						for jj in range(len(fit_data[:, 0])):
 							if jj == ii:
 								continue
-							dist = np.abs(fit_data[jj,0] - fit_data[ii,0])
+							dist = np.abs(fit_data[jj, 0] - fit_data[ii, 0])
 							if dist != 0:
 								sum_j += dist
-						sigma.append(np.abs(fit_data[ii,0]) / sum_j)
+						sigma.append(np.abs(fit_data[ii, 0]) / sum_j)
 					sigma = np.asarray(sigma)
 
 					popt, _ = curve_fit(
