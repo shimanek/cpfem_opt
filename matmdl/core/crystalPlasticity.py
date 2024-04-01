@@ -30,7 +30,10 @@ def do_orientation_inputs(next_params, orient, in_opt):
 		)
 	else:
 		if "inp" in uset.orientations[orient]:
-			shutil.copy(uset.orientations[orient]["inp"], "mat_orient.inp")
+			shutil.copy(
+				uset.orientations[orient]["inp"][0], 
+				uset.orientations[orient]["inp"][1]
+			)
 
 
 def get_orient_info(
