@@ -106,6 +106,10 @@ def run_fast_plots():
 		)
 		labels0.append(f"Fit [{orient}]")
 
+		# save best stress-strain data:
+		temp_ss = np.stack((eng_strain_best, eng_stress_best), axis=1)
+		np.savetxt(f"out_best_stressStrain_{orient}.csv", temp_ss, delimiter=",", header="Eng. Strain, Eng. Stress")
+
 		plot_settings(ax)
 		if uset.max_strain > 0:
 			ax.set_xlim(right=uset.max_strain)
