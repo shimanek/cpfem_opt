@@ -127,9 +127,9 @@ class UserSettings:
 					)
 			if req.upper:
 				value = self.__dict__[key]
-				if value < req.upper:
+				if value > req.upper:
 					raise ValueError(
-						f"Input of {value} for `{key}` is below lower bound of {req.upper}"
+						f"Input of {value} for `{key}` is above upper bound of {req.upper}"
 					)
 
 		# check if this is a single run
