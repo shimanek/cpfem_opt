@@ -73,7 +73,7 @@ class TestError(unittest.TestCase):
 		tol_slope=None,
 	):
 		# tolerances are RMSE in respective units
-		from matmdl.objectives.rmse import _slope_diff, _stress_diff
+		from matmdl.objectives.calculate import _slope_diff, _stress_diff
 
 		x = np.linspace(0.0, 1.0, 100)
 

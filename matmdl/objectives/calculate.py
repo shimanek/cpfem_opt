@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 from matmdl.core.parser import uset
 
 
-def calc_error(exp_data: "Nx2 matrix", orientation: str) -> float:
+def calc_error(exp_data: "Nx2 matrix", orientation: str, sim_data=None) -> float:
 	"""
 	Give error value for run compared to experimental data.
 
@@ -20,10 +20,17 @@ def calc_error(exp_data: "Nx2 matrix", orientation: str) -> float:
 	        ``exp_data.data[orientation]['raw']``.
 	    orientation: Orientation nickname.
 	"""
-	simSS = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)[1:, 1:]
+	if sim_data is None:
+		simSS = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)[
+			1:, 1:
+		]
+		# if loading force-displacement from file, normalize to engineering stress-strain:
+		simSS[:, 0] = simSS[:, 0] / uset.length
+		simSS[:, 1] = simSS[:, 1] / uset.area
+	else:
+		# TODO do checks for sim_data format/types
+		simSS = sim_data
 	# TODO get simulation dimensions at beginning of running this file, pass to this function
-	simSS[:, 0] = simSS[:, 0] / uset.length  # disp to strain
-	simSS[:, 1] = simSS[:, 1] / uset.area  # force to stress
 
 	expSS = deepcopy(exp_data)
 
