@@ -104,7 +104,6 @@ def loop(opt, loop_len):
 				errors.append(objective.calc_error(exp_data.data[orient]["raw"], orient))
 				writer.combine_SS(zeros=False, orientation=orient)  # save stress-strain data
 
-			combined_error = np.mean(errors)
 			combined_error = objective.combine_error(errors)
 			update_params = update_params + [next_params]
 			update_errors = update_errors + [combined_error]

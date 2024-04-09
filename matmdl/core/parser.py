@@ -67,7 +67,10 @@ class UserSettings:
 			"main_path": Option(types=[str], crit=False, default=os.getcwd()),
 			"format": Option(types=[str], crit=False, default="huang"),
 			"executable_path": Option(types=[str, bool], crit=False, default=False),
-			"error_deviation_weight": Option(types=[float], crit=False, default=0.10),
+			"error_deviation_weight": Option(
+				types=[float], crit=False, default=0.10, lower=0.0, upper=1.0
+			),
+			"do_single": Option(types=[bool], crit=False, default=False),
 		},
 		"plot": {
 			"grain_size_name": Option(crit=False, types=[str]),
