@@ -21,7 +21,9 @@ def calc_error(exp_data: "Nx2 matrix", orientation: str, sim_data=None) -> float
 	    orientation: Orientation nickname.
 	"""
 	if sim_data is None:
-		simSS = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)[1:, 1:]
+		simSS = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)[
+			1:, 1:
+		]
 		# if loading force-displacement from file, normalize to engineering stress-strain:
 		simSS[:, 0] = simSS[:, 0] / uset.length
 		simSS[:, 1] = simSS[:, 1] / uset.area
@@ -29,7 +31,6 @@ def calc_error(exp_data: "Nx2 matrix", orientation: str, sim_data=None) -> float
 		# TODO do checks for sim_data format/types
 		simSS = sim_data
 	# TODO get simulation dimensions at beginning of running this file, pass to this function
-
 
 	expSS = deepcopy(exp_data)
 

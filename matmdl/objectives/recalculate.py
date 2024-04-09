@@ -3,16 +3,19 @@ Recalculates error values based on saved stress-strain data.
 
 Reloads *.npy files to recalculation of individual error values.
 Moves current out_errors.txt to dated filename before rewriting.
-Uses current error settings 
+Uses current error settings
 """
-import numpy as np
-import os
+
 import datetime
-from matmdl.core.parser import uset
-from matmdl.objectives import calc_error, combine_error
-from matmdl.core.experimental import ExpData
+import os
+
+import numpy as np
+
 from matmdl.core import writer as writer
+from matmdl.core.experimental import ExpData
+from matmdl.core.parser import uset
 from matmdl.core.utilities import warn
+from matmdl.objectives import calc_error, combine_error
 
 
 def recalculate():
@@ -30,7 +33,7 @@ def recalculate():
 	# load previous data:
 	exp_data = ExpData(uset.orientations)
 	orients = sorted(list(uset.orientations.keys()))
-	#^ InOpt uses same sorting... not essential but nice to match
+	# ^ InOpt uses same sorting... not essential but nice to match
 	data = {}
 	lengths = []
 	for orient in orients:
@@ -43,13 +46,14 @@ def recalculate():
 	if any(length_diffs):
 		raise ValueError("Found data files of different lengths, stopping.")
 
-
 	# loop thru stress-strains
 	for i in range(0, length):
 		# do each comparison, add to new data file
 		errors = []
 		for orient in orients:
-			errors.append(calc_error(exp_data.data[orient]["raw"], orient, sim_data=data[orient][1:,1:, i]))
+			errors.append(
+				calc_error(exp_data.data[orient]["raw"], orient, sim_data=data[orient][1:, 1:, i])
+			)
 		writer.write_error_to_file(errors, orients, combine_error)
 
 
