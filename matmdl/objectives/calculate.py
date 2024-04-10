@@ -16,9 +16,10 @@ def calc_error(exp_data: "Nx2 matrix", orientation: str, sim_data=None) -> float
 	stress-strain curves. Interpolation of experimental data depends on :ref:`i_powerlaw`.
 
 	Args:
-	    exp_data: Array of experimental strain-stress, as from
-	        ``exp_data.data[orientation]['raw']``.
-	    orientation: Orientation nickname.
+		exp_data: Array of experimental strain-stress, as from
+		``exp_data.data[orientation]['raw']``.
+
+		orientation: Orientation nickname.
 	"""
 	if sim_data is None:
 		simSS = np.loadtxt(f"temp_time_disp_force_{orientation}.csv", delimiter=",", skiprows=1)[
@@ -91,9 +92,9 @@ def _stress_diff(x, curve1, curve2):
 	root mean percent error between curves
 
 	Args:
-	    x: array of values at which to evaluate curve differences
-	    curve1: f(x) for test curve
-	    curve2: f(x) for reference curve
+		x: array of values at which to evaluate curve differences
+		curve1: f(x) for test curve
+		curve2: f(x) for reference curve
 	"""
 	ycurve1 = curve1(x)
 	ycurve2 = curve2(x)

@@ -28,6 +28,7 @@ theme:
     code: Roboto Mono
 
 markdown_extensions:
+  - footnotes
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -41,6 +42,9 @@ markdown_extensions:
   #     permalink: true
 plugins:
 - search
+- redirects:
+    redirect_maps:
+      index.md: summary.md
 - mkdocstrings:
     default_handler: python
     handlers:
@@ -54,16 +58,18 @@ plugins:
 
 
 nav:
-  - index.md
-  - Installation: install.md
-  - Getting Started:
+  - In Brief:
+    - Overview: summary.md
+    - Installation: install.md
+  - In Practice:
     - Input: input.md
     - Output: output.md
-  - Theory:
+    - Throughput: thruput.md
+  - In Theory:
     - Intro: theory.md
     - Objective: objective.md
     - Extra: theory2.md
-  - API: 
+  - In Detail: 
     - API/index.md
     - run: API/run.md
     - plot: API/plot.md

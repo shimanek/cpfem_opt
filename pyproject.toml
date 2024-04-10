@@ -14,13 +14,14 @@ dependencies = [
 doc = [
     "mkdocstrings-python",
 	"mkdocs-material",
+    "mkdocs-redirects",
 ]
 
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
-ignore = ["E501", "F722", "E701"]
+ignore = ["E501", "F722", "E701", "E999"]
 
 [tool.ruff.format]
 indent-style = "tab"

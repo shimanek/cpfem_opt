@@ -1,4 +1,4 @@
-The recommended installation method is an editable installation after cloning or copying the repository. 
+This is a small, research-oriented software package with very few total users. Therefore, the recommended installation method is an editable installation after cloning or copying the repository. 
 To keep dependencies clean, the use of virtual environments is encouraged. 
 Here, we will demonstrate the process for [conda](https://docs.conda.io/en/latest/)/[mamba](https://mamba.readthedocs.io/en/latest/index.html) and [pip](https://pip.pypa.io/en/stable/).
 

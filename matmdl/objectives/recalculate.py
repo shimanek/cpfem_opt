@@ -3,7 +3,16 @@ Recalculates error values based on saved stress-strain data.
 
 Reloads *.npy files to recalculation of individual error values.
 Moves current out_errors.txt to dated filename before rewriting.
-Uses current error settings
+Uses current error settings.
+
+Note:
+	This is a callable module, e.g.:
+
+	```
+	python3 -m matmdl.objectives.recalculate
+	```
+
+	But this should not be called when an optimization process is running.
 """
 
 import datetime
@@ -19,6 +28,15 @@ from matmdl.objectives import calc_error, combine_error
 
 
 def recalculate():
+	"""
+	Recalculate errors based on current error metrics and saved *.npy data.
+
+	Args:
+		None
+
+	Warning:
+		Should not be called while an optimization process is running.
+	"""
 	# change folder to do in place:
 	with uset.unlock():
 		uset.main_path = os.getcwd()
