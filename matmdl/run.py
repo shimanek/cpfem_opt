@@ -1,99 +1,124 @@
 """
-Script to optimize CPFEM parameters using as the engine Abaqus and Huang's subroutine.
-All user inputs should be in the ``opt_input.py`` file.
-Two import modes: tries to load Abaqus modules (when running to extract stress-strain
-info) or else imports sciki-optimize library (when running as main outside of Abaqus).
+Runnable module to start an optimization run.
+All input should be in an `input.toml` file in the directory where this is called.
 """
+
 import os
-import shutil
+
 import numpy as np
 
-from matmdl.experimental import ExpData
-from matmdl.optimizer import InOpt
-from matmdl.optimizer import instantiate_optimizer, get_next_param_set, update_progress, load_opt
-from matmdl.runner import get_first, remove_out_files, write_params, refine_run, check_single
-from matmdl.crystalPlasticity import get_orient_info, load_subroutine, param_check
-from matmdl.engines import job_run, job_extract, check_complete
-from matmdl.objectives import calc_error, max_rmse
-from matmdl.writer import write_error_to_file, combine_SS, write_opt_progress
-from matmdl.parser import uset
-from matmdl.parallel import check_parallel, Checkout, update_parallel
+from matmdl import engines as engine
+from matmdl import objectives as objective
+
+from .core import optimizer as optimizer
+from .core import parallel as parallel
+from .core import runner as runner
+from .core import writer as writer
+from .core.experimental import ExpData
+from .core.parser import uset
+from .core.state import state
+from .core.utilities import warn
+
 
 def main():
-    """Instantiate data structures, start optimization loop."""
-    check_single()  # takes over, runs, exits
-    check_parallel()
-    remove_out_files()
-    global exp_data, in_opt
-    exp_data = ExpData(uset.orientations)
-    in_opt = InOpt(uset.orientations, uset.params)
-    opt = instantiate_optimizer(in_opt, uset)
-    if uset.do_load_previous: opt = load_opt(opt)
-    load_subroutine()
+	"""
+	Instantiate data structures, start optimization loop.
 
-    loop(opt, uset.loop_len)
+	Checks for single run option, which runs then exits.
+	Checks if current process is part of a parallel pool.
+	Checks if previous output should be reloaded.
+	"""
+	runner.check_single()
+	parallel.check_parallel()
+	runner.remove_out_files()
+	global exp_data, in_opt
+	exp_data = ExpData(uset.orientations)
+	in_opt = optimizer.InOpt(uset.orientations, uset.params)
+	opt = optimizer.instantiate(in_opt, uset)
+	if uset.do_load_previous:
+		opt = optimizer.load_previous(opt)
+	engine.prepare()
+
+	loop(opt, uset.loop_len)
 
 
 def loop(opt, loop_len):
-    """Holds all optimization iteration instructions."""
-    def single_loop(opt, i):
-        """
-        Run single iteration (one parameter set) of the optimization scheme.
+	"""Holds all optimization iteration instructions."""
 
-        Single loops need to be separate function calls to allow empty returns to exit one
-        parameter set.
-        """
-        global opt_progress  # global progress tracker, row:(i, params, error)
-        next_params = get_next_param_set(opt, in_opt)
-        write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
-        while param_check(uset.params):  # True if Tau0 >= TauS
-            # this tells opt that params are bad but does not record it elsewhere
-            opt.tell(next_params, max_rmse(i, opt_progress))
-            next_params = get_next_param_set(opt, in_opt)
-            write_params(uset.param_file, in_opt.material_params, next_params[0:in_opt.num_params_material])
-        else:
-            for orient in uset.orientations.keys():
-                if in_opt.has_orient_opt[orient]:
-                    orient_components = get_orient_info(next_params, orient, in_opt)
-                    write_params('mat_orient.inp', orient_components['names'], orient_components['values'])
-                else:
-                    shutil.copy(uset.orientations[orient]['inp'], 'mat_orient.inp')
-                shutil.copy('{0}_{1}.inp'.format(uset.jobname, orient), '{0}.inp'.format(uset.jobname))
-                
-                job_run()
-                if not check_complete(): # try decreasing max increment size
-                    refine_run()
-                if not check_complete(): # if it still fails, tell optimizer a large error, continue
-                    opt.tell(next_params, max_rmse(i, opt_progress))
-                    print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
-                    return
-                else:
-                    output_fname = 'temp_time_disp_force_{0}.csv'.format(orient)
-                    if os.path.isfile(output_fname): 
-                        os.remove(output_fname)
-                    job_extract(orient)  # extract data to temp_time_disp_force.csv
-                    if np.sum(np.loadtxt(output_fname, delimiter=',', skiprows=1)[:,1:2]) == 0:
-	                    opt.tell(next_params, max_rmse(i, opt_progress))
-	                    print(f"Warning: early incomplete run for {orient}, skipping to next paramter set")
-	                    return
+	def single_loop(opt):
+		"""
+		Run single iteration (one parameter set) of the optimization scheme.
 
-            # write out:
-            with Checkout("out"):
-	            rmse_list = []
-	            for orient in uset.orientations.keys():
-	                rmse_list.append(calc_error(exp_data.data[orient]['raw'], orient))
-	                combine_SS(zeros=False, orientation=orient)  # save stress-strain data
-	            write_error_to_file(rmse_list, in_opt.orients)
-	            rmse = np.mean(rmse_list)
-	            opt.tell(next_params, rmse)
-	            opt_progress = update_progress(i, next_params, rmse)
-	            write_opt_progress(in_opt, opt_progress)
-	            # update_parallel(opt)
-    
-    get_first(opt, in_opt)
-    for i in range(loop_len):
-        single_loop(opt, i)
+		Single loops need to be separate function calls to allow empty returns to exit one
+		parameter set.
+		"""
+		next_params = optimizer.get_next_param_set(opt, in_opt)
+		writer.write_input_params(
+			uset.param_file,
+			in_opt.material_params,
+			next_params[0 : in_opt.num_params_material],
+		)
+
+		with state.TimeRun()():
+			for orient in in_opt.orients:
+				engine.pre_run(next_params, orient, in_opt)
+
+				runner.run(max_strain=exp_data.tell_max_strain(orient))
+
+				if not engine.has_completed():  # try decreasing max increment size
+					runner.refine_run()
+				if (
+					not engine.has_completed()
+				):  # if it still fails, tell optimizer a large error, continue
+					opt.tell(next_params, uset.large_error)
+					warn(
+						f"Warning: early incomplete run for {orient}, skipping to next paramter set",
+						RuntimeWarning,
+					)
+					return
+				else:
+					output_fname = f"temp_time_disp_force_{orient}.csv"
+					if os.path.isfile(output_fname):
+						os.remove(output_fname)
+					engine.extract(orient)  # extract data to temp_time_disp_force.csv
+					if np.sum(np.loadtxt(output_fname, delimiter=",", skiprows=1)[:, 1:2]) == 0:
+						opt.tell(next_params, uset.large_error)
+						warn(
+							f"Warning: early incomplete run for {orient}, skipping to next paramter set",
+							RuntimeWarning,
+						)
+						return
+
+		# write out:
+		update_params, update_errors = [], []
+		with parallel.Checkout("out"):
+			# check parallel instances:
+			update_params_par, update_errors_par = parallel.update_parallel()
+			if len(update_errors_par) > 0:
+				update_params = update_params + update_params_par
+				update_errors = update_errors + update_errors_par
+
+			# this instance:
+			errors = []
+			for orient in in_opt.orients:
+				errors.append(objective.calc_error(exp_data.data[orient]["raw"], orient))
+				writer.combine_SS(zeros=False, orientation=orient)  # save stress-strain data
+
+			combined_error = objective.combine_error(errors)
+			update_params = update_params + [next_params]
+			update_errors = update_errors + [combined_error]
+
+			# write this instance to file:
+			writer.write_error_to_file(errors, in_opt.orients, objective.combine_error)
+			writer.write_params_to_file(next_params, in_opt.params)
+
+		# update optimizer outside of Checkout context to lower time using output files:
+		optimizer.update_if_needed(opt, update_params, update_errors)
+
+	runner.get_first(opt, in_opt, exp_data)
+	for _ in range(loop_len):
+		single_loop(opt)
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+	main()

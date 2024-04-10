@@ -1,7 +1,7 @@
 [params]
-Tau0 = [100,200]
-H0 = [1400,2400]
-TauS = [400,800]
+Tau0 = 5
+H0 = 100
+TauS = 12
 
 
 [[orientations]]
@@ -11,7 +11,7 @@ inp = 'mat_orient_test.inp'
 [orientations.offset]
 dir_load = [0,0,1]
 dir_0deg = [0,1,1]
-mag_bounds = [0,1]
+mag_bounds = 1
 deg_bounds = 0
 
 [[orientations]]
@@ -23,7 +23,7 @@ max_strain = 0.011
 [orientations.offset]
 dir_load = [0,0,1]
 dir_0deg = [0,1,1]
-mag_bounds = [0,1]
+mag_bounds = 1
 deg_bounds = 0
 
 

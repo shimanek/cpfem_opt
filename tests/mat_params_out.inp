@@ -10,9 +10,9 @@ Gamma0 = 0.001
 n = 50.
 ** Hardening law
 ** Unit: MPa
-Tau0 = 15.637
+Tau0 = 2.22
 H0 = 500.0
-TauS_shift = 2.89953
+TauS_shift = 3.33
 hs = 0.01
 gamma0 = 0.4
 f0 = 1.0

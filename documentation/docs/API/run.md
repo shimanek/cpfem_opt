@@ -6,4 +6,6 @@ Running the optimization is handled by the `run` module, callable by:
 python -m matmdl.run
 ```
 
+## Docstrings:
+
 ::: matmdl.run

@@ -5,9 +5,10 @@ theme:
     - content.code.annotate
     - content.code.copy
     - content.code.select
-    - navigation.sections  # expands nav sections
+    - navigation.sections
     - navigation.instant
     - search.suggest
+    - navigation.indexes
   custom_dir: overrides
   palette:
   - scheme: slate
@@ -39,7 +40,6 @@ markdown_extensions:
   # - toc:
   #     permalink: true
 plugins:
-- offline
 - search
 - mkdocstrings:
     default_handler: python
@@ -48,17 +48,27 @@ plugins:
         paths: [..]
         options:
           show_submodules: true
+          show_symbol_type_heading: true
+          group_by_category: true
+          show_root_heading: true
+
 
 nav:
-  - Home: index.md
+  - index.md
   - Installation: install.md
   - Getting Started:
     - Input: input.md
     - Output: output.md
   - Theory:
     - Intro: theory.md
-    - Advanced: theory2.md
+    - Objective: objective.md
+    - Extra: theory2.md
   - API: 
-    - run: api_run.md
-    - plot: api_plot.md
-    - other: api_landing.md
+    - API/index.md
+    - run: API/run.md
+    - plot: API/plot.md
+    - other: 
+      - core: API/core.md
+      - engines: API/engines.md
+      - objectives: API/objectives.md
+      - models: API/models.md

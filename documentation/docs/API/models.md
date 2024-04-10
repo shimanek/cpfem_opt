@@ -1,0 +1,4 @@
+# API: Models
+
+::: matmdl.models
+
