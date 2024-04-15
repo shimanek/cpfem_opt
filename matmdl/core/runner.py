@@ -78,7 +78,11 @@ def check_single():
 			except shutil.SameFileError:
 				pass
 		shutil.copy(f"mat_orient_{orient}.inp", "mat_orient.inp")
-		shutil.copy(f"{uset.jobname}_{orient}.inp", f"{uset.jobname}.inp")
+		try:
+			shutil.copy(f"{uset.jobname}_{orient}.inp", f"{uset.jobname}.inp")
+		except FileNotFoundError:
+			# per-orientation inputs not used, could be a single input run
+			pass
 
 		engine.run()
 		if not engine.has_completed():

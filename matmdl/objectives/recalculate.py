@@ -57,6 +57,8 @@ def recalculate():
 	for orient in orients:
 		data[orient] = np.load(f"out_time_disp_force_{orient}.npy", allow_pickle=False)
 		lengths.append(np.shape(data[orient])[-1])
+		# note that conversion between force-displacement and 
+		# stress-strain happens later within calc_error
 
 	# check that all input data have the same length:
 	length = lengths[0]
