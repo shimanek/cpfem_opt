@@ -5,10 +5,13 @@ Best parameters determined by objective function that wrote to out_errors.txt.
 Use root mean squared error so that error value is more interpretable.
 """
 import os
+
 import numpy as np
+
+from matmdl.core.experimental import ExpData
 from matmdl.core.parser import uset
 from matmdl.objectives import calc_error
-from matmdl.core.experimental import ExpData
+
 
 def best_rmse():
 	## load errors, find lowest
