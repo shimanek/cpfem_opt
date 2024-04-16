@@ -1,5 +1,28 @@
 """
-Choose the computational engine for running, checking, and extracting 
+Choose the computational engine for running, checking, and extracting
 finite element job information. Currently only Abaqus exists.
 """
-from matmdl.engines.abaqus import job_run, job_extract, check_complete
+
+from matmdl.core.parser import uset
+
+match uset.format:
+	case "huang":
+		from .abaqus import (
+			extract,
+			file_patterns,
+			has_completed,
+			pre_run,
+			prepare,
+			run,
+			write_strain,
+		)
+	case "fepx":
+		from .fepx import (
+			extract,
+			file_patterns,
+			has_completed,
+			pre_run,
+			prepare,
+			run,
+			write_strain,
+		)

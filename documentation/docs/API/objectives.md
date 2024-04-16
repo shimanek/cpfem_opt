@@ -1,0 +1,4 @@
+# API: Objectives
+
+::: matmdl.objectives
+

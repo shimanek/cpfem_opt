@@ -17,4 +17,12 @@ doc = [
 ]
 
 [tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
 ignore = ["E501", "F722", "E701"]
+
+[tool.ruff.format]
+indent-style = "tab"
+docstring-code-format = true
+

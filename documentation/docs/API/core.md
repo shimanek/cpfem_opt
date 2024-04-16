@@ -1,0 +1,3 @@
+# API: Core
+
+::: matmdl.core

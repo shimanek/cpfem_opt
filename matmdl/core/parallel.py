@@ -3,21 +3,31 @@ Module for dealing with the present optimization being one of many simultaneous 
 This is presumed to be the case when the setting `main_path` has a value.
 Everything here should be called within a Checkout guard.
 """
-from matmdl.parser import uset
-from matmdl.state import state
-import numpy as np
-from shutil import copy
-import random
+
 import os
+import random
+import re
 import time
+from shutil import copy
+
+import numpy as np
+
+from matmdl.core.parser import uset
+from matmdl.core.state import state
+from matmdl.core.utilities import msg, warn
+from matmdl.engines import file_patterns
 
 
 def check_parallel():
-	"""parallel initialization if needed"""
+	"""
+	Starts parallel initialization if needed.
+
+	Note:
+		This copies files from `uset.main_path` but does not reload the input file.
+	"""
 	if uset.main_path not in [os.getcwd(), "."]:
-		print("Starting as a parallel instance", flush=True)
-		copy_files()
-		# TODO: reload copied input.toml
+		msg("Starting as a parallel instance")
+		copy_files(file_patterns)
 
 
 def _get_num_newlines():
@@ -48,8 +58,17 @@ def _get_totlines():
 	return totlines
 
 
-def update_parallel(opt):
-	""" state if dict of filename: linux seconds of last modification"""
+def update_parallel():
+	"""
+	Update state if needed based on shared database timing information.
+
+	Returns:
+		params (list): parameter values (list) of unseen points to be updated
+		errors (list): error values (scalar) of unseen points to be updated
+
+	Note:
+		Also updates `state.last_updated` timing information.
+	"""
 	if uset.main_path in [os.getcwd(), "."]:
 		return ([], [])
 
@@ -60,26 +79,35 @@ def update_parallel(opt):
 	# update state:
 	num_lines = _get_totlines()
 	start_line = num_lines - num_newlines + 1
-	update_params = np.loadtxt(os.path.join(uset.main_path, "out_progress.txt"), delimiter=',', skiprows=start_line)
-	update_errors = np.loadtxt(os.path.join(uset.main_path, "out_errors.txt"), delimiter=',', skiprows=start_line)
+	update_params = np.loadtxt(
+		os.path.join(uset.main_path, "out_progress.txt"),
+		delimiter=",",
+		skiprows=start_line,
+	)
+	update_errors = np.loadtxt(
+		os.path.join(uset.main_path, "out_errors.txt"),
+		delimiter=",",
+		skiprows=start_line,
+	)
 
 	# strict output database assertion:
 	# assert_db_lengths_match()
 
 	# quick assertion for params and errors only:
-	has_multiple = len(np.shape(update_params))==2
+	has_multiple = len(np.shape(update_params)) == 2
 	len_params = np.shape(update_params)[0] if has_multiple else 1
 	len_errors = np.shape(update_errors)[0] if has_multiple else 1
 	# ^ (if shape is 1D then there is only one entry)
-	assert len_params == len_errors, \
-		f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
+	assert (
+		len_params == len_errors
+	), f"Error: mismatch in output database size! Found {len_params} params and {len_errors} errors"
 
 	update_params_pass = []
 	update_errors_pass = []
 	if has_multiple:
 		for i in range(np.shape(update_params)[0]):
-			update_params_pass.append(list(update_params[i,1:]))  # first value is time
-			update_errors_pass.append(float(update_errors[i,-1]))  # last value is mean
+			update_params_pass.append(list(update_params[i, 1:]))  # first value is time
+			update_errors_pass.append(float(update_errors[i, -1]))  # last value is mean
 	else:
 		update_params_pass.append(list(update_params[1:]))
 		update_errors_pass.append(float(update_errors[-1]))
@@ -94,8 +122,10 @@ def assert_db_lengths_match():
 	for npyfile in [f for f in os.listdir(uset.main_path) if f.endswith("npy")]:
 		dat = np.load(os.path.join(uset.main_path, npyfile))
 		lengths.append(np.shape(dat)[2])
-	for outfile in [f for f in os.listdir(uset.main_path) if f.startswith("out_") and f.endswith(".txt")]:
-		dat = np.loadtxt(os.path.join(uset.main_path, outfile), delimiter=',', skiprows=1)
+	for outfile in [
+		f for f in os.listdir(uset.main_path) if f.startswith("out_") and f.endswith(".txt")
+	]:
+		dat = np.loadtxt(os.path.join(uset.main_path, outfile), delimiter=",", skiprows=1)
 		lengths.append(np.shape(dat)[0])
 
 	if len(set(lengths)) > 1:
@@ -114,12 +144,11 @@ def _get_output_state():
 	return output_state
 
 
-def copy_files():
-	""" copy files from uset.main_path to runner dir"""
-	#TODO: add experimental files for non-orientation case?
-	
+def copy_files(file_patterns):
+	"""copy files from uset.main_path to runner dir"""
+
 	# exact filenames
-	flist = ["input.toml", uset.umat, uset.param_file, uset.jobname+".inp"]
+	flist = ["input.toml"]
 	for orient in uset.orientations.keys():  # no need for ordering here
 		flist.append(uset.orientations[orient]["exp"])
 		try:
@@ -127,12 +156,11 @@ def copy_files():
 		except KeyError:
 			# orientation generated, no input file needed
 			pass
-	
-	# only start of filenames
-	fstarts = ["mesh", "mat"]
+
+	# file list defined in engines:
 	for f in os.listdir(uset.main_path):
-		for start in fstarts:
-			if f.startswith(start):
+		for pattern in file_patterns:
+			if re.search(pattern, f):
 				flist.append(f)
 
 	# copy files to current directory
@@ -141,7 +169,8 @@ def copy_files():
 
 
 class Checkout:
-	"""checkout shared resource without write collisions"""
+	"""Checkout shared resource without write collisions."""
+
 	def __init__(self, fname, local=False):
 		self.start = time.time()
 		self.fname = fname
@@ -160,10 +189,12 @@ class Checkout:
 				try:
 					with open(self.fpath + ".lck", "r") as f:
 						source = f.read()
-					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}", flush=True)
+					msg(
+						f"Waiting on Checkout for {time.time()-self.start:.3f} seconds from {source}"
+					)
 				except FileNotFoundError:
-					print(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds", flush=True)
-				time.sleep(2)
+					msg(f"Waiting on Checkout for {time.time()-self.start:.3f} seconds")
+				time.sleep(1)
 			else:
 				with open(self.fpath + ".lck", "a+") as f:
 					f.write(f"{os.getcwd()}\n")
@@ -176,21 +207,23 @@ class Checkout:
 				except FileNotFoundError:
 					lines = []
 				if len(lines) != 1:
-					print("Warning: collision detected between processes:", flush=True)
+					warn("Warning: collision detected between processes:", RuntimeWarning)
 					for line in lines:
-						print("line", flush=True)
-					print("Reattempting to checkout resource", flush=True)
+						print(f"\t{line}", flush=True)
+					warn("Reattempting to checkout resource", RuntimeWarning)
 					try:
 						os.remove(self.fpath + ".lck")
 					except FileNotFoundError:
 						pass  # only one process will successfully remove file
-					time.sleep(4.0*random.random())  # wait for a sec before restarting
+					time.sleep(4.0 * random.random())  # wait for a sec before restarting
 					self.__enter__()  # try again
 
-				print(f"Unlocked after {time.time()-self.start:.3f} seconds", flush=True)
+				msg(f"Unlocked after {time.time()-self.start:.3f} seconds")
 				break
 		if time.time() - self.start > cutoff_seconds:
-			raise RuntimeError(f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting.")
+			raise RuntimeError(
+				f"Error: waited for resource {self.fname} for longer than {cutoff_seconds}s, exiting."
+			)
 
 	def __exit__(self, exc_type, exc_value, exc_tb):
 		if False:  # debugging
@@ -198,13 +231,15 @@ class Checkout:
 				source = f.read()
 			print(f"Exit: rm lock from: {source}", flush=True)
 		os.remove(self.fpath + ".lck")
-		print(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.", flush=True)
+		msg(f"Exiting Checkout after {time.time()-self.time_unlocked:.3f} seconds.")
 
 	def __call__(self, fn):
 		"""
 		Decorator to use if whole function needs resource checked out.
 		"""
+
 		def decorator():
 			with self:
 				return fn()
+
 		return decorator
