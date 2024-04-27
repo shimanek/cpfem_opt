@@ -139,9 +139,37 @@ def instantiate(in_opt: object, uset: object) -> object:
 	Returns:
 	    skopt.Optimize: Instantiated optimization object.
 	"""
+	# Gaussian process with Matérn kernel as surrogate model
+	from sklearn.gaussian_process.kernels import (
+		RBF,
+		ConstantKernel,
+		DotProduct,
+		ExpSineSquared,
+		Matern,
+		RationalQuadratic,
+	)
+	from skopt.learning import GaussianProcessRegressor
+	from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
+	noise_level = 0.1
+	kernels = [
+		1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0)),
+		1.0 * RationalQuadratic(length_scale=1.0, alpha=0.1),
+		1.0 * ExpSineSquared(length_scale=1.0, periodicity=3.0,
+			length_scale_bounds=(0.1, 10.0),
+			periodicity_bounds=(1.0, 10.0)),
+		ConstantKernel(0.1, (0.01, 10.0))
+			* (DotProduct(sigma_0=1.0, sigma_0_bounds=(0.1, 10.0)) ** 2),
+		1.0 * Matern(length_scale=1.0, length_scale_bounds=(1e-1, 10.0),
+			nu=2.5),
+	]
+	kernel = kernels[0]
+	gpr = GaussianProcessRegressor(kernel=kernel, alpha=noise_level ** 2,
+		normalize_y=True, noise="gaussian",
+		n_restarts_optimizer=2
+	)
 	opt = Optimizer(
 		dimensions=in_opt.bounds,
-		base_estimator="gp",
+		base_estimator=gpr,
 		n_initial_points=uset.n_initial_points,
 		initial_point_generator="lhs",
 		acq_func="EI",
