@@ -152,7 +152,7 @@ def copy_files(file_patterns):
 	for orient in uset.orientations.keys():  # no need for ordering here
 		flist.append(uset.orientations[orient]["exp"])
 		try:
-			flist.append(uset.orientations[orient]["inp"])
+			flist.append(uset.orientations[orient]["inp"][0])
 		except KeyError:
 			# orientation generated, no input file needed
 			pass
