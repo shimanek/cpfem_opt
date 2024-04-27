@@ -12,7 +12,7 @@ import numpy as np
 from matmdl import engines as engine
 from matmdl.core import optimizer as optimizer
 from matmdl.core import writer as writer
-from matmdl.core.crystalPlasticity import get_orient_info
+from matmdl.core.crystalPlasticity import do_orientation_inputs
 from matmdl.core.experimental import ExpData
 from matmdl.core.parser import uset
 from matmdl.core.state import state
@@ -63,21 +63,7 @@ def check_single():
 
 	engine.prepare()
 	for orient in in_opt.orients:
-		print(f"DBG: starting orient {orient}")
-		if in_opt.has_orient_opt[orient]:
-			orient_components = get_orient_info(next_params, orient, in_opt)
-			writer.write_input_params(
-				"mat_orient.inp",
-				orient_components["names"],
-				orient_components["values"],
-			)
-			shutil.copy("mat_orient.inp", f"mat_orient_{orient}.inp")
-		else:
-			try:
-				shutil.copy(uset.orientations[orient]["inp"], f"mat_orient_{orient}.inp")
-			except shutil.SameFileError:
-				pass
-		shutil.copy(f"mat_orient_{orient}.inp", "mat_orient.inp")
+		do_orientation_inputs(next_params, orient, in_opt)
 		try:
 			shutil.copy(f"{uset.jobname}_{orient}.inp", f"{uset.jobname}.inp")
 		except FileNotFoundError:
@@ -189,3 +175,4 @@ def refine_run(ct: int = 0):
 		return
 	else:
 		refine_run(ct)
+
