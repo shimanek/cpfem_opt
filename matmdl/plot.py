@@ -39,7 +39,7 @@ def run_fast_plots():
 	global in_opt
 	in_opt = optimizer.InOpt(uset.orientations, uset.params)
 	orients = in_opt.orients
-	fig0, ax0 = plt.subplots()
+	fig0, ax0 = plt.subplots(figsize=(4,3.2))
 	labels0 = []
 	colors0 = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 	for ct_orient, orient in enumerate(orients):
@@ -70,13 +70,24 @@ def run_fast_plots():
 			color="black",
 			label="Experimental " + uset.grain_size_name,
 		)
+		if "Ni" in orient:
+			ni_label_dict = {
+				"Ni_096": "0.96 µm",
+				"Ni_2": "2 µm",
+				"Ni_20": "20 µm",
+			}
+			label = ni_label_dict[orient]
+		else:
+			label = f"[{orient}]"
 		ax0.plot(
 			exp_SS[:, 0],
 			exp_SS[:, 1],
 			"s",
-			markerfacecolor=colors0[ct_orient],
+			# color=get_plot_color(orient),
 			color="black",
-			label="Experimental " + uset.grain_size_name,
+			markerfacecolor=get_plot_color(orient),
+			# markerfacecolor="none",
+			label=label,
 		)
 		labels0.append(f"Exp. [{orient}]")
 
@@ -95,14 +106,19 @@ def run_fast_plots():
 			color="blue",
 			label="Best parameter set",
 		)
+		if "Ni" in orient:
+			label = ""
+		else:
+			label = f"Fit [{orient}]"
 		ax0.plot(
 			eng_strain_best,
 			eng_stress_best,
 			"-",
 			alpha=1.0,
-			linewidth=2,
-			color=colors0[ct_orient],
-			label="Best parameter set",
+			linewidth=1.5,
+			color=get_plot_color(orient),
+			markerfacecolor="none",
+			label=label,
 		)
 		labels0.append(f"Fit [{orient}]")
 
@@ -190,7 +206,31 @@ def run_fast_plots():
 	if len(orients) > 1:
 		msg("all stress-strain")
 		plot_settings(ax0, legend=False)
-		ax0.legend(loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False)
+		handles, labels = ax0.get_legend_handles_labels()
+		new_h = []
+		new_l = []
+		# want all exp labels first
+		for handle, label in zip(handles, labels):
+			if "Fit" in label:
+				continue
+			else:
+				new_h.append(handle)
+				new_l.append(label)
+		# then want one fit label
+		from matplotlib.lines import Line2D
+		line = Line2D([0], [0], color="black", linewidth=1.5, linestyle='-')
+		new_h.append(line)
+		new_l.append("Fits")
+
+		# for fig 3, 6:
+		# ax0.legend(new_h, new_l, loc="upper right", fancybox=False)
+		# for fig 5:
+		# ax0.legend(new_h, new_l, loc="upper left", bbox_to_anchor=(1.0, 1.02), fancybox=False)
+		# for fig 8:
+		ax0.legend(new_h, new_l, loc="lower right", fancybox=False)
+		# prev legend call:
+		# ax0.legend(loc="upper left", bbox_to_anchor=(1.0, 1.02), labels=labels0, fancybox=False)
+
 		if uset.max_strain > 0:
 			ax0.set_xlim(right=uset.max_strain)
 		fig0.savefig(os.path.join(os.getcwd(), "res_all.png"), bbox_inches="tight", dpi=400)
@@ -346,6 +386,36 @@ def get_rotation_ccw(degrees):
 	return rot
 
 
+def get_plot_color(key):
+	color_dict = {
+		"001": "tab:blue",
+		"101": "tab:orange",
+		"102": "tab:green",
+		"111": "tab:red",
+		"112": "tab:purple",
+		"212": "tab:brown",
+		"213": "tab:pink",
+		# also available in olive and cyan
+		"Ni_096": "tab:blue",
+		"Ni_2": "tab:orange",
+		"Ni_20": "tab:green",
+	}
+	return color_dict[key]
+
+
+def get_plot_symbol(key):
+	symbol_dict = {
+		"001": "s",
+		"101": "^",
+		"102": "v",
+		"111": "D",
+		"112": "o",
+		"212": "+",
+		"213": "x",
+	}
+	return symbol_dict[key]
+
+
 def plot_error_front_fit(errors, samples):
 	"""
 	Plots Pareto efficient pairwise errors with parabolic fits.
@@ -412,9 +482,9 @@ def plot_error_front_fit(errors, samples):
 				_ax.plot(
 					boundary_errors[:, 0],
 					boundary_errors[:, 1],
-					"o",
+					"s",
 					color="blue",
-					markerfacecolor="none",
+					# markerfacecolor="none",
 					zorder=2.0,
 				)
 				max_boundary_error = max(max(boundary_errors[:, 0]), max(boundary_errors[:, 1]))
@@ -437,8 +507,8 @@ def plot_error_front_fit(errors, samples):
 					markerfacecolor="none",
 					zorder=1.0,
 				)
-				_ax.set_xlabel(f"{samples[i]}")
-				_ax.set_ylabel(f"{samples[j+1]}")
+				_ax.set_xlabel(f"[{samples[i]}]")
+				_ax.set_ylabel(f"[{samples[j+1]}]")
 
 				# add equal error line
 				line = np.linspace(min_boundary_error, max_boundary_error, 100)
@@ -494,6 +564,7 @@ def plot_error_front_fit(errors, samples):
 						p0=(0, 10, 100),
 						bounds=((-10, -100, -500), (10, 100, 500)),
 						sigma=sigma,
+						maxfev=5000,
 					)
 					y_rot = f(x_rot, *popt)
 					curve_reg = np.stack((x_rot, y_rot), axis=1) @ rotation.T
@@ -517,11 +588,12 @@ def plot_error_front_fit(errors, samples):
 					# overall height of parabola in rotated frame:
 					diff_rs[samples[i]] = diff_rs[samples[i]] + f(0, *popt)
 					diff_rs[samples[j + 1]] = diff_rs[samples[j + 1]] + f(0, *popt)
-				except RuntimeError:
+				except RuntimeError as e:
 					warn(
 						f"Warning: unable to fit Pareto front for samples {samples[i]} and {samples[j+1]}",
 						RuntimeWarning,
 					)
+					print(e)
 
 				if i > 0:
 					_ax.set_ylabel("")
@@ -627,8 +699,8 @@ def plot_error_front(errors, samples):
 
 
 def plot_settings(ax, legend=True):
-	ax.set_xlabel("Engineering Strain, m/m")
-	ax.set_ylabel("Engineering Stress, MPa")
+	ax.set_xlabel("Eng. Strain [–]")
+	ax.set_ylabel("Eng. Stress [MPa]")
 	ax.set_xlim(left=0)
 	ax.set_ylim(bottom=0)
 	if legend:
