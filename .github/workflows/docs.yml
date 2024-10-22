@@ -5,6 +5,7 @@ on:
       - master 
       - main
       - deploy
+      - f/deploy
 permissions:
   contents: write
 jobs:
