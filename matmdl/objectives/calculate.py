@@ -115,10 +115,8 @@ def ddx_rolling(curve, x, window):
 	assert n > 1, "Rolling average requires window width of 2 or more points"
 	num_windows = len(x) - window
 	slopes = np.empty(num_windows)
-	with warnings.catch_warnings():
-		warnings.simplefilter("ignore", np.RankWarning)
-		for i in range(num_windows):
-			slopes[i] = np.polyfit(x[i : i + n], curve(x[i : i + n]), 1)[0]
+	for i in range(num_windows):
+		slopes[i] = np.polyfit(x[i : i + n], curve(x[i : i + n]), 1)[0]
 	return slopes
 
 

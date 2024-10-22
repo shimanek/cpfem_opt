@@ -30,7 +30,16 @@ def do_orientation_inputs(next_params, orient, in_opt):
 		)
 	else:
 		if "inp" in uset.orientations[orient]:
-			shutil.copy(uset.orientations[orient]["inp"], "mat_orient.inp")
+			if len(uset.orientations[orient]["inp"]) > 1:
+				# if two filenames given, copy one to the other
+				shutil.copy(
+					uset.orientations[orient]["inp"][0], 
+					uset.orientations[orient]["inp"][1]
+				)
+			else:
+				# otherwise, copy one filename to the standard orientation file name
+				shutil.copy(f"mat_orient_{orient}.inp", "mat_orient.inp")
+
 
 
 def get_orient_info(
