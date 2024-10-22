@@ -6,8 +6,11 @@ This is research code to accompany a forthcoming manuscript. Documentation can b
 
 # Manuscript
 JOM
+
 Simultaneous Optimization of Crystal Plasticity Hardening Parameters
+
 John D. Shimanek, Zi-Kui Liu, Allison M. Beese
+
 DOI: 10.1007/s11837-024-06935-2
 
 
